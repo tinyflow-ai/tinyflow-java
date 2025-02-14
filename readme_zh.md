@@ -42,4 +42,4 @@ tinyflow.execute(variables);
 
 ## Star 用户专属交流群
 
-![](./docs/assets/image/wechat_group.jpg)
+![](./docs/assets/images/wechat_group.jpg)

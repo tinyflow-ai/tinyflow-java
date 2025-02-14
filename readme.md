@@ -44,4 +44,4 @@ tinyflow.execute(variables);
 
 ## Wechat Group
 
-![](./docs/assets/image/wechat_group.jpg)
+![](./docs/assets/images/wechat_group.jpg)
