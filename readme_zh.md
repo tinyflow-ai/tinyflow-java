@@ -13,3 +13,28 @@ Tinyflow-java 是一个使用 Java 开发的智能体编排解决方案，她不
 ## 前端
 
  Tinyflow-java 的前端拖拽组件， 开源地址：https://gitee.com/tinyflow-ai/tinyflow
+ 
+## 快速开始
+
+引入依赖
+
+```xml
+<dependency>
+    <groupId>dev.tinyflow</groupId>
+    <artifactId>tinyflow-java</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+
+初始化 Tinyflow
+
+```java
+String flowDataJson = "从前端传递的流程数据";
+Tinyflow tinyflow = new Tinyflow(flowDataJson);
+
+Map<String, Object> variables = new HashMap<>();
+variables.put("name", "张三");
+variables.put("age", 18);
+
+tinyflow.execute(variables);
+```

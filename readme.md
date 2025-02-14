@@ -14,3 +14,29 @@ By integrating Tinyflow-java, you can make any traditional Java Web application 
 ## Front-end
 
 Tinyflow-java's front-end drag component, open source address: https://github.com/tinyflow-ai/tinyflow
+
+
+## Quick Start
+
+Introduce dependencies
+
+```xml
+<dependency>
+    <groupId>dev.tinyflow</groupId>
+    <artifactId>tinyflow-java</artifactId>
+    <version>0.0.1</version>
+</dependency>
+```
+
+Initialize Tinyflow
+
+```java
+String flowDataJson = "Process data passed from the front end";
+Tinyflow tinyflow = new Tinyflow(flowDataJson);
+
+Map<String, Object> variables = new HashMap<>();
+variables.put("name", "Michale");
+variables.put("age", 18);
+
+tinyflow.execute(variables);
+```
