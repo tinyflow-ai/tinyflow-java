@@ -38,3 +38,8 @@ variables.put("age", 18);
 
 tinyflow.execute(variables);
 ```
+
+
+## Star 用户专属交流群
+
+![](./docs/assets/image/wechat_group.jpg)

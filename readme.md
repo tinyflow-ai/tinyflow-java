@@ -40,3 +40,8 @@ variables.put("age", 18);
 
 tinyflow.execute(variables);
 ```
+
+
+## Wechat Group
+
+![](./docs/assets/image/wechat_group.jpg)
