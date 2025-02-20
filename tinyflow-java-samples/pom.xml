@@ -9,6 +9,7 @@
         <version>0.0.1</version>
     </parent>
 
+    <name>tinyflow-java-samples</name>
     <artifactId>tinyflow-java-samples</artifactId>
 
     <properties>

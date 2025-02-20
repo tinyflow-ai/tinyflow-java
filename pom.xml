@@ -8,6 +8,39 @@
     <artifactId>tinyflow-java</artifactId>
     <version>0.0.1</version>
     <packaging>pom</packaging>
+
+    <url>https://tinyflow.dev</url>
+    <description>Tinyflow-java is an intelligent agent orchestration solution developed using Java. It is not a product,
+        but a development component. By integrating Tinyflow-java, you can make any traditional Java Web application
+        have the ability to orchestrate AI intelligent agents.
+    </description>
+
+    <issueManagement>
+        <system>Github Issue</system>
+        <url>https://github.com/tinyflow-ai/tinyflow-java/issues</url>
+    </issueManagement>
+    <licenses>
+        <license>
+            <name>GNU Lesser General Public License v3.0</name>
+            <url>https://github.com/tinyflow-ai/tinyflow-java/blob/main/LICENSE</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <name>Michael Yang</name>
+            <email>fuhai999@gmail.com</email>
+            <roles>
+                <role>developer</role>
+            </roles>
+            <timezone>+8</timezone>
+        </developer>
+    </developers>
+    <scm>
+        <url>https://github.com/tinyflow-ai/tinyflow-java</url>
+        <connection>scm:git:https://github.com/tinyflow-ai/tinyflow-java.git</connection>
+        <developerConnection>scm:git:https://github.com/tinyflow-ai/tinyflow-java.git</developerConnection>
+    </scm>
+
     <modules>
         <module>tinyflow-java-core</module>
         <module>tinyflow-java-samples</module>
@@ -30,87 +63,102 @@
     </dependencyManagement>
 
 
-    <profiles>
-        <profile>
-            <!-- 跳过测试：mvn package -Dmaven.test.skip=true   -->
-            <!-- 检测依赖最新版本：mvn versions:display-dependency-updates  -->
-            <!-- 统一修改版本号：mvn versions:set -DnewVersion=3.0  -->
-            <!-- mvn -N versions:update-child-modules  -->
-            <!-- mvn versions:set -DnewVersion=2.0 -DprocessAllModules=true -DallowSnapshots=true -->
+    <!-- 跳过测试：mvn package -Dmaven.test.skip=true   -->
+    <!-- 检测依赖最新版本：mvn versions:display-dependency-updates  -->
+    <!-- 统一修改版本号：mvn versions:set -DnewVersion=3.0  -->
+    <!-- mvn -N versions:update-child-modules  -->
+    <!-- mvn versions:set -DnewVersion=2.0 -DprocessAllModules=true -DallowSnapshots=true -->
 
-            <!-- mvn clean source:jar install -->
-            <!-- mvn deploy -Dmaven.test.skip=true -e -P release -->
-            <!-- mvn deploy -e -P release -->
-            <id>release</id>
-            <build>
-                <plugins>
-                    <!-- Source -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>2.2.1</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <!-- Javadoc -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.10.4</version>
-                        <configuration>
-                            <windowtitle>Tinyflow</windowtitle>
-                            <doctitle>Tinyflow</doctitle>
-                            <show>private</show>
-                            <detectLinks>false</detectLinks>
-                            <detectOfflineLinks>true</detectOfflineLinks>
-                            <linksource>true</linksource>
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                            <detectJavaApiLink>true</detectJavaApiLink>
-                            <source>8</source>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <!-- 以下是GPG -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.5</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
+    <!-- mvn clean source:jar install -->
+    <!-- mvn deploy -Dmaven.test.skip=true -e -P release -->
+    <!-- mvn deploy -e -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
 
-                </plugins>
-            </build>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>ossrh</id>
-                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
-                </snapshotRepository>
-                <repository>
-                    <id>ossrh</id>
-                    <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
-        </profile>
-    </profiles>
+            <!-- Source -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Javadoc -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.4</version>
+                <configuration>
+                    <windowtitle>Tinyflow</windowtitle>
+                    <doctitle>Tinyflow</doctitle>
+                    <show>private</show>
+                    <detectLinks>false</detectLinks>
+                    <detectOfflineLinks>true</detectOfflineLinks>
+                    <linksource>true</linksource>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                    <detectJavaApiLink>true</detectJavaApiLink>
+                    <source>8</source>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Javadoc -->
+            <!-- Gpg Signature -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.7.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <tokenAuth>true</tokenAuth>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>central</id>
+            <url>https://central.sonatype.com/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
 
 </project>
