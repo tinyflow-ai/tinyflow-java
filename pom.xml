@@ -10,9 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>tinyflow-java-core</module>
-        <module>tinyflow-java-springboot</module>
-        <module>tinyflow-java-jfinal</module>
-        <module>tinyflow-java-springboot2</module>
+        <module>tinyflow-java-samples</module>
     </modules>
 
     <properties>
