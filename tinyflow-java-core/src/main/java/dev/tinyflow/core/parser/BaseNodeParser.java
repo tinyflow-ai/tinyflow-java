@@ -17,8 +17,7 @@ package dev.tinyflow.core.parser;
 
 
 import com.agentsflex.core.chain.DataType;
-import com.agentsflex.core.chain.InputParameter;
-import com.agentsflex.core.chain.OutputKey;
+import com.agentsflex.core.chain.Parameter;
 import com.agentsflex.core.chain.RefType;
 import com.agentsflex.core.chain.node.BaseNode;
 import com.alibaba.fastjson.JSONArray;
@@ -38,20 +37,20 @@ public abstract class BaseNodeParser implements NodeParser {
         return jsonObject != null ? jsonObject : EMPTY_JSON_OBJECT;
     }
 
-    public void addInputParameters(BaseNode node, JSONObject data) {
-        List<InputParameter> inputParameters = getInputParameters(data, "inputParams");
-        node.setInputParameters(inputParameters);
+    public void addParameters(BaseNode node, JSONObject data) {
+        List<Parameter> inputParameters = getParameters(data, "parameters");
+        node.setParameters(inputParameters);
     }
 
-    public List<InputParameter> getInputParameters(JSONObject data, String key) {
-        JSONArray inputParams = data.getJSONArray(key);
-        if (inputParams == null || inputParams.isEmpty()) {
+    public List<Parameter> getParameters(JSONObject data, String key) {
+        JSONArray parametersJsonArray = data.getJSONArray(key);
+        if (parametersJsonArray == null || parametersJsonArray.isEmpty()) {
             return Collections.emptyList();
         }
-        List<InputParameter> parameters = new ArrayList<>(inputParams.size());
-        for (int i = 0; i < inputParams.size(); i++) {
-            JSONObject inputParam = inputParams.getJSONObject(i);
-            InputParameter parameter = new InputParameter();
+        List<Parameter> parameters = new ArrayList<>(parametersJsonArray.size());
+        for (int i = 0; i < parametersJsonArray.size(); i++) {
+            JSONObject inputParam = parametersJsonArray.getJSONObject(i);
+            Parameter parameter = new Parameter();
             parameter.setName(inputParam.getString("name"));
             parameter.setDescription(inputParam.getString("description"));
             parameter.setRef(inputParam.getString("ref"));
@@ -65,16 +64,16 @@ public abstract class BaseNodeParser implements NodeParser {
     }
 
     public void addOutputKeys(BaseNode node, JSONObject data) {
-        JSONArray outputParams = data.getJSONArray("outputParams");
+        JSONArray outputParams = data.getJSONArray("outputDefs");
         if (outputParams != null) for (int i = 0; i < outputParams.size(); i++) {
             JSONObject outputParam = outputParams.getJSONObject(i);
-            OutputKey outputKey = new OutputKey();
-            outputKey.setName(outputParam.getString("name"));
-            outputKey.setDescription(outputParam.getString("description"));
-            outputKey.setRef(outputParam.getString("ref"));
-            outputKey.setRefType(RefType.ofValue(outputParam.getString("refType")));
-            outputKey.setDataType(DataType.ofValue(outputParam.getString("dataType")));
-            node.addOutputKey(outputKey);
+            Parameter outputDef = new Parameter();
+            outputDef.setName(outputParam.getString("name"));
+            outputDef.setDescription(outputParam.getString("description"));
+            outputDef.setRef(outputParam.getString("ref"));
+            outputDef.setRefType(RefType.ofValue(outputParam.getString("refType")));
+            outputDef.setDataType(DataType.ofValue(outputParam.getString("dataType")));
+            node.addOutputDef(outputDef);
         }
     }
 }

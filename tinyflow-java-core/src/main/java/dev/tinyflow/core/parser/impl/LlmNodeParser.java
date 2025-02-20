@@ -49,7 +49,7 @@ public class LlmNodeParser extends BaseNodeParser {
             llmNode.setLlm(llm);
         }
 
-        addInputParameters(llmNode, data);
+        addParameters(llmNode, data);
         addOutputKeys(llmNode, data);
 
         return llmNode;

@@ -28,7 +28,7 @@ public class StartNodeParser extends BaseNodeParser {
         StartNode startNode = new StartNode();
         JSONObject data = getData(nodeJSONObject);
         startNode.setName(data.getString("label"));
-        addInputParameters(startNode, data);
+        addParameters(startNode, data);
         return startNode;
     }
 }
