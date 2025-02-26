@@ -24,6 +24,11 @@
             <artifactId>agents-flex-bom</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.jfinal</groupId>
+            <artifactId>enjoy</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>
