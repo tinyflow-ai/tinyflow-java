@@ -24,9 +24,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
-import dev.tinyflow.core.parser.impl.EndNodeParser;
-import dev.tinyflow.core.parser.impl.LlmNodeParser;
-import dev.tinyflow.core.parser.impl.StartNodeParser;
+import dev.tinyflow.core.parser.impl.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +35,9 @@ public class ChainParser {
 
     static {
         nodeParserMap.put("startNode", new StartNodeParser());
+        nodeParserMap.put("codeNode", new CodeNodeParser());
+        nodeParserMap.put("templateNode", new TemplateNodeParser());
+
         nodeParserMap.put("endNode", new EndNodeParser());
         nodeParserMap.put("llmNode", new LlmNodeParser());
     }
