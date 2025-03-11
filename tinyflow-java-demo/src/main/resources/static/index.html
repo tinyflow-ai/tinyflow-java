@@ -22,7 +22,7 @@
         }
     </style>
 </head>
-<body onload="get()">
+<body onload="loadData()">
 <a href="workflow.html">新增</a>
 <div id="list">
     <table id="data-table">
@@ -39,20 +39,27 @@
         </tbody>
     </table>
 </div>
-
+<script src="config.js"></script>
 <script>
-    function get() {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://localhost:8080/workflow/getAll", true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.send();
-
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                var list = JSON.parse(xhr.responseText);
-                renderList(list);
+    // 加载数据
+    function loadData() {
+        fetch(`${BASE_URL}/workflow/getAll`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
             }
-        };
+        })
+            .then(response => {
+                if (!response.ok) throw new Error(`请求失败! status: ${response.status}`);
+                return response.json();
+            })
+            .then(list => {
+                renderList(list);
+            })
+            .catch(error => {
+                console.error('数据加载失败:', error);
+                // 可以在这里添加UI错误提示
+            });
     }
 
     function renderList(list) {

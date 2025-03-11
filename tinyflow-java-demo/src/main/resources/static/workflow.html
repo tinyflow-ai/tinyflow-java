@@ -48,6 +48,7 @@
         <pre id="resultText"></pre>
     </div>
 </div>
+<script src="config.js"></script>
 <script>
     var id;
     var modal = document.getElementById("myModal");
@@ -112,66 +113,67 @@
         if (id === undefined || id === '' || id == null) {
             data.name = name;
         }
-        // 创建 XMLHttpRequest 对象
-        var xhr = new XMLHttpRequest();
-        // 定义请求的方式（GET 或 POST）、URL 和是否异步（true 表示异步）
-        xhr.open("POST", "http://localhost:8080/workflow/save", true);
-        // 发送请求前设置请求头
-        xhr.setRequestHeader("Content-Type", "application/json");
-        // 发送请求
-        xhr.send(JSON.stringify(data));
-        // 定义处理请求成功的函数
-        xhr.onreadystatechange = function() {
-
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                var json = xhr.responseText;
-                console.log(json);
-            }
-        };
+        // 使用 fetch 发起 POST 请求
+        fetch(`${BASE_URL}/workflow/save`, {
+            method: "POST", // 请求方法
+            headers: {
+                "Content-Type": "application/json" // 设置请求头
+            },
+            body: JSON.stringify(data) // 发送 JSON 格式的数据
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('请求失败');
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+            });
     }
     function get(id) {
-        // 创建 XMLHttpRequest 对象
-        var xhr = new XMLHttpRequest();
-        // 定义请求的方式（GET 或 POST）、URL 和是否异步（true 表示异步）
-        xhr.open("GET", "http://localhost:8080/workflow/get?id=" + id, true);
-        // 发送请求前设置请求头
-        xhr.setRequestHeader("Content-Type", "application/json");
-        // 发送请求
-        xhr.send();
-        // 定义处理请求成功的函数
-        xhr.onreadystatechange = function() {
-
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                var json = xhr.responseText;
-                var wf = JSON.parse(json);
+        fetch(`${BASE_URL}/workflow/get?id=${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('请求失败');
+                return response.json();
+            })
+            .then(wf => {
                 tinyflow = new Tinyflow.Tinyflow({
                     element: '#app',
                     data: JSON.parse(wf.graph)
                 });
-            }
-        };
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+            });
     }
-    function exec(param) {
-        var data = {
-            "param": param,
-            "data": tinyflow.getData()
-        }
-        // 创建 XMLHttpRequest 对象
-        var xhr = new XMLHttpRequest();
-        // 定义请求的方式（GET 或 POST）、URL 和是否异步（true 表示异步）
-        xhr.open("POST", "http://localhost:8080/workflow/exe", true);
-        // 发送请求前设置请求头
-        xhr.setRequestHeader("Content-Type", "application/json");
-        // 发送请求
-        xhr.send(JSON.stringify(data));
-        // 定义处理请求成功的函数
-        xhr.onreadystatechange = function() {
 
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                var json = JSON.parse(xhr.responseText);
-                showResult(json);
-            }
+    function exec(param) {
+        const data = {
+            param: param,
+            data: tinyflow.getData()
         };
+
+        fetch(`${BASE_URL}/workflow/exe`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('请求失败');
+                return response.json();
+            })
+            .then(json => {
+                showResult(json);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+            });
     }
     function showResult(result) {
         var resultText = document.getElementById('resultText');
