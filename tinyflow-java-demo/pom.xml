@@ -38,10 +38,16 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+<!--        正式环境需要替换为已发布版本，此处直接引用tinyflow-java-core    -->
+<!--        <dependency>-->
+<!--            <groupId>dev.tinyflow</groupId>-->
+<!--            <artifactId>tinyflow-java</artifactId>-->
+<!--            <version>0.0.1</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>dev.tinyflow</groupId>
-            <artifactId>tinyflow-java</artifactId>
-            <version>0.0.1</version>
+            <artifactId>tinyflow-java-core</artifactId>
+            <version>0.0.2</version>
         </dependency>
         <dependency>
             <groupId>com.agentsflex</groupId>

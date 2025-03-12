@@ -83,7 +83,40 @@
             if (paramArr[i].type === 'startNode') {
                 var params = paramArr[i].data.parameters;
                 for (var key in params) {
-                    paramsObj[params[key].name] = document.getElementById(key).value;
+                    var param = params[key];
+                    var element = document.getElementById(key);
+                    if (!element) {
+                        console.error('未找到元素:', key);
+                        continue;
+                    }
+                    var value;
+                    switch (param.dataType) {
+                        case 'Boolean':
+                            // 假设使用checkbox，获取checked属性
+                            value = element.checked;
+                            break;
+                        case 'Number':
+                            // 转换为数字，无效值转为NaN
+                            value = Number(element.value);
+                            break;
+                        case 'File':
+                            // 获取文件对象
+                            value = element.files[0] || null;
+                            break;
+                        case 'Object':
+                        case 'Array':
+                            // 尝试解析JSON
+                            try {
+                                value = JSON.parse(element.value);
+                            } catch (e) {
+                                console.error(`参数“${param.name}”的JSON解析失败:`, e);
+                                value = element.value; // 保留原始值或根据需求处理
+                            }
+                            break;
+                        default: // String及其他未指定类型
+                            value = element.value;
+                    }
+                    paramsObj[param.name] = value;
                 }
                 break;
             }
@@ -176,14 +209,70 @@
             });
     }
     function showResult(result) {
-        var resultText = document.getElementById('resultText');
-        resultText.innerHTML = ''; // 清空之前的文本
-        for (var key in result) {
-            var div = document.createElement('div');
-            div.textContent = `${key}: ${result[key]}`;
-            resultText.appendChild(div);
+        const resultText = document.getElementById('resultText');
+        resultText.innerHTML = ''; // 清空容器
+
+        // 类型检查增强
+        if (!isValidInput(result)) {
+            resultText.innerHTML = '<div style="color: red">错误：参数必须是对象或数组</div>';
+            return;
         }
+
+        // 安全遍历自身可枚举属性
+        Object.keys(result).forEach(key => {
+            try {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                <span class="key">${escapeHtml(key)}</span>:
+                <span class="value">${formatValue(result[key])}</span>
+            `;
+                resultText.appendChild(div);
+            } catch (e) {
+                console.error(`渲染属性 ${key} 时出错:`, e);
+            }
+        });
     }
+
+    // 类型校验函数
+    const isValidInput = (input) => {
+        const type = Object.prototype.toString.call(input);
+        return type === '[object Object]' || type === '[object Array]';
+    };
+
+    // 值格式化函数（核心改进）
+    const formatValue = (value) => {
+        if (value === null) return '<span class="null">null</span>';
+        if (value === undefined) return '<span class="undefined">undefined</span>';
+
+        switch (typeof value) {
+            case 'object':
+                // 处理特殊对象类型
+                if (Array.isArray(value)) {
+                    return `[ ${value.map(item => formatValue(item)).join(', ')} ]`;
+                } else if (value instanceof Date) {
+                    return `<time>${value.toISOString()}</time>`;
+                }
+                // 简单对象处理（限制递归深度可在此添加）
+                return `{ ${Object.keys(value).map(k =>
+                    `${k}: ${formatValue(value[k])}`
+                ).join(', ')} }`;
+            case 'string':
+                return `<span class="string">"${escapeHtml(value)}"</span>`;
+            case 'number':
+                return `<span class="number">${value}</span>`;
+            case 'boolean':
+                return `<span class="boolean">${value.toString()}</span>`;
+            default:
+                return escapeHtml(String(value));
+        }
+    };
+
+    // HTML转义防止XSS
+    const escapeHtml = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    };
 
     function load() {
         // 使用方法
