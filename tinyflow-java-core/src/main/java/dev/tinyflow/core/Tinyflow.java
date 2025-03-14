@@ -17,6 +17,7 @@ package dev.tinyflow.core;
 
 import com.agentsflex.core.chain.Chain;
 import dev.tinyflow.core.parser.ChainParser;
+import dev.tinyflow.core.provder.KnowledgeProvider;
 import dev.tinyflow.core.provder.LlmProvider;
 
 import java.util.Map;
@@ -26,6 +27,7 @@ public class Tinyflow {
     private String data;
     private Chain chain;
     private LlmProvider llmProvider;
+    private KnowledgeProvider knowledgeProvider;
 
 
     public Tinyflow(String flowData) {
@@ -55,6 +57,14 @@ public class Tinyflow {
 
     public void setLlmProvider(LlmProvider llmProvider) {
         this.llmProvider = llmProvider;
+    }
+
+    public KnowledgeProvider getKnowledgeProvider() {
+        return knowledgeProvider;
+    }
+
+    public void setKnowledgeProvider(KnowledgeProvider knowledgeProvider) {
+        this.knowledgeProvider = knowledgeProvider;
     }
 
     public void execute(Map<String, Object> variables) {
