@@ -17,7 +17,6 @@ package dev.tinyflow.core.parser.impl;
 
 import com.agentsflex.core.chain.ChainNode;
 import com.agentsflex.core.chain.node.EndNode;
-import com.agentsflex.core.chain.node.StartNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.parser.BaseNodeParser;
@@ -30,7 +29,7 @@ public class EndNodeParser extends BaseNodeParser {
         JSONObject data = getData(nodeJSONObject);
         endNode.setName(data.getString("label"));
         endNode.setMessage(data.getString("message"));
-        addOutputKeys(endNode, data);
+        addOutputDefs(endNode, data);
         return endNode;
     }
 }

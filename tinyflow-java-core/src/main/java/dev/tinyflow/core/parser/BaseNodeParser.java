@@ -63,7 +63,7 @@ public abstract class BaseNodeParser implements NodeParser {
         return parameters;
     }
 
-    public void addOutputKeys(BaseNode node, JSONObject data) {
+    public void addOutputDefs(BaseNode node, JSONObject data) {
         JSONArray outputParams = data.getJSONArray("outputDefs");
         if (outputParams != null) for (int i = 0; i < outputParams.size(); i++) {
             JSONObject outputParam = outputParams.getJSONObject(i);

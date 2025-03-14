@@ -16,14 +16,10 @@
 package dev.tinyflow.core.parser.impl;
 
 import com.agentsflex.core.chain.ChainNode;
-import com.agentsflex.core.chain.node.LlmNode;
-import com.agentsflex.core.llm.ChatOptions;
-import com.agentsflex.core.llm.Llm;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.TemplateNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
-import dev.tinyflow.core.provder.LlmProvider;
 
 public class TemplateNodeParser extends BaseNodeParser {
 
@@ -36,7 +32,7 @@ public class TemplateNodeParser extends BaseNodeParser {
         templateNode.setTemplate(data.getString("template"));
 
         addParameters(templateNode, data);
-        addOutputKeys(templateNode, data);
+        addOutputDefs(templateNode, data);
 
         return templateNode;
     }
