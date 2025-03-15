@@ -16,36 +16,23 @@
 package dev.tinyflow.core;
 
 import com.agentsflex.core.chain.Chain;
+import com.agentsflex.core.util.StringUtil;
 import dev.tinyflow.core.parser.ChainParser;
 import dev.tinyflow.core.provder.KnowledgeProvider;
 import dev.tinyflow.core.provder.LlmProvider;
 
-import java.util.Map;
-
 public class Tinyflow {
 
     private String data;
-    private Chain chain;
     private LlmProvider llmProvider;
     private KnowledgeProvider knowledgeProvider;
+    private ChainParser chainParser = new ChainParser();
 
-    public Tinyflow(LlmProvider llmProvider, String flowData) {
-        setLlmProvider(llmProvider);
-        this.data = flowData;
-        this.chain = ChainParser.parse(this);
+    public Tinyflow() {
     }
 
     public Tinyflow(String flowData) {
         this.data = flowData;
-        this.chain = ChainParser.parse(this);
-    }
-
-    public Chain getChain() {
-        return chain;
-    }
-
-    public void setChain(Chain chain) {
-        this.chain = chain;
     }
 
     public String getData() {
@@ -72,11 +59,19 @@ public class Tinyflow {
         this.knowledgeProvider = knowledgeProvider;
     }
 
-    public void execute(Map<String, Object> variables) {
-        chain.execute(variables);
+    public ChainParser getChainParser() {
+        return chainParser;
     }
 
-    public Map<String, Object> executeForResult(Map<String, Object> variables) {
-        return chain.executeForResult(variables);
+    public void setChainParser(ChainParser chainParser) {
+        this.chainParser = chainParser;
     }
+
+    public Chain toChain() {
+        if (StringUtil.noText(data)) {
+            throw new IllegalStateException("data is empty");
+        }
+        return chainParser.parse(this);
+    }
+
 }

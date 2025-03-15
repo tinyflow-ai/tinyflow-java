@@ -31,12 +31,16 @@ import java.util.Map;
 
 public class ChainParser {
 
-    private static final Map<String, NodeParser> nodeParserMap = new HashMap<>();
+    private Map<String, NodeParser> nodeParserMap = new HashMap<>();
 
-    static {
+    public ChainParser() {
+
+        initDefaultParsers();
+    }
+
+    private void initDefaultParsers() {
         nodeParserMap.put("startNode", new StartNodeParser());
         nodeParserMap.put("codeNode", new CodeNodeParser());
-
 
         nodeParserMap.put("httpNode", new HttpNodeParser());
         nodeParserMap.put("knowledgeNode", new HttpNodeParser());
@@ -48,7 +52,19 @@ public class ChainParser {
         nodeParserMap.put("llmNode", new LlmNodeParser());
     }
 
-    public static Chain parse(Tinyflow tinyflow) {
+    public Map<String, NodeParser> getNodeParserMap() {
+        return nodeParserMap;
+    }
+
+    public void setNodeParserMap(Map<String, NodeParser> nodeParserMap) {
+        this.nodeParserMap = nodeParserMap;
+    }
+
+    public void addNodeParser(String type, NodeParser nodeParser) {
+        this.nodeParserMap.put(type, nodeParser);
+    }
+
+    public Chain parse(Tinyflow tinyflow) {
         String jsonString = tinyflow.getData();
         if (StringUtil.noText(jsonString)) {
             return null;
@@ -61,7 +77,7 @@ public class ChainParser {
         return parse(tinyflow, nodes, edges, null);
     }
 
-    public static Chain parse(Tinyflow tinyflow, JSONArray nodes, JSONArray edges, JSONObject parentNode) {
+    public Chain parse(Tinyflow tinyflow, JSONArray nodes, JSONArray edges, JSONObject parentNode) {
         if (CollectionUtil.noItems(nodes) || CollectionUtil.noItems(edges)) {
             return null;
         }
@@ -97,7 +113,7 @@ public class ChainParser {
         return chain;
     }
 
-    private static ChainNode parseNode(Tinyflow tinyflow, JSONObject nodeObject) {
+    private ChainNode parseNode(Tinyflow tinyflow, JSONObject nodeObject) {
         String type = nodeObject.getString("type");
         if (StringUtil.noText(type)) {
             return null;
@@ -108,7 +124,7 @@ public class ChainParser {
     }
 
 
-    private static ChainEdge parseEdge(JSONObject edgeObject) {
+    private ChainEdge parseEdge(JSONObject edgeObject) {
         if (edgeObject == null) return null;
         ChainEdge edge = new ChainEdge();
         edge.setId(edgeObject.getString("id"));

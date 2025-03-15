@@ -17,7 +17,7 @@ public class TinyflowTest {
         Map<String,Object> variables = new HashMap<>();
         variables.put("name", "michael");
 
-        Map<String, Object> result = tinyflow.executeForResult(variables);
+        Map<String, Object> result = tinyflow.toChain().executeForResult(variables);
 
         System.out.println(result);
     }
