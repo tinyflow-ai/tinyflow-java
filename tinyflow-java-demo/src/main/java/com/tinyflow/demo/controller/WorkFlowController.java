@@ -61,7 +61,7 @@ public class WorkFlowController {
                     JSONObject data = node.getJSONObject("data");
                     QwenLlmConfig qwenLlmConfig = new QwenLlmConfig();
                     //  千问apikey
-                    qwenLlmConfig.setApiKey("sk-197479f492be4559b1af52a3f7179dbc");
+                    qwenLlmConfig.setApiKey("sk-xxxxxxxxxxx");
                     qwenLlmConfig.setModel("qwen-plus");
                     tinyflow.setLlmProvider(id -> new QwenLlm(qwenLlmConfig));
                     break;
