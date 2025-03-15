@@ -27,6 +27,11 @@ public class Tinyflow {
     private Chain chain;
     private LlmProvider llmProvider;
 
+    public Tinyflow(LlmProvider llmProvider, String flowData) {
+        setLlmProvider(llmProvider);
+        this.data = flowData;
+        this.chain = ChainParser.parse(this);
+    }
 
     public Tinyflow(String flowData) {
         this.data = flowData;

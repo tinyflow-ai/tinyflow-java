@@ -176,7 +176,16 @@
             .then(wf => {
                 tinyflow = new Tinyflow.Tinyflow({
                     element: '#app',
-                    data: JSON.parse(wf.graph)
+                    data: JSON.parse(wf.graph),
+                    provider: {
+                        llm: ()  => [
+                            {
+                                value: 'llm',
+                                label: 'llm',
+                            }
+                        ],
+                        knowledge: () => []
+                    }
                 });
             })
             .catch(error => {
