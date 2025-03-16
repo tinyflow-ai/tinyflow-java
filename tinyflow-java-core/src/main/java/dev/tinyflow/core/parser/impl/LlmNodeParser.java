@@ -22,7 +22,7 @@ import com.agentsflex.core.llm.Llm;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.parser.BaseNodeParser;
-import dev.tinyflow.core.provder.LlmProvider;
+import dev.tinyflow.core.provider.LlmProvider;
 
 public class LlmNodeParser extends BaseNodeParser {
 

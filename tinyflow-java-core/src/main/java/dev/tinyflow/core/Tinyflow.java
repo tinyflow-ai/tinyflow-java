@@ -18,8 +18,8 @@ package dev.tinyflow.core;
 import com.agentsflex.core.chain.Chain;
 import com.agentsflex.core.util.StringUtil;
 import dev.tinyflow.core.parser.ChainParser;
-import dev.tinyflow.core.provder.KnowledgeProvider;
-import dev.tinyflow.core.provder.LlmProvider;
+import dev.tinyflow.core.provider.KnowledgeProvider;
+import dev.tinyflow.core.provider.LlmProvider;
 
 public class Tinyflow {
 
