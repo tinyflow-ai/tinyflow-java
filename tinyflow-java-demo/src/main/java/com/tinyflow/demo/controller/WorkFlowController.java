@@ -1,7 +1,5 @@
 package com.tinyflow.demo.controller;
 
-import com.agentsflex.llm.openai.OpenAILlm;
-import com.agentsflex.llm.openai.OpenAILlmConfig;
 import com.agentsflex.llm.qwen.QwenLlm;
 import com.agentsflex.llm.qwen.QwenLlmConfig;
 import com.alibaba.fastjson.JSONArray;
@@ -48,23 +46,14 @@ public class WorkFlowController {
     public ResponseEntity<Map<String, Object>> exe(@RequestBody JSONObject wf) {
         Tinyflow tinyflow = parseFlowParam(wf.getJSONObject("data").toJSONString());
         Map<String, Object> variables = wf.getJSONObject("param").getInnerMap();
-        Map<String, Object> result = tinyflow.executeForResult(variables);
+        Map<String, Object> result = tinyflow.toChain().executeForResult(variables);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     private Tinyflow parseFlowParam(String graph) {
         JSONObject json = JSONObject.parseObject(graph);
         JSONArray nodeArr = json.getJSONArray("nodes");
-        for (int i = 0; i < nodeArr.size(); i++) {
-            JSONObject node = nodeArr.getJSONObject(i);
-            if (node.getString("type").equals("llmNode")) {
-                node.getJSONObject("data").put("topK", 10);
-                node.getJSONObject("data").put("topP", 0.8);
-                node.getJSONObject("data").put("temperature", 0.8);
-                node.getJSONObject("data").put("maxTokens", 2048);
-            }
-        }
-        Tinyflow tinyflow = null;
+        Tinyflow tinyflow = new Tinyflow(json.toJSONString());
         for (int i = 0; i < nodeArr.size(); i++) {
             JSONObject node = nodeArr.getJSONObject(i);
             switch (node.getString("type")) {
@@ -74,7 +63,7 @@ public class WorkFlowController {
                     //  千问apikey
                     qwenLlmConfig.setApiKey("sk-xxxxxxxxxxx");
                     qwenLlmConfig.setModel("qwen-plus");
-                    tinyflow = new Tinyflow(id -> new QwenLlm(qwenLlmConfig), json.toJSONString());
+                    tinyflow.setLlmProvider(id -> new QwenLlm(qwenLlmConfig));
                     break;
                 case "zsk":
 

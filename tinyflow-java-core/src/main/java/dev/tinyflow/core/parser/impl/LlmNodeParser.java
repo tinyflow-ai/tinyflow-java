@@ -37,9 +37,9 @@ public class LlmNodeParser extends BaseNodeParser {
 
 
         ChatOptions chatOptions = new ChatOptions();
-        chatOptions.setTopK(data.getInteger("topK"));
-        chatOptions.setTopP(data.getFloat("topP"));
-        chatOptions.setTemperature(data.getFloat("temperature"));
+        chatOptions.setTopK(data.containsKey("topK") ? data.getInteger("topK") : 10);
+        chatOptions.setTopP(data.containsKey("topP") ? data.getFloat("topP") : 0.8F);
+        chatOptions.setTemperature(data.containsKey("temperature") ? data.getFloat("temperature") : 0.8F);
         llmNode.setChatOptions(chatOptions);
 
         LlmProvider llmProvider = tinyflow.getLlmProvider();
