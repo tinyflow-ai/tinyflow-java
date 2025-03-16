@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.provder;
+package dev.tinyflow.core.provider;
 
 import com.agentsflex.core.llm.Llm;
 
