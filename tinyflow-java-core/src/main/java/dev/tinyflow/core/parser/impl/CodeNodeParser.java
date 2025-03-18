@@ -30,10 +30,19 @@ public class CodeNodeParser extends BaseNodeParser {
 
         JSONObject data = getData(nodeJSONObject);
         String engine = data.getString("engine");
-
-        CodeNode codeNode = "groovy".equalsIgnoreCase(engine)
-                ? new GroovyExecNode() : new QLExpressExecNode();
-
+        CodeNode codeNode;
+        switch (engine) {
+            case "groovy":
+                codeNode = new GroovyExecNode();
+                break;
+//                Agents-Flex更新后可用
+//            case "js":
+//                codeNode = new JsExecNode();
+//                break;
+            default:
+                codeNode = new QLExpressExecNode();
+                break;
+        }
         codeNode.setName(data.getString("label"));
         codeNode.setCode(data.getString("code"));
 
