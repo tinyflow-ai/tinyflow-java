@@ -49,8 +49,9 @@ public class LoopNodeParser extends BaseNodeParser {
         Chain chain = tinyflow.getChainParser().parse(tinyflow, nodes, edges, nodeJSONObject);
         loopNode.setLoopChain(chain);
 
-
+        addParameters(loopNode, data);
         addOutputDefs(loopNode, data);
+
         return loopNode;
     }
 }

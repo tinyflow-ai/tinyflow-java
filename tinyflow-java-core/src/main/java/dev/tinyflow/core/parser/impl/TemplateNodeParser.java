@@ -31,6 +31,7 @@ public class TemplateNodeParser extends BaseNodeParser {
         templateNode.setName(data.getString("label"));
         templateNode.setTemplate(data.getString("template"));
         templateNode.setOutputDef(data.getJSONArray("outputDefs").getJSONObject(0).getString("name"));
+
         addParameters(templateNode, data);
         addOutputDefs(templateNode, data);
 

@@ -16,6 +16,7 @@
 package dev.tinyflow.core.parser.impl;
 
 import com.agentsflex.chain.node.GroovyExecNode;
+import com.agentsflex.chain.node.JsExecNode;
 import com.agentsflex.chain.node.QLExpressExecNode;
 import com.agentsflex.core.chain.ChainNode;
 import com.agentsflex.core.chain.node.CodeNode;
@@ -35,14 +36,15 @@ public class CodeNodeParser extends BaseNodeParser {
             case "groovy":
                 codeNode = new GroovyExecNode();
                 break;
-//                Agents-Flex更新后可用
-//            case "js":
-//                codeNode = new JsExecNode();
-//                break;
+            case "js":
+            case "javascript":
+                codeNode = new JsExecNode();
+                break;
             default:
                 codeNode = new QLExpressExecNode();
                 break;
         }
+
         codeNode.setName(data.getString("label"));
         codeNode.setCode(data.getString("code"));
 
