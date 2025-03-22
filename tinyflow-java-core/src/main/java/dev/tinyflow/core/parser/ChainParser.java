@@ -43,7 +43,7 @@ public class ChainParser {
         nodeParserMap.put("codeNode", new CodeNodeParser());
 
         nodeParserMap.put("httpNode", new HttpNodeParser());
-        nodeParserMap.put("knowledgeNode", new HttpNodeParser());
+        nodeParserMap.put("knowledgeNode", new KnowledgeNodeParser());
         nodeParserMap.put("loopNode", new LoopNodeParser());
         nodeParserMap.put("searchEngineNode", new SearchEngineNodeParser());
         nodeParserMap.put("templateNode", new TemplateNodeParser());
