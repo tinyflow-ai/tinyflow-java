@@ -56,7 +56,7 @@ public class KnowledgeNode extends BaseNode {
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
-        Map<String, Object> argsMap = getParameters(chain);
+        Map<String, Object> argsMap = chain.getParameterValues(this);
 
         String query = (String) argsMap.get("query");
         List<Document> result = knowledge.search(query, 10);

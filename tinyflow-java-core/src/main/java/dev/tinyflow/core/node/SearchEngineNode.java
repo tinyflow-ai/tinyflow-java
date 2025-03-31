@@ -47,7 +47,7 @@ public class SearchEngineNode extends BaseNode {
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
-        Map<String, Object> argsMap = getParameters(chain);
+        Map<String, Object> argsMap = chain.getParameterValues(this);
 
         String query = (String) argsMap.get("query");
         List<Document> result = searchEngine.search(query, 10);

@@ -121,7 +121,7 @@ public class HttpNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
 
-        Map<String, Object> urlDataMap = getChainParameters(chain, urlParameters);
+        Map<String, Object> urlDataMap = chain.getParameterValues(this, urlParameters);
         String parametersString = mapToQueryString(urlDataMap);
         String newUrl = parametersString.isEmpty() ? url : url +
                 (url.contains("?") ? "&" + parametersString : "?" + parametersString);
@@ -129,7 +129,7 @@ public class HttpNode extends BaseNode {
         Request.Builder reqBuilder = new Request.Builder()
                 .url(newUrl);
 
-        Map<String, Object> headersMap = getChainParameters(chain, headers);
+        Map<String, Object> headersMap = chain.getParameterValues(this, headers);
         headersMap.forEach((s, o) -> reqBuilder.addHeader(s, String.valueOf(o)));
 
         if (StringUtil.noText(method) || "GET".equalsIgnoreCase(method)) {
@@ -186,13 +186,13 @@ public class HttpNode extends BaseNode {
         }
 
         if ("x-www-form-urlencoded".equals(bodyDataType)) {
-            Map<String, Object> formUrlencodedMap = getChainParameters(chain, fromUrlencoded);
+            Map<String, Object> formUrlencodedMap = chain.getParameterValues(this, fromUrlencoded);
             String bodyString = mapToQueryString(formUrlencodedMap);
             return RequestBody.create(bodyString, MediaType.parse("application/x-www-form-urlencoded"));
         }
 
         if ("form-data".equals(bodyDataType)) {
-            Map<String, Object> formDataMap = getChainParameters(chain, fromData);
+            Map<String, Object> formDataMap = chain.getParameterValues(this, fromData);
 
             MultipartBody.Builder builder = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM);

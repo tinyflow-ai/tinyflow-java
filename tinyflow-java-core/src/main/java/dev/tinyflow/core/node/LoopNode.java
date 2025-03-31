@@ -47,7 +47,7 @@ public class LoopNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
         loopChain.setParent(chain);
-        Map<String, Object> loopVars = getChainParameters(chain, Collections.singletonList(loopVar));
+        Map<String, Object> loopVars = chain.getParameterValues(this, Collections.singletonList(loopVar));
         Maps result = Maps.of();
         Object value = loopVars.get(loopVar.getName());
         if (value instanceof Iterable) {
