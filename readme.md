@@ -24,7 +24,7 @@ Introduce dependencies
 <dependency>
     <groupId>dev.tinyflow</groupId>
     <artifactId>tinyflow-java</artifactId>
-    <version>1.0.0-rc.3</version>
+    <version>1.0.0-rc.4</version>
 </dependency>
 ```
 
