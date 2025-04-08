@@ -43,7 +43,6 @@
 
     <modules>
         <module>tinyflow-java-core</module>
-        <module>tinyflow-java-samples</module>
     </modules>
 
     <properties>
@@ -57,7 +56,7 @@
             <dependency>
                 <groupId>com.agentsflex</groupId>
                 <artifactId>agents-flex-bom</artifactId>
-                <version>1.0.0-rc.10</version>
+                <version>1.0.0</version>
             </dependency>
 
             <!--使用 enjoy 模板引擎-->
