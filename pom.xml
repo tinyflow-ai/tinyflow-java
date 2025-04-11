@@ -69,15 +69,6 @@
     </dependencyManagement>
 
 
-    <!-- 跳过测试：mvn package -Dmaven.test.skip=true   -->
-    <!-- 检测依赖最新版本：mvn versions:display-dependency-updates  -->
-    <!-- 统一修改版本号：mvn versions:set -DnewVersion=3.0  -->
-    <!-- mvn -N versions:update-child-modules  -->
-    <!-- mvn versions:set -DnewVersion=2.0 -DprocessAllModules=true -DallowSnapshots=true -->
-
-    <!-- mvn clean source:jar install -->
-    <!-- mvn deploy -Dmaven.test.skip=true -e -P release -->
-    <!-- mvn deploy -e -->
     <build>
         <plugins>
             <plugin>
@@ -158,6 +149,16 @@
         </plugins>
     </build>
 
+
+    <!-- 跳过测试：mvn package -Dmaven.test.skip=true   -->
+    <!-- 检测依赖最新版本：mvn versions:display-dependency-updates  -->
+    <!-- 统一修改版本号：mvn versions:set -DnewVersion=3.0  -->
+    <!-- mvn -N versions:update-child-modules  -->
+    <!-- mvn versions:set -DnewVersion=2.0 -DprocessAllModules=true -DallowSnapshots=true -->
+
+    <!-- mvn clean source:jar install -->
+    <!-- mvn deploy -Dmaven.test.skip=true -e -P release -->
+    <!-- mvn deploy -e -->
 
     <distributionManagement>
         <snapshotRepository>
