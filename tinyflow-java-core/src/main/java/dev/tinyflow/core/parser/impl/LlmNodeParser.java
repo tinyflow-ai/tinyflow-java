@@ -44,7 +44,7 @@ public class LlmNodeParser extends BaseNodeParser {
 
         LlmProvider llmProvider = tinyflow.getLlmProvider();
         if (llmProvider != null) {
-            Llm llm = llmProvider.getLlm(data.getBigInteger("model"));
+            Llm llm = llmProvider.getLlm(data.getBigInteger("llmId"));
             llmNode.setLlm(llm);
         }
 
