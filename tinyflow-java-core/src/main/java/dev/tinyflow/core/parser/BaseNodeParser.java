@@ -43,7 +43,10 @@ public abstract class BaseNodeParser implements NodeParser {
     }
 
     public List<Parameter> getParameters(JSONObject data, String key) {
-        JSONArray parametersJsonArray = data.getJSONArray(key);
+        return getParameters(data.getJSONArray(key));
+    }
+
+    public List<Parameter> getParameters(JSONArray parametersJsonArray) {
         if (parametersJsonArray == null || parametersJsonArray.isEmpty()) {
             return Collections.emptyList();
         }
@@ -51,17 +54,27 @@ public abstract class BaseNodeParser implements NodeParser {
         for (int i = 0; i < parametersJsonArray.size(); i++) {
             JSONObject inputParam = parametersJsonArray.getJSONObject(i);
             Parameter parameter = new Parameter();
+            parameter.setId(inputParam.getString("id"));
             parameter.setName(inputParam.getString("name"));
             parameter.setDescription(inputParam.getString("description"));
+            parameter.setDataType(DataType.ofValue(inputParam.getString("dataType")));
             parameter.setRef(inputParam.getString("ref"));
             parameter.setRefType(RefType.ofValue(inputParam.getString("refType")));
-            parameter.setDataType(DataType.ofValue(inputParam.getString("dataType")));
             parameter.setRequired(inputParam.getBooleanValue("required"));
+            parameter.setDefaultValue(inputParam.getString("defaultValue"));
+
+
+            JSONArray childrenJSONArray = inputParam.getJSONArray("children");
+            if (childrenJSONArray != null && !childrenJSONArray.isEmpty()) {
+                parameter.addChildren(getParameters(childrenJSONArray));
+            }
+
             parameters.add(parameter);
         }
 
         return parameters;
     }
+
 
     public void addOutputDefs(BaseNode node, JSONObject data) {
         JSONArray outputParams = data.getJSONArray("outputDefs");
