@@ -20,6 +20,7 @@ import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.KnowledgeNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
+import dev.tinyflow.core.provider.KnowledgeProvider;
 
 public class KnowledgeNodeParser extends BaseNodeParser {
 
@@ -32,10 +33,13 @@ public class KnowledgeNodeParser extends BaseNodeParser {
         knowledgeNode.setKnowledgeId(data.get("knowledgeId"));
         knowledgeNode.setQueryCount(data.getIntValue("queryCount"));
 
-        knowledgeNode.setKnowledge(tinyflow.getKnowledgeProvider().getKnowledge(data.get("knowledgeId")));
+        KnowledgeProvider knowledgeProvider = tinyflow.getKnowledgeProvider();
+        if (knowledgeProvider != null) {
+            knowledgeNode.setKnowledge(knowledgeProvider.getKnowledge(data.get("knowledgeId")));
+        }
 
         addParameters(knowledgeNode, data);
-        addParameters(knowledgeNode, data);
+        addOutputDefs(knowledgeNode, data);
 
         return knowledgeNode;
     }
