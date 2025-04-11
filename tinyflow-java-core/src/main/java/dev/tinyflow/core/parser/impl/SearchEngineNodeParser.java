@@ -38,9 +38,9 @@ public class SearchEngineNodeParser extends BaseNodeParser {
             searchEngineNode.setSearchEngine(new BochaaiSearchEngineImpl());
         }
 
-
         addParameters(searchEngineNode, data);
         addOutputDefs(searchEngineNode, data);
+
         return searchEngineNode;
     }
 }
