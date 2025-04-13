@@ -20,12 +20,14 @@ import com.agentsflex.core.util.StringUtil;
 import dev.tinyflow.core.parser.ChainParser;
 import dev.tinyflow.core.provider.KnowledgeProvider;
 import dev.tinyflow.core.provider.LlmProvider;
+import dev.tinyflow.core.provider.SearchEngineProvider;
 
 public class Tinyflow {
 
     private String data;
     private LlmProvider llmProvider;
     private KnowledgeProvider knowledgeProvider;
+    private SearchEngineProvider searchEngineProvider;
     private ChainParser chainParser = new ChainParser();
 
     public Tinyflow() {
@@ -65,6 +67,14 @@ public class Tinyflow {
 
     public void setChainParser(ChainParser chainParser) {
         this.chainParser = chainParser;
+    }
+
+    public SearchEngineProvider getSearchEngineProvider() {
+        return searchEngineProvider;
+    }
+
+    public void setSearchEngineProvider(SearchEngineProvider searchEngineProvider) {
+        this.searchEngineProvider = searchEngineProvider;
     }
 
     public Chain toChain() {
