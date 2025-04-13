@@ -52,7 +52,7 @@
         <dependency>
             <groupId>com.agentsflex</groupId>
             <artifactId>agents-flex-bom</artifactId>
-            <version>1.0.0-rc.6</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
