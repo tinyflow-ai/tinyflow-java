@@ -18,17 +18,24 @@ package dev.tinyflow.core.node;
 import com.agentsflex.core.chain.Chain;
 import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.document.Document;
+import com.agentsflex.core.prompt.template.TextPromptTemplate;
 import com.agentsflex.core.util.Maps;
+import com.agentsflex.core.util.StringUtil;
 import dev.tinyflow.core.knowledge.Knowledge;
+import org.slf4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class KnowledgeNode extends BaseNode {
 
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(KnowledgeNode.class);
+
     private Object knowledgeId;
     private Knowledge knowledge;
-    private int queryCount;
+    private String keyword;
+    private String limit;
 
     public Object getKnowledgeId() {
         return knowledgeId;
@@ -36,14 +43,6 @@ public class KnowledgeNode extends BaseNode {
 
     public void setKnowledgeId(Object knowledgeId) {
         this.knowledgeId = knowledgeId;
-    }
-
-    public int getQueryCount() {
-        return queryCount;
-    }
-
-    public void setQueryCount(int queryCount) {
-        this.queryCount = queryCount;
     }
 
     public Knowledge getKnowledge() {
@@ -54,13 +53,41 @@ public class KnowledgeNode extends BaseNode {
         this.knowledge = knowledge;
     }
 
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
+    }
+
+    public String getLimit() {
+        return limit;
+    }
+
+    public void setLimit(String limit) {
+        this.limit = limit;
+    }
+
     @Override
     protected Map<String, Object> execute(Chain chain) {
         Map<String, Object> argsMap = chain.getParameterValues(this);
+        String realKeyword = TextPromptTemplate.create(keyword).formatToString(argsMap);
+        String realLimitString = TextPromptTemplate.create(limit).formatToString(argsMap);
+        int realLimit = 10;
+        if (StringUtil.hasText(realLimitString)) {
+            try {
+                realLimit = Integer.parseInt(realLimitString);
+            } catch (Exception e) {
+                logger.error(e.toString(), e);
+            }
+        }
 
-        String query = (String) argsMap.get("query");
-        List<Document> result = knowledge.search(query, 10);
+        if (knowledge == null) {
+            return Collections.emptyMap();
+        }
 
+        List<Document> result = knowledge.search(realKeyword, realLimit, this, chain);
         return Maps.of("documents", result);
     }
 
@@ -68,13 +95,16 @@ public class KnowledgeNode extends BaseNode {
     public String toString() {
         return "KnowledgeNode{" +
                 "knowledgeId=" + knowledgeId +
-                ", queryCount=" + queryCount +
+                ", knowledge=" + knowledge +
+                ", keyword='" + keyword + '\'' +
+                ", limit='" + limit + '\'' +
                 ", description='" + description + '\'' +
                 ", parameters=" + parameters +
                 ", outputDefs=" + outputDefs +
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", async=" + async +
+                ", awaitAsyncResult=" + awaitAsyncResult +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +

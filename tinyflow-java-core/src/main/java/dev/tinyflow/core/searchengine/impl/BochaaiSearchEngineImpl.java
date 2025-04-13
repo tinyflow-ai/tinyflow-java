@@ -15,40 +15,29 @@
  */
 package dev.tinyflow.core.searchengine.impl;
 
+import com.agentsflex.core.chain.Chain;
 import com.agentsflex.core.document.Document;
-import com.agentsflex.core.llm.client.HttpClient;
 import com.agentsflex.core.util.Maps;
-import dev.tinyflow.core.searchengine.SearchEngine;
+import dev.tinyflow.core.node.SearchEngineNode;
+import dev.tinyflow.core.searchengine.BaseSearchEngine;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class BochaaiSearchEngineImpl implements SearchEngine {
+public class BochaaiSearchEngineImpl extends BaseSearchEngine {
 
-    private String url = "https://api.bochaai.com/v1/ai-search";
-    private String apiKey;
-    private HttpClient httpClient = new HttpClient();
+    private static final String DEFAULT_API_URL = "https://api.bochaai.com/v1/ai-search";
 
-    public String getUrl() {
-        return url;
+    public BochaaiSearchEngineImpl() {
+        setApiUrl(DEFAULT_API_URL);
     }
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getApiKey() {
-        return apiKey;
-    }
-
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
 
     @Override
-    public List<Document> search(String keyword, int limit) {
+    public List<Document> search(String keyword, int limit, SearchEngineNode searchEngineNode, Chain chain) {
+
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", "Bearer " + apiKey);
         headers.put("Content-Type", "application/json");
@@ -60,7 +49,8 @@ public class BochaaiSearchEngineImpl implements SearchEngine {
                 .set("stream", false)
                 .toJSON();
 
-        String responseString = httpClient.post(url, headers, jsonString);
+        String responseString = httpClient.post(apiUrl, headers, jsonString);
+
 
         return Collections.emptyList();
     }

@@ -20,7 +20,7 @@ import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.SearchEngineNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
-import dev.tinyflow.core.searchengine.impl.BochaaiSearchEngineImpl;
+import dev.tinyflow.core.searchengine.SearchEngine;
 
 public class SearchEngineNodeParser extends BaseNodeParser {
 
@@ -29,13 +29,15 @@ public class SearchEngineNodeParser extends BaseNodeParser {
         SearchEngineNode searchEngineNode = new SearchEngineNode();
         JSONObject data = getData(nodeJSONObject);
         searchEngineNode.setName(data.getString("label"));
+        searchEngineNode.setKeyword(data.getString("keyword"));
+        searchEngineNode.setLimit(data.getString("limit"));
 
-
-        searchEngineNode.setQueryCount(data.getIntValue("queryCount"));
-
-        String searchEngine = data.getString("searchEngine");
-        if ("bocha".equalsIgnoreCase(searchEngine)) {
-            searchEngineNode.setSearchEngine(new BochaaiSearchEngineImpl());
+        String engine = data.getString("engine");
+        searchEngineNode.setEngine(engine);
+        
+        if (tinyflow.getSearchEngineProvider() != null) {
+            SearchEngine searchEngine = tinyflow.getSearchEngineProvider().getSearchEngine(engine);
+            searchEngineNode.setSearchEngine(searchEngine);
         }
 
         addParameters(searchEngineNode, data);

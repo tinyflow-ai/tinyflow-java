@@ -31,7 +31,7 @@ public class KnowledgeNodeParser extends BaseNodeParser {
         knowledgeNode.setName(data.getString("label"));
         knowledgeNode.setDescription(data.getString("description"));
         knowledgeNode.setKnowledgeId(data.get("knowledgeId"));
-        knowledgeNode.setQueryCount(data.getIntValue("queryCount"));
+        knowledgeNode.setLimit(data.getString("limit"));
 
         KnowledgeProvider knowledgeProvider = tinyflow.getKnowledgeProvider();
         if (knowledgeProvider != null) {

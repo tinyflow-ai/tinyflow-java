@@ -18,16 +18,33 @@ package dev.tinyflow.core.node;
 import com.agentsflex.core.chain.Chain;
 import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.document.Document;
+import com.agentsflex.core.prompt.template.TextPromptTemplate;
 import com.agentsflex.core.util.Maps;
+import com.agentsflex.core.util.StringUtil;
 import dev.tinyflow.core.searchengine.SearchEngine;
+import org.slf4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class SearchEngineNode extends BaseNode {
 
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(SearchEngineNode.class);
+
+
+    private String engine;
     private SearchEngine searchEngine;
-    private int queryCount;
+    private String limit;
+    private String keyword;
+
+    public String getEngine() {
+        return engine;
+    }
+
+    public void setEngine(String engine) {
+        this.engine = engine;
+    }
 
     public SearchEngine getSearchEngine() {
         return searchEngine;
@@ -37,35 +54,60 @@ public class SearchEngineNode extends BaseNode {
         this.searchEngine = searchEngine;
     }
 
-    public int getQueryCount() {
-        return queryCount;
+    public String getLimit() {
+        return limit;
     }
 
-    public void setQueryCount(int queryCount) {
-        this.queryCount = queryCount;
+    public void setLimit(String limit) {
+        this.limit = limit;
+    }
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
     }
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
         Map<String, Object> argsMap = chain.getParameterValues(this);
+        String realKeyword = TextPromptTemplate.create(keyword).formatToString(argsMap);
+        String realLimitString = TextPromptTemplate.create(limit).formatToString(argsMap);
+        int realLimit = 10;
+        if (StringUtil.hasText(realLimitString)) {
+            try {
+                realLimit = Integer.parseInt(realLimitString);
+            } catch (Exception e) {
+                logger.error(e.toString(), e);
+            }
+        }
 
-        String query = (String) argsMap.get("query");
-        List<Document> result = searchEngine.search(query, 10);
+        if (searchEngine == null) {
+            return Collections.emptyMap();
+        }
 
+        List<Document> result = searchEngine.search(realKeyword, realLimit, this, chain);
         return Maps.of("documents", result);
+
     }
+
 
     @Override
     public String toString() {
         return "SearchEngineNode{" +
-                "searchEngine=" + searchEngine +
-                ", queryCount=" + queryCount +
+                "engine='" + engine + '\'' +
+                ", searchEngine=" + searchEngine +
+                ", limit='" + limit + '\'' +
+                ", keyword='" + keyword + '\'' +
                 ", description='" + description + '\'' +
                 ", parameters=" + parameters +
                 ", outputDefs=" + outputDefs +
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", async=" + async +
+                ", awaitAsyncResult=" + awaitAsyncResult +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
