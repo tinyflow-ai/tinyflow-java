@@ -45,7 +45,6 @@ public class CodeNodeParser extends BaseNodeParser {
                 break;
         }
 
-        codeNode.setName(data.getString("label"));
         codeNode.setCode(data.getString("code"));
 
         addParameters(codeNode, data);

@@ -18,6 +18,7 @@ package dev.tinyflow.core.parser;
 import com.agentsflex.core.chain.Chain;
 import com.agentsflex.core.chain.ChainEdge;
 import com.agentsflex.core.chain.ChainNode;
+import com.agentsflex.core.chain.JavascriptStringCondition;
 import com.agentsflex.core.util.CollectionUtil;
 import com.agentsflex.core.util.StringUtil;
 import com.alibaba.fastjson.JSON;
@@ -90,6 +91,14 @@ public class ChainParser {
                 ChainNode node = parseNode(tinyflow, nodeObject);
                 if (node != null) {
                     node.setId(nodeObject.getString("id"));
+                    node.setName(nodeObject.getString("label"));
+                    node.setDescription(nodeObject.getString("description"));
+
+                    String conditionString = nodeObject.getString("condition");
+                    if (StringUtil.hasText(conditionString)) {
+                        node.setCondition(new JavascriptStringCondition(conditionString.trim()));
+                    }
+
                     chain.addNode(node);
                 }
             }
@@ -130,6 +139,16 @@ public class ChainParser {
         edge.setId(edgeObject.getString("id"));
         edge.setSource(edgeObject.getString("source"));
         edge.setTarget(edgeObject.getString("target"));
+
+        JSONObject data = edgeObject.getJSONObject("data");
+        if (data == null || data.isEmpty()) {
+            return edge;
+        }
+
+        String conditionString = data.getString("condition");
+        if (StringUtil.hasText(conditionString)) {
+            edge.setCondition(new JavascriptStringCondition(conditionString.trim()));
+        }
         return edge;
     }
 }
