@@ -30,7 +30,6 @@ public class HttpNodeParser extends BaseNodeParser {
     public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
         HttpNode httpNode = new HttpNode();
         JSONObject data = getData(nodeJSONObject);
-        httpNode.setName(data.getString("label"));
         httpNode.setUrl(data.getString("url"));
         httpNode.setMethod(data.getString("method"));
         httpNode.setBodyDataType(data.getString("bodyDataType"));

@@ -28,7 +28,6 @@ public class EndNodeParser extends BaseNodeParser {
         EndNode endNode = new EndNode();
 
         JSONObject data = getData(nodeJSONObject);
-        endNode.setName(data.getString("label"));
         endNode.setMessage(data.getString("message"));
 
         addOutputDefs(endNode, data);

@@ -30,7 +30,6 @@ public class LlmNodeParser extends BaseNodeParser {
     public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
         LlmNode llmNode = new LlmNode();
         JSONObject data = getData(nodeJSONObject);
-        llmNode.setName(data.getString("label"));
         llmNode.setUserPrompt(data.getString("userPrompt"));
         llmNode.setSystemPrompt(data.getString("systemPrompt"));
         llmNode.setOutType(data.getString("outType"));

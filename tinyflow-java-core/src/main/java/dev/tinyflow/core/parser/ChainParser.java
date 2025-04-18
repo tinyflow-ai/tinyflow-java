@@ -90,13 +90,34 @@ public class ChainParser {
                     || (parentNode != null && parentNode.getString("id").equals(nodeObject.getString("parentId")))) {
                 ChainNode node = parseNode(tinyflow, nodeObject);
                 if (node != null) {
+
+
                     node.setId(nodeObject.getString("id"));
                     node.setName(nodeObject.getString("label"));
                     node.setDescription(nodeObject.getString("description"));
 
-                    String conditionString = nodeObject.getString("condition");
-                    if (StringUtil.hasText(conditionString)) {
-                        node.setCondition(new JavascriptStringCondition(conditionString.trim()));
+                    JSONObject dataJsonObject = nodeObject.getJSONObject("data");
+                    if (dataJsonObject != null && !dataJsonObject.isEmpty()) {
+                        String conditionString = dataJsonObject.getString("condition");
+
+                        if (StringUtil.hasText(conditionString)) {
+                            node.setCondition(new JavascriptStringCondition(conditionString.trim()));
+                        }
+
+                        Boolean async = dataJsonObject.getBoolean("async");
+                        if (async != null) {
+                            node.setAsync(async);
+                        }
+
+                        String name = dataJsonObject.getString("title");
+                        if (StringUtil.hasText(name)) {
+                            node.setName(name);
+                        }
+
+                        String description = dataJsonObject.getString("description");
+                        if (StringUtil.hasText(description)) {
+                            node.setDescription(description);
+                        }
                     }
 
                     chain.addNode(node);

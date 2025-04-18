@@ -27,7 +27,6 @@ public class StartNodeParser extends BaseNodeParser {
     public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
         StartNode startNode = new StartNode();
         JSONObject data = getData(nodeJSONObject);
-        startNode.setName(data.getString("label"));
         addParameters(startNode, data);
         return startNode;
     }

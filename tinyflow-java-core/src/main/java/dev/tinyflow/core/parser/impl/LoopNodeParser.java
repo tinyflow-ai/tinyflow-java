@@ -33,8 +33,6 @@ public class LoopNodeParser extends BaseNodeParser {
     public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
         LoopNode loopNode = new LoopNode();
         JSONObject data = getData(nodeJSONObject);
-        loopNode.setName(data.getString("label"));
-
         List<Parameter> loopParameters = getParameters(data, "loopVar");
         if (!loopParameters.isEmpty()) {
             loopNode.setLoopVar(loopParameters.get(0));

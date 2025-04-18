@@ -28,13 +28,12 @@ public class SearchEngineNodeParser extends BaseNodeParser {
     public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
         SearchEngineNode searchEngineNode = new SearchEngineNode();
         JSONObject data = getData(nodeJSONObject);
-        searchEngineNode.setName(data.getString("label"));
         searchEngineNode.setKeyword(data.getString("keyword"));
         searchEngineNode.setLimit(data.getString("limit"));
 
         String engine = data.getString("engine");
         searchEngineNode.setEngine(engine);
-        
+
         if (tinyflow.getSearchEngineProvider() != null) {
             SearchEngine searchEngine = tinyflow.getSearchEngineProvider().getSearchEngine(engine);
             searchEngineNode.setSearchEngine(searchEngine);

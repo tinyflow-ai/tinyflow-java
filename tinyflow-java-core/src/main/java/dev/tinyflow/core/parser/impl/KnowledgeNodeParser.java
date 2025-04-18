@@ -28,8 +28,6 @@ public class KnowledgeNodeParser extends BaseNodeParser {
     public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
         JSONObject data = getData(nodeJSONObject);
         KnowledgeNode knowledgeNode = new KnowledgeNode();
-        knowledgeNode.setName(data.getString("label"));
-        knowledgeNode.setDescription(data.getString("description"));
         knowledgeNode.setKnowledgeId(data.get("knowledgeId"));
         knowledgeNode.setLimit(data.getString("limit"));
 

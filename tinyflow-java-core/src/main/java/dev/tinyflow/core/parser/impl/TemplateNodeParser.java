@@ -28,7 +28,6 @@ public class TemplateNodeParser extends BaseNodeParser {
         JSONObject data = getData(nodeJSONObject);
 
         TemplateNode templateNode = new TemplateNode();
-        templateNode.setName(data.getString("label"));
         templateNode.setTemplate(data.getString("template"));
         templateNode.setOutputDef(data.getJSONArray("outputDefs").getJSONObject(0).getString("name"));
 
