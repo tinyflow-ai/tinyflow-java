@@ -30,6 +30,7 @@ public class KnowledgeNodeParser extends BaseNodeParser {
         KnowledgeNode knowledgeNode = new KnowledgeNode();
         knowledgeNode.setKnowledgeId(data.get("knowledgeId"));
         knowledgeNode.setLimit(data.getString("limit"));
+        knowledgeNode.setKeyword(data.getString("keyword"));
 
         KnowledgeProvider knowledgeProvider = tinyflow.getKnowledgeProvider();
         if (knowledgeProvider != null) {

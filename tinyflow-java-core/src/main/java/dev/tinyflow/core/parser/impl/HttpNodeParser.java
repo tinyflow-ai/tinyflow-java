@@ -32,9 +32,9 @@ public class HttpNodeParser extends BaseNodeParser {
         JSONObject data = getData(nodeJSONObject);
         httpNode.setUrl(data.getString("url"));
         httpNode.setMethod(data.getString("method"));
-        httpNode.setBodyDataType(data.getString("bodyDataType"));
+        httpNode.setBodyJson(data.getString("bodyJson"));
         httpNode.setRawBody(data.getString("rawBody"));
-        httpNode.setJsonBody(data.getString("jsonBody"));
+        httpNode.setBodyType(data.getString("bodyType"));
 
         List<Parameter> headers = getParameters(data, "headers");
         httpNode.setHeaders(headers);

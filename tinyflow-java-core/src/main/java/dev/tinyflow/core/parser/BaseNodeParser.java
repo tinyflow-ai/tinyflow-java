@@ -62,6 +62,7 @@ public abstract class BaseNodeParser implements NodeParser {
             parameter.setRefType(RefType.ofValue(parameterJsonObject.getString("refType")));
             parameter.setRequired(parameterJsonObject.getBooleanValue("required"));
             parameter.setDefaultValue(parameterJsonObject.getString("defaultValue"));
+            parameter.setValue(parameterJsonObject.getString("value"));
 
 
             JSONArray childrenJSONArray = parameterJsonObject.getJSONArray("children");
