@@ -22,7 +22,14 @@ import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.llm.client.OkHttpClientUtil;
 import com.agentsflex.core.util.StringUtil;
 import com.alibaba.fastjson.JSON;
-import okhttp3.*;
+import com.alibaba.fastjson.JSONObject;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -39,11 +46,41 @@ public class HttpNode extends BaseNode {
     private List<Parameter> headers;
     private List<Parameter> urlParameters;
 
-    private String bodyDataType;
+    private String bodyType;
     private List<Parameter> fromData;
     private List<Parameter> fromUrlencoded;
-    private String jsonBody;
+    private String bodyJson;
     private String rawBody;
+
+    public static String mapToQueryString(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (String key : map.keySet()) {
+            if (StringUtil.noText(key)) {
+                continue;
+            }
+            if (stringBuilder.length() > 0) {
+                stringBuilder.append("&");
+            }
+            stringBuilder.append(key.trim());
+            stringBuilder.append("=");
+            Object value = map.get(key);
+            stringBuilder.append(value == null ? "" : urlEncode(value.toString().trim()));
+        }
+        return stringBuilder.toString();
+    }
+
+    public static String urlEncode(String string) {
+        try {
+            return URLEncoder.encode(string, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public String getUrl() {
         return url;
@@ -77,12 +114,12 @@ public class HttpNode extends BaseNode {
         this.urlParameters = urlParameters;
     }
 
-    public String getBodyDataType() {
-        return bodyDataType;
+    public String getBodyType() {
+        return bodyType;
     }
 
-    public void setBodyDataType(String bodyDataType) {
-        this.bodyDataType = bodyDataType;
+    public void setBodyType(String bodyType) {
+        this.bodyType = bodyType;
     }
 
     public List<Parameter> getFromData() {
@@ -101,12 +138,12 @@ public class HttpNode extends BaseNode {
         this.fromUrlencoded = fromUrlencoded;
     }
 
-    public String getJsonBody() {
-        return jsonBody;
+    public String getBodyJson() {
+        return bodyJson;
     }
 
-    public void setJsonBody(String jsonBody) {
-        this.jsonBody = jsonBody;
+    public void setBodyJson(String bodyJson) {
+        this.bodyJson = bodyJson;
     }
 
     public String getRawBody() {
@@ -117,17 +154,15 @@ public class HttpNode extends BaseNode {
         this.rawBody = rawBody;
     }
 
-
     @Override
     protected Map<String, Object> execute(Chain chain) {
 
         Map<String, Object> urlDataMap = chain.getParameterValues(this, urlParameters);
         String parametersString = mapToQueryString(urlDataMap);
-        String newUrl = parametersString.isEmpty() ? url : url +
+        String newUrl = "POST".equalsIgnoreCase(method) || parametersString.isEmpty() ? url : url +
                 (url.contains("?") ? "&" + parametersString : "?" + parametersString);
 
-        Request.Builder reqBuilder = new Request.Builder()
-                .url(newUrl);
+        Request.Builder reqBuilder = new Request.Builder().url(newUrl);
 
         Map<String, Object> headersMap = chain.getParameterValues(this, headers);
         headersMap.forEach((s, o) -> reqBuilder.addHeader(s, String.valueOf(o)));
@@ -135,7 +170,7 @@ public class HttpNode extends BaseNode {
         if (StringUtil.noText(method) || "GET".equalsIgnoreCase(method)) {
             reqBuilder.method("GET", null);
         } else {
-            reqBuilder.method(method.toUpperCase(), getRequestBody(chain));
+            reqBuilder.method(method.toUpperCase(), getRequestBody(chain, urlDataMap));
         }
 
 
@@ -180,18 +215,20 @@ public class HttpNode extends BaseNode {
         }
     }
 
-    private RequestBody getRequestBody(Chain chain) {
-        if ("json".equals(bodyDataType)) {
-            return RequestBody.create(jsonBody, MediaType.parse("application/json"));
+    private RequestBody getRequestBody(Chain chain, Map<String, Object> urlDataMap) {
+        if ("json".equals(bodyType)) {
+            JSONObject object = JSON.parseObject(bodyJson);
+            object.putAll(urlDataMap);
+            return RequestBody.create(JSON.toJSONString(object), MediaType.parse("application/json"));
         }
 
-        if ("x-www-form-urlencoded".equals(bodyDataType)) {
+        if ("x-www-form-urlencoded".equals(bodyType)) {
             Map<String, Object> formUrlencodedMap = chain.getParameterValues(this, fromUrlencoded);
             String bodyString = mapToQueryString(formUrlencodedMap);
             return RequestBody.create(bodyString, MediaType.parse("application/x-www-form-urlencoded"));
         }
 
-        if ("form-data".equals(bodyDataType)) {
+        if ("form-data".equals(bodyType)) {
             Map<String, Object> formDataMap = chain.getParameterValues(this, fromData);
 
             MultipartBody.Builder builder = new MultipartBody.Builder()
@@ -216,41 +253,11 @@ public class HttpNode extends BaseNode {
             return builder.build();
         }
 
-        if ("raw".equals(bodyDataType)) {
+        if ("raw".equals(bodyType)) {
             return RequestBody.create(rawBody, null);
         }
         //none
         return RequestBody.create("", null);
-    }
-
-    public static String mapToQueryString(Map<String, Object> map) {
-        if (map == null || map.isEmpty()) {
-            return "";
-        }
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        for (String key : map.keySet()) {
-            if (StringUtil.noText(key)) {
-                continue;
-            }
-            if (stringBuilder.length() > 0) {
-                stringBuilder.append("&");
-            }
-            stringBuilder.append(key.trim());
-            stringBuilder.append("=");
-            Object value = map.get(key);
-            stringBuilder.append(value == null ? "" : urlEncode(value.toString().trim()));
-        }
-        return stringBuilder.toString();
-    }
-
-    public static String urlEncode(String string) {
-        try {
-            return URLEncoder.encode(string, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -260,10 +267,10 @@ public class HttpNode extends BaseNode {
                 ", method='" + method + '\'' +
                 ", headers=" + headers +
                 ", parameters=" + urlParameters +
-                ", bodyDataType='" + bodyDataType + '\'' +
+                ", bodyType='" + bodyType + '\'' +
                 ", fromData=" + fromData +
                 ", fromUrlencoded=" + fromUrlencoded +
-                ", jsonBody='" + jsonBody + '\'' +
+                ", bodyJson='" + bodyJson + '\'' +
                 ", rawBody='" + rawBody + '\'' +
                 ", description='" + description + '\'' +
                 ", parameter=" + urlParameters +
