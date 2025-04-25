@@ -79,9 +79,14 @@ public abstract class BaseNodeParser implements NodeParser {
 
     public void addOutputDefs(BaseNode node, JSONObject data) {
         JSONArray outputDefs = data.getJSONArray("outputDefs");
-        if (outputDefs != null) for (int i = 0; i < outputDefs.size(); i++) {
+        if (outputDefs == null || outputDefs.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < outputDefs.size(); i++) {
             JSONObject outputDefJsonObject = outputDefs.getJSONObject(i);
             Parameter parameter = new Parameter();
+            parameter.setId(outputDefJsonObject.getString("id"));
             parameter.setName(outputDefJsonObject.getString("name"));
             parameter.setDescription(outputDefJsonObject.getString("description"));
             parameter.setRef(outputDefJsonObject.getString("ref"));
