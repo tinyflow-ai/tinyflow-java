@@ -16,6 +16,7 @@
 package dev.tinyflow.core.node;
 
 import com.agentsflex.core.chain.Chain;
+import com.agentsflex.core.chain.Parameter;
 import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.util.Maps;
 import com.agentsflex.core.util.StringUtil;
@@ -23,13 +24,13 @@ import com.jfinal.template.Engine;
 import com.jfinal.template.Template;
 
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 import java.util.Map;
 
 public class TemplateNode extends BaseNode {
 
     private static final Engine engine;
     private String template;
-    private String outputDef;
 
     static {
         engine = Engine.create("template", e -> {
@@ -45,13 +46,6 @@ public class TemplateNode extends BaseNode {
         this.template = template;
     }
 
-    public String getOutputDef() {
-        return outputDef;
-    }
-
-    public void setOutputDef(String outputDef) {
-        this.outputDef = outputDef;
-    }
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
@@ -62,8 +56,12 @@ public class TemplateNode extends BaseNode {
         Template templateByString = engine.getTemplateByString(template);
         templateByString.render(parameters, result);
 
-        String outputDef = this.outputDef;
-        if (StringUtil.noText(outputDef)) outputDef = "output";
+        String outputDef = "output";
+        List<Parameter> outputDefs = getOutputDefs();
+        if (outputDefs != null && !outputDefs.isEmpty()) {
+            String parameterName = outputDefs.get(0).getName();
+            if (StringUtil.hasText(parameterName)) outputDef = parameterName;
+        }
 
         return Maps.of(outputDef, result.toString());
     }
@@ -73,7 +71,6 @@ public class TemplateNode extends BaseNode {
     public String toString() {
         return "TemplateNode{" +
                 "template='" + template + '\'' +
-                ", outputDef='" + outputDef + '\'' +
                 ", description='" + description + '\'' +
                 ", parameters=" + parameters +
                 ", outputDefs=" + outputDefs +
