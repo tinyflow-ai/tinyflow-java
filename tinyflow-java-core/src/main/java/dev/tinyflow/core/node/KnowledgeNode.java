@@ -104,7 +104,6 @@ public class KnowledgeNode extends BaseNode {
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", async=" + async +
-                ", awaitAsyncResult=" + awaitAsyncResult +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
