@@ -16,7 +16,6 @@
 package dev.tinyflow.core.node;
 
 import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.chain.Parameter;
 import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.document.Document;
 import com.agentsflex.core.prompt.template.TextPromptTemplate;
@@ -26,7 +25,6 @@ import dev.tinyflow.core.knowledge.Knowledge;
 import org.slf4j.Logger;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -90,14 +88,7 @@ public class KnowledgeNode extends BaseNode {
         }
 
         List<Document> result = knowledge.search(realKeyword, realLimit, this, chain);
-        Map<String ,Object> resultMap = new HashMap<>();
-        for (Document document : result) {
-            resultMap.put("documents.title",document.getMetadata("fileName"));
-            resultMap.put("documents.content",document.getContent());
-            resultMap.put("documents.documentId",document.getId());
-            resultMap.put("documents.knowledgeId",document.getMetadata("fileId"));
-        }
-        return resultMap;
+        return Maps.of("documents", result);
     }
 
     @Override
