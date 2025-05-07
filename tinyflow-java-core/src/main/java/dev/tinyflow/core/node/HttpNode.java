@@ -20,16 +20,11 @@ import com.agentsflex.core.chain.DataType;
 import com.agentsflex.core.chain.Parameter;
 import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.llm.client.OkHttpClientUtil;
+import com.agentsflex.core.prompt.template.TextPromptTemplate;
 import com.agentsflex.core.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import okhttp3.*;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -217,9 +212,11 @@ public class HttpNode extends BaseNode {
 
     private RequestBody getRequestBody(Chain chain, Map<String, Object> urlDataMap) {
         if ("json".equals(bodyType)) {
-            JSONObject object = JSON.parseObject(bodyJson);
-            object.putAll(urlDataMap);
-            return RequestBody.create(JSON.toJSONString(object), MediaType.parse("application/json"));
+            Map<String, Object> argsMap = chain.getParameterValues(this);
+            String bodyJsonString = TextPromptTemplate.create(bodyJson).formatToString(argsMap);
+            JSONObject jsonObject = JSON.parseObject(bodyJsonString);
+            jsonObject.putAll(urlDataMap);
+            return RequestBody.create(jsonObject.toString(), MediaType.parse("application/json"));
         }
 
         if ("x-www-form-urlencoded".equals(bodyType)) {
@@ -254,7 +251,9 @@ public class HttpNode extends BaseNode {
         }
 
         if ("raw".equals(bodyType)) {
-            return RequestBody.create(rawBody, null);
+            Map<String, Object> argsMap = chain.getParameterValues(this);
+            String rawBodyString = TextPromptTemplate.create(rawBody).formatToString(argsMap);
+            return RequestBody.create(rawBodyString, null);
         }
         //none
         return RequestBody.create("", null);
