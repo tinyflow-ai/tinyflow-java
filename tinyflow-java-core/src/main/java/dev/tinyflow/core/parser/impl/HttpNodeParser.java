@@ -39,14 +39,11 @@ public class HttpNodeParser extends BaseNodeParser {
         List<Parameter> headers = getParameters(data, "headers");
         httpNode.setHeaders(headers);
 
-        List<Parameter> urlParameters = getParameters(data, "urlParameters");
-        httpNode.setUrlParameters(urlParameters);
+        List<Parameter> formData = getParameters(data, "formData");
+        httpNode.setFormData(formData);
 
-        List<Parameter> fromData = getParameters(data, "fromData");
-        httpNode.setFromData(fromData);
-
-        List<Parameter> fromUrlencoded = getParameters(data, "fromUrlencoded");
-        httpNode.setFromUrlencoded(fromUrlencoded);
+        List<Parameter> formUrlencoded = getParameters(data, "formUrlencoded");
+        httpNode.setFormUrlencoded(formUrlencoded);
 
         addParameters(httpNode, data);
         addOutputDefs(httpNode, data);

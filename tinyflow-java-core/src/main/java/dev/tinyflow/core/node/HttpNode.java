@@ -39,11 +39,10 @@ public class HttpNode extends BaseNode {
     private String method;
 
     private List<Parameter> headers;
-    private List<Parameter> urlParameters;
 
     private String bodyType;
-    private List<Parameter> fromData;
-    private List<Parameter> fromUrlencoded;
+    private List<Parameter> formData;
+    private List<Parameter> formUrlencoded;
     private String bodyJson;
     private String rawBody;
 
@@ -101,14 +100,6 @@ public class HttpNode extends BaseNode {
         this.headers = headers;
     }
 
-    public List<Parameter> getUrlParameters() {
-        return urlParameters;
-    }
-
-    public void setUrlParameters(List<Parameter> urlParameters) {
-        this.urlParameters = urlParameters;
-    }
-
     public String getBodyType() {
         return bodyType;
     }
@@ -117,20 +108,20 @@ public class HttpNode extends BaseNode {
         this.bodyType = bodyType;
     }
 
-    public List<Parameter> getFromData() {
-        return fromData;
+    public List<Parameter> getFormData() {
+        return formData;
     }
 
-    public void setFromData(List<Parameter> fromData) {
-        this.fromData = fromData;
+    public void setFormData(List<Parameter> formData) {
+        this.formData = formData;
     }
 
-    public List<Parameter> getFromUrlencoded() {
-        return fromUrlencoded;
+    public List<Parameter> getFormUrlencoded() {
+        return formUrlencoded;
     }
 
-    public void setFromUrlencoded(List<Parameter> fromUrlencoded) {
-        this.fromUrlencoded = fromUrlencoded;
+    public void setFormUrlencoded(List<Parameter> formUrlencoded) {
+        this.formUrlencoded = formUrlencoded;
     }
 
     public String getBodyJson() {
@@ -152,20 +143,18 @@ public class HttpNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
 
-        Map<String, Object> urlDataMap = chain.getParameterValues(this, urlParameters);
-        String parametersString = mapToQueryString(urlDataMap);
-        String newUrl = "POST".equalsIgnoreCase(method) || parametersString.isEmpty() ? url : url +
-                (url.contains("?") ? "&" + parametersString : "?" + parametersString);
+        Map<String, Object> argsMap = chain.getParameterValues(this);
+        String newUrl = TextPromptTemplate.create(url).formatToString(argsMap);
 
         Request.Builder reqBuilder = new Request.Builder().url(newUrl);
 
-        Map<String, Object> headersMap = chain.getParameterValues(this, headers);
+        Map<String, Object> headersMap = chain.getParameterValues(this, headers, argsMap);
         headersMap.forEach((s, o) -> reqBuilder.addHeader(s, String.valueOf(o)));
 
         if (StringUtil.noText(method) || "GET".equalsIgnoreCase(method)) {
             reqBuilder.method("GET", null);
         } else {
-            reqBuilder.method(method.toUpperCase(), getRequestBody(chain, urlDataMap));
+            reqBuilder.method(method.toUpperCase(), getRequestBody(chain, argsMap));
         }
 
 
@@ -210,23 +199,21 @@ public class HttpNode extends BaseNode {
         }
     }
 
-    private RequestBody getRequestBody(Chain chain, Map<String, Object> urlDataMap) {
+    private RequestBody getRequestBody(Chain chain, Map<String, Object> formatArgs) {
         if ("json".equals(bodyType)) {
-            Map<String, Object> argsMap = chain.getParameterValues(this);
-            String bodyJsonString = TextPromptTemplate.create(bodyJson).formatToString(argsMap);
+            String bodyJsonString = TextPromptTemplate.create(bodyJson).formatToString(formatArgs);
             JSONObject jsonObject = JSON.parseObject(bodyJsonString);
-            jsonObject.putAll(urlDataMap);
             return RequestBody.create(jsonObject.toString(), MediaType.parse("application/json"));
         }
 
         if ("x-www-form-urlencoded".equals(bodyType)) {
-            Map<String, Object> formUrlencodedMap = chain.getParameterValues(this, fromUrlencoded);
+            Map<String, Object> formUrlencodedMap = chain.getParameterValues(this, formUrlencoded);
             String bodyString = mapToQueryString(formUrlencodedMap);
             return RequestBody.create(bodyString, MediaType.parse("application/x-www-form-urlencoded"));
         }
 
         if ("form-data".equals(bodyType)) {
-            Map<String, Object> formDataMap = chain.getParameterValues(this, fromData);
+            Map<String, Object> formDataMap = chain.getParameterValues(this, formData, formatArgs);
 
             MultipartBody.Builder builder = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM);
@@ -251,8 +238,7 @@ public class HttpNode extends BaseNode {
         }
 
         if ("raw".equals(bodyType)) {
-            Map<String, Object> argsMap = chain.getParameterValues(this);
-            String rawBodyString = TextPromptTemplate.create(rawBody).formatToString(argsMap);
+            String rawBodyString = TextPromptTemplate.create(rawBody).formatToString(formatArgs);
             return RequestBody.create(rawBodyString, null);
         }
         //none
@@ -265,17 +251,16 @@ public class HttpNode extends BaseNode {
                 "url='" + url + '\'' +
                 ", method='" + method + '\'' +
                 ", headers=" + headers +
-                ", parameters=" + urlParameters +
                 ", bodyType='" + bodyType + '\'' +
-                ", fromData=" + fromData +
-                ", fromUrlencoded=" + fromUrlencoded +
+                ", fromData=" + formData +
+                ", fromUrlencoded=" + formUrlencoded +
                 ", bodyJson='" + bodyJson + '\'' +
                 ", rawBody='" + rawBody + '\'' +
-                ", description='" + description + '\'' +
-                ", parameter=" + urlParameters +
+                ", parameters=" + parameters +
                 ", outputDefs=" + outputDefs +
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
                 ", async=" + async +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
