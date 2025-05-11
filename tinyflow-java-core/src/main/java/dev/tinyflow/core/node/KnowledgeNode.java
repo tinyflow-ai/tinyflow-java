@@ -72,8 +72,8 @@ public class KnowledgeNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
         Map<String, Object> argsMap = chain.getParameterValues(this);
-        String realKeyword = TextPromptTemplate.create(keyword).formatToString(argsMap);
-        String realLimitString = TextPromptTemplate.create(limit).formatToString(argsMap);
+        String realKeyword = TextPromptTemplate.of(keyword).formatToString(argsMap);
+        String realLimitString = TextPromptTemplate.of(limit).formatToString(argsMap);
         int realLimit = 10;
         if (StringUtil.hasText(realLimitString)) {
             try {

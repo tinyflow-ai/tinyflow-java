@@ -144,7 +144,7 @@ public class HttpNode extends BaseNode {
     protected Map<String, Object> execute(Chain chain) {
 
         Map<String, Object> argsMap = chain.getParameterValues(this);
-        String newUrl = TextPromptTemplate.create(url).formatToString(argsMap);
+        String newUrl = TextPromptTemplate.of(url).formatToString(argsMap);
 
         Request.Builder reqBuilder = new Request.Builder().url(newUrl);
 
@@ -201,7 +201,7 @@ public class HttpNode extends BaseNode {
 
     private RequestBody getRequestBody(Chain chain, Map<String, Object> formatArgs) {
         if ("json".equals(bodyType)) {
-            String bodyJsonString = TextPromptTemplate.create(bodyJson).formatToString(formatArgs);
+            String bodyJsonString = TextPromptTemplate.of(bodyJson).formatToString(formatArgs);
             JSONObject jsonObject = JSON.parseObject(bodyJsonString);
             return RequestBody.create(jsonObject.toString(), MediaType.parse("application/json"));
         }
@@ -238,7 +238,7 @@ public class HttpNode extends BaseNode {
         }
 
         if ("raw".equals(bodyType)) {
-            String rawBodyString = TextPromptTemplate.create(rawBody).formatToString(formatArgs);
+            String rawBodyString = TextPromptTemplate.of(rawBody).formatToString(formatArgs);
             return RequestBody.create(rawBodyString, null);
         }
         //none

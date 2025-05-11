@@ -56,7 +56,7 @@
             <dependency>
                 <groupId>com.agentsflex</groupId>
                 <artifactId>agents-flex-bom</artifactId>
-                <version>1.0.7</version>
+                <version>1.0.8</version>
             </dependency>
 
             <!--使用 enjoy 模板引擎-->
