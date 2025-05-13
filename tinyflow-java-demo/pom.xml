@@ -47,12 +47,12 @@
         <dependency>
             <groupId>dev.tinyflow</groupId>
             <artifactId>tinyflow-java-core</artifactId>
-            <version>1.0.5</version>
+            <version>1.0.6</version>
         </dependency>
         <dependency>
             <groupId>com.agentsflex</groupId>
             <artifactId>agents-flex-bom</artifactId>
-            <version>1.0.5</version>
+            <version>1.0.9</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
