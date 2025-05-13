@@ -19,7 +19,6 @@ import com.agentsflex.core.chain.Chain;
 import com.agentsflex.core.chain.Parameter;
 import com.agentsflex.core.chain.RefType;
 import com.agentsflex.core.chain.node.BaseNode;
-import com.agentsflex.core.util.Maps;
 
 import java.util.*;
 
@@ -47,62 +46,88 @@ public class LoopNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
         loopChain.setParent(chain);
+
+        Map<String, Object> executeResult = new HashMap<>();
+        Map<String, Object> chainMemory = chain.getMemory().getAll();
+
         Map<String, Object> loopVars = chain.getParameterValues(this, Collections.singletonList(loopVar));
-        Maps result = Maps.of();
-        Object value = loopVars.get(loopVar.getName());
-        if (value instanceof Iterable) {
-            Iterable<?> iterable = (Iterable<?>) value;
+        Object loopValue = loopVars.get(loopVar.getName());
+        if (loopValue instanceof Iterable) {
+            Iterable<?> iterable = (Iterable<?>) loopValue;
             int index = 0;
             for (Object o : iterable) {
-                Map<String, Object> loopParams = new HashMap<>();
-                loopParams.put("loopItem", o);
-                loopParams.put("index", index++);
-                loopParams.putAll(loopVars);
-                loopParams.putAll(chain.getMemory().getAll());
-                loopChain.execute(loopParams);
-                fillResult(result, loopChain.getMemory().getAll());
+                executeLoopChain(index++, o, loopVars, chainMemory, executeResult);
             }
-        } else if (value instanceof Number) {
-            int count = ((Number) value).intValue();
+        } else if (loopValue instanceof Number || (loopValue instanceof String && isNumeric(loopValue.toString()))) {
+            int count = loopValue instanceof Number ? ((Number) loopValue).intValue() : Integer.parseInt(loopValue.toString().trim());
             for (int i = 0; i < count; i++) {
-                Map<String, Object> loopParams = new HashMap<>();
-                loopParams.put("loopItem", i);
-                loopParams.put("index", i);
-                loopParams.putAll(loopVars);
-                loopParams.putAll(chain.getMemory().getAll());
-                loopChain.execute(loopParams);
-                fillResult(result, loopChain.getMemory().getAll());
+                executeLoopChain(i, i, loopVars, chainMemory, executeResult);
             }
         }
 
-        List<Parameter> outputDefs = getOutputDefs();
-        if (outputDefs != null) {
-            for (Parameter outputDef : outputDefs) {
-                if (outputDef.getRefType() == RefType.INPUT) {
-                    result.put(outputDef.getName(), outputDef.getRef());
-                }
+        return executeResult;
+    }
+
+    private void executeLoopChain(int index, Object loopItem, Map<String, Object> loopVars, Map<String, Object> parentMap, Map<String, Object> executeResult) {
+        Map<String, Object> loopParams = new HashMap<>();
+        loopParams.put("index", index);
+        loopParams.put("loopItem", loopItem);
+        loopParams.putAll(loopVars);
+        loopParams.putAll(parentMap);
+        try {
+            loopChain.execute(loopParams);
+        } finally {
+            fillResult(executeResult, loopChain);
+            loopChain.reset();
+        }
+    }
+
+    /**
+     * 判断字符串是否是数字
+     *
+     * @param string 需要判断的字符串
+     * @return boolean 是数字返回 true，否则返回 false
+     */
+    private boolean isNumeric(String string) {
+        if (string == null || string.isEmpty()) {
+            return false;
+        }
+        char[] chars = string.trim().toCharArray();
+        for (char c : chars) {
+            if (!Character.isDigit(c)) {
+                return false;
             }
         }
-        return result;
+        return true;
     }
 
     /**
      * 把子流程执行的结果填充到主流程的输出参数中
      *
-     * @param result        主流程的输出参数
-     * @param executeResult 子流程的执行结果
+     * @param executeResult 主流程的输出参数
+     * @param loopChain     子流程的
      */
-    private void fillResult(Maps result, Map<String, Object> executeResult) {
+    private void fillResult(Map<String, Object> executeResult, Chain loopChain) {
         List<Parameter> outputDefs = getOutputDefs();
         if (outputDefs != null) {
             for (Parameter outputDef : outputDefs) {
+                Object value = null;
+
+                //引用
                 if (outputDef.getRefType() == RefType.REF) {
-                    Object value = executeResult.get(outputDef.getRef());
-                    @SuppressWarnings("unchecked") List<Object> list = (List<Object>) result.get(outputDef.getName());
-                    if (list == null) list = new ArrayList<>();
-                    list.add(value);
-                    result.put(outputDef.getName(), list);
+                    value = loopChain.get(outputDef.getRef());
                 }
+                //固定值
+                else if (outputDef.getRefType() == RefType.FIXED) {
+                    value = outputDef.getValue();
+                }
+
+                @SuppressWarnings("unchecked") List<Object> existList = (List<Object>) executeResult.get(outputDef.getName());
+                if (existList == null) {
+                    existList = new ArrayList<>();
+                }
+                existList.add(value);
+                executeResult.put(outputDef.getName(), existList);
             }
         }
     }
