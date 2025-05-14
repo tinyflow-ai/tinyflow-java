@@ -1,47 +1,45 @@
 # Tinyflow-java
 
-Tinyflow-java is an intelligent agent orchestration solution developed using Java. It is not a product, but a development component.
-By integrating Tinyflow-java, you can make any traditional Java Web application have the ability to orchestrate AI intelligent agents.
+Tinyflow-java 是一个使用 Java 开发的智能体编排解决方案，她不是一个产品，而是一个开发组件。
+通过集成 Tinyflow-java，您可以使得任何的传统的 Java Web 应用，具备 AI 智能体流程编排的能力。
 
-## Features
+## 特点
 
-- Lightweight (supports Java 8 and above, no restrictions on development frameworks)
-
-- Flexible (built-in rich node types, supports synchronous or asynchronous execution)
-
-- High performance (based on Java development, faster performance than Nodejs and Python)
-
-## Front-end
-
-Tinyflow-java's front-end drag component, open source address: https://github.com/tinyflow-ai/tinyflow
+- 轻量（支持 Java 8 及以上版本，不限制开发框架）
+- 灵活（内置丰富的节点类型，支持同步或异步执行）
+- 高性能（基于 Java 开发，性能比 Nodejs 和 Python 更快） 
 
 
-## Quick Start
+## 前端
 
-Introduce dependencies
+ Tinyflow-java 的前端拖拽组件， 开源地址：https://gitee.com/tinyflow-ai/tinyflow
+ 
+## 快速开始
+
+引入依赖
 
 ```xml
 <dependency>
     <groupId>dev.tinyflow</groupId>
     <artifactId>tinyflow-java-core</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.6</version>
 </dependency>
 ```
 
-Initialize Tinyflow
+初始化 Tinyflow
 
 ```java
-String flowDataJson = "Process data passed from the front end";
+String flowDataJson = "从前端传递的流程数据";
 Tinyflow tinyflow = new Tinyflow(flowDataJson);
 
 Map<String, Object> variables = new HashMap<>();
-variables.put("name", "Michale");
+variables.put("name", "张三");
 variables.put("age", 18);
 
 tinyflow.execute(variables);
 ```
 
 
-## Wechat Group
+## Star 用户专属交流群
 
 ![](./docs/assets/images/wechat_group.jpg)
