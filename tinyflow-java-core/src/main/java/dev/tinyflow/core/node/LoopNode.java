@@ -56,23 +56,22 @@ public class LoopNode extends BaseNode {
             Iterable<?> iterable = (Iterable<?>) loopValue;
             int index = 0;
             for (Object o : iterable) {
-                executeLoopChain(index++, o, loopVars, chainMemory, executeResult);
+                executeLoopChain(index++, o, chainMemory, executeResult);
             }
         } else if (loopValue instanceof Number || (loopValue instanceof String && isNumeric(loopValue.toString()))) {
             int count = loopValue instanceof Number ? ((Number) loopValue).intValue() : Integer.parseInt(loopValue.toString().trim());
             for (int i = 0; i < count; i++) {
-                executeLoopChain(i, i, loopVars, chainMemory, executeResult);
+                executeLoopChain(i, i, chainMemory, executeResult);
             }
         }
 
         return executeResult;
     }
 
-    private void executeLoopChain(int index, Object loopItem, Map<String, Object> loopVars, Map<String, Object> parentMap, Map<String, Object> executeResult) {
+    private void executeLoopChain(int index, Object loopItem, Map<String, Object> parentMap, Map<String, Object> executeResult) {
         Map<String, Object> loopParams = new HashMap<>();
-        loopParams.put("index", index);
-        loopParams.put("loopItem", loopItem);
-        loopParams.putAll(loopVars);
+        loopParams.put(this.id + ".index", index);
+        loopParams.put(this.id + ".loopItem", loopItem);
         loopParams.putAll(parentMap);
         try {
             loopChain.execute(loopParams);
