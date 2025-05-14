@@ -89,7 +89,9 @@ public abstract class BaseNodeParser implements NodeParser {
             parameter.setId(outputDefJsonObject.getString("id"));
             parameter.setName(outputDefJsonObject.getString("name"));
             parameter.setDescription(outputDefJsonObject.getString("description"));
-            parameter.setRef(outputDefJsonObject.getString("ref"));
+            parameter.setRef(outputDefJsonObject.getString("ref"));            
+            parameter.setValue(outputDefJsonObject.getString("value"));
+            parameter.setDefaultValue(outputDefJsonObject.getString("defaultValue"));
             parameter.setRefType(RefType.ofValue(outputDefJsonObject.getString("refType")));
             parameter.setDataType(DataType.ofValue(outputDefJsonObject.getString("dataType")));
             node.addOutputDef(parameter);
