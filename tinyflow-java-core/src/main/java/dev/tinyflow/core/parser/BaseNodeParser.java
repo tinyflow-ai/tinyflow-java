@@ -64,10 +64,9 @@ public abstract class BaseNodeParser implements NodeParser {
             parameter.setDefaultValue(parameterJsonObject.getString("defaultValue"));
             parameter.setValue(parameterJsonObject.getString("value"));
 
-
-            JSONArray childrenJSONArray = parameterJsonObject.getJSONArray("children");
-            if (childrenJSONArray != null && !childrenJSONArray.isEmpty()) {
-                parameter.addChildren(getParameters(childrenJSONArray));
+            JSONArray children = parameterJsonObject.getJSONArray("children");
+            if (children != null && !children.isEmpty()) {
+                parameter.addChildren(getParameters(children));
             }
 
             parameters.add(parameter);
@@ -89,14 +88,15 @@ public abstract class BaseNodeParser implements NodeParser {
             parameter.setId(outputDefJsonObject.getString("id"));
             parameter.setName(outputDefJsonObject.getString("name"));
             parameter.setDescription(outputDefJsonObject.getString("description"));
-            parameter.setRef(outputDefJsonObject.getString("ref"));            
+            parameter.setRef(outputDefJsonObject.getString("ref"));
             parameter.setValue(outputDefJsonObject.getString("value"));
             parameter.setDefaultValue(outputDefJsonObject.getString("defaultValue"));
             parameter.setRefType(RefType.ofValue(outputDefJsonObject.getString("refType")));
             parameter.setDataType(DataType.ofValue(outputDefJsonObject.getString("dataType")));
-            JSONArray childrenJSONArray = outputDefJsonObject.getJSONArray("children");
-            if (childrenJSONArray != null && !childrenJSONArray.isEmpty()) {
-                parameter.addChildren(getParameters(childrenJSONArray));
+
+            JSONArray children = outputDefJsonObject.getJSONArray("children");
+            if (children != null && !children.isEmpty()) {
+                parameter.addChildren(getParameters(children));
             }
 
             node.addOutputDef(parameter);
