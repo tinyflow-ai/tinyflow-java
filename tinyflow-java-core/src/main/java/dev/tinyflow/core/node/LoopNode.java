@@ -16,6 +16,7 @@
 package dev.tinyflow.core.node;
 
 import com.agentsflex.core.chain.Chain;
+import com.agentsflex.core.chain.ChainStatus;
 import com.agentsflex.core.chain.Parameter;
 import com.agentsflex.core.chain.RefType;
 import com.agentsflex.core.chain.node.BaseNode;
@@ -56,11 +57,17 @@ public class LoopNode extends BaseNode {
             Iterable<?> iterable = (Iterable<?>) loopValue;
             int index = 0;
             for (Object o : iterable) {
+                if (this.loopChain.getStatus() != ChainStatus.READY) {
+                    break;
+                }
                 executeLoopChain(index++, o, chainMemory, executeResult);
             }
         } else if (loopValue instanceof Number || (loopValue instanceof String && isNumeric(loopValue.toString()))) {
             int count = loopValue instanceof Number ? ((Number) loopValue).intValue() : Integer.parseInt(loopValue.toString().trim());
             for (int i = 0; i < count; i++) {
+                if (this.loopChain.getStatus() != ChainStatus.READY) {
+                    break;
+                }
                 executeLoopChain(i, i, chainMemory, executeResult);
             }
         }
@@ -76,8 +83,13 @@ public class LoopNode extends BaseNode {
         try {
             loopChain.execute(loopParams);
         } finally {
-            fillResult(executeResult, loopChain);
-            loopChain.reset();
+            // 正常结束的情况下，填充结果
+            if (loopChain.getStatus() == ChainStatus.FINISHED_NORMAL) {
+                fillResult(executeResult, loopChain);
+
+                //重置 chain statue 为 ready
+                loopChain.reset();
+            }
         }
     }
 
