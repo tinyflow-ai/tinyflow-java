@@ -47,6 +47,7 @@ public class LoopNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
         loopChain.setParent(chain);
+        loopChain.setStatus(ChainStatus.READY);
 
         Map<String, Object> executeResult = new HashMap<>();
         Map<String, Object> chainMemory = chain.getMemory().getAll();
