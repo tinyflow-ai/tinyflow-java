@@ -90,55 +90,6 @@ public class ChainParser {
                     || (parentNode != null && parentNode.getString("id").equals(nodeObject.getString("parentId")))) {
                 ChainNode node = parseNode(tinyflow, nodeObject);
                 if (node != null) {
-
-                    node.setId(nodeObject.getString("id"));
-                    node.setName(nodeObject.getString("label"));
-                    node.setDescription(nodeObject.getString("description"));
-
-                    JSONObject dataJsonObject = nodeObject.getJSONObject("data");
-                    if (dataJsonObject != null && !dataJsonObject.isEmpty()) {
-                        String conditionString = dataJsonObject.getString("condition");
-
-                        if (StringUtil.hasText(conditionString)) {
-                            node.setCondition(new JsCodeCondition(conditionString.trim()));
-                        }
-
-                        Boolean async = dataJsonObject.getBoolean("async");
-                        if (async != null) {
-                            node.setAsync(async);
-                        }
-
-                        String name = dataJsonObject.getString("title");
-                        if (StringUtil.hasText(name)) {
-                            node.setName(name);
-                        }
-
-                        String description = dataJsonObject.getString("description");
-                        if (StringUtil.hasText(description)) {
-                            node.setDescription(description);
-                        }
-
-                        Boolean loopEnable = dataJsonObject.getBoolean("loopEnable");
-                        if (loopEnable != null) {
-                            node.setLoopEnable(loopEnable);
-                        }
-
-                        Long loopIntervalMs = dataJsonObject.getLong("loopIntervalMs");
-                        if (loopIntervalMs != null) {
-                            node.setLoopIntervalMs(loopIntervalMs);
-                        }
-
-                        Integer maxLoopCount = dataJsonObject.getInteger("maxLoopCount");
-                        if (maxLoopCount != null) {
-                            node.setMaxLoopCount(maxLoopCount);
-                        }
-
-                        String loopBreakCondition = dataJsonObject.getString("loopBreakCondition");
-                        if (StringUtil.hasText(loopBreakCondition)) {
-                            node.setLoopBreakCondition(new JsCodeCondition(loopBreakCondition.trim()));
-                        }
-                    }
-
                     chain.addNode(node);
                 }
             }

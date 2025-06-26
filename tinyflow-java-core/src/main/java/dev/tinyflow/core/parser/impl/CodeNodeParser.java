@@ -18,7 +18,7 @@ package dev.tinyflow.core.parser.impl;
 import com.agentsflex.chain.node.GroovyExecNode;
 import com.agentsflex.chain.node.JsExecNode;
 import com.agentsflex.chain.node.QLExpressExecNode;
-import com.agentsflex.core.chain.ChainNode;
+import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.chain.node.CodeNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
@@ -27,9 +27,7 @@ import dev.tinyflow.core.parser.BaseNodeParser;
 public class CodeNodeParser extends BaseNodeParser {
 
     @Override
-    public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
-
-        JSONObject data = getData(nodeJSONObject);
+    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         String engine = data.getString("engine");
         CodeNode codeNode;
         switch (engine) {
@@ -46,10 +44,6 @@ public class CodeNodeParser extends BaseNodeParser {
         }
 
         codeNode.setCode(data.getString("code"));
-
-        addParameters(codeNode, data);
-        addOutputDefs(codeNode, data);
-
         return codeNode;
     }
 }

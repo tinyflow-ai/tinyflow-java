@@ -15,7 +15,7 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.ChainNode;
+import com.agentsflex.core.chain.node.BaseNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.TemplateNode;
@@ -24,16 +24,9 @@ import dev.tinyflow.core.parser.BaseNodeParser;
 public class TemplateNodeParser extends BaseNodeParser {
 
     @Override
-    public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
-        JSONObject data = getData(nodeJSONObject);
-
+    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         TemplateNode templateNode = new TemplateNode();
         templateNode.setTemplate(data.getString("template"));
-//        templateNode.setOutputDef(data.getJSONArray("outputDefs").getJSONObject(0).getString("name"));
-
-        addParameters(templateNode, data);
-        addOutputDefs(templateNode, data);
-
         return templateNode;
     }
 }

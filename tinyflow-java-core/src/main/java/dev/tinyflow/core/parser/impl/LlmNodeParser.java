@@ -15,7 +15,7 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.ChainNode;
+import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.chain.node.LlmNode;
 import com.agentsflex.core.llm.ChatOptions;
 import com.agentsflex.core.llm.Llm;
@@ -27,9 +27,8 @@ import dev.tinyflow.core.provider.LlmProvider;
 public class LlmNodeParser extends BaseNodeParser {
 
     @Override
-    public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
+    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         LlmNode llmNode = new LlmNode();
-        JSONObject data = getData(nodeJSONObject);
         llmNode.setUserPrompt(data.getString("userPrompt"));
         llmNode.setSystemPrompt(data.getString("systemPrompt"));
         llmNode.setOutType(data.getString("outType"));
@@ -46,9 +45,6 @@ public class LlmNodeParser extends BaseNodeParser {
             Llm llm = llmProvider.getLlm(data.getString("llmId"));
             llmNode.setLlm(llm);
         }
-
-        addParameters(llmNode, data);
-        addOutputDefs(llmNode, data);
 
         return llmNode;
     }

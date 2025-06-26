@@ -16,12 +16,12 @@
 package dev.tinyflow.core.parser;
 
 
-import com.agentsflex.core.chain.DataType;
-import com.agentsflex.core.chain.Parameter;
-import com.agentsflex.core.chain.RefType;
+import com.agentsflex.core.chain.*;
 import com.agentsflex.core.chain.node.BaseNode;
+import com.agentsflex.core.util.StringUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import dev.tinyflow.core.Tinyflow;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -102,4 +102,67 @@ public abstract class BaseNodeParser implements NodeParser {
             node.addOutputDef(parameter);
         }
     }
+
+    @Override
+    public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
+        JSONObject data = getData(nodeJSONObject);
+        BaseNode node = doParse(nodeJSONObject, data, tinyflow);
+        if (node != null) {
+
+            node.setId(nodeJSONObject.getString("id"));
+            node.setName(nodeJSONObject.getString("label"));
+            node.setDescription(nodeJSONObject.getString("description"));
+
+            if (!data.isEmpty()) {
+
+                addParameters(node, data);
+                addOutputDefs(node, data);
+
+                String conditionString = data.getString("condition");
+
+                if (StringUtil.hasText(conditionString)) {
+                    node.setCondition(new JsCodeCondition(conditionString.trim()));
+                }
+
+                Boolean async = data.getBoolean("async");
+                if (async != null) {
+                    node.setAsync(async);
+                }
+
+                String name = data.getString("title");
+                if (StringUtil.hasText(name)) {
+                    node.setName(name);
+                }
+
+                String description = data.getString("description");
+                if (StringUtil.hasText(description)) {
+                    node.setDescription(description);
+                }
+
+                Boolean loopEnable = data.getBoolean("loopEnable");
+                if (loopEnable != null) {
+                    node.setLoopEnable(loopEnable);
+                }
+
+                Long loopIntervalMs = data.getLong("loopIntervalMs");
+                if (loopIntervalMs != null) {
+                    node.setLoopIntervalMs(loopIntervalMs);
+                }
+
+                Integer maxLoopCount = data.getInteger("maxLoopCount");
+                if (maxLoopCount != null) {
+                    node.setMaxLoopCount(maxLoopCount);
+                }
+
+                String loopBreakCondition = data.getString("loopBreakCondition");
+                if (StringUtil.hasText(loopBreakCondition)) {
+                    node.setLoopBreakCondition(new JsCodeCondition(loopBreakCondition.trim()));
+                }
+            }
+        }
+
+        return node;
+    }
+
+    protected abstract BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow);
 }
