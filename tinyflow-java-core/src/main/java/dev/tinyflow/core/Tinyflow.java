@@ -17,6 +17,7 @@ package dev.tinyflow.core;
 
 import com.agentsflex.core.chain.Chain;
 import com.agentsflex.core.util.StringUtil;
+import dev.tinyflow.core.file.FileStorage;
 import dev.tinyflow.core.parser.ChainParser;
 import dev.tinyflow.core.provider.KnowledgeProvider;
 import dev.tinyflow.core.provider.LlmProvider;
@@ -28,6 +29,7 @@ public class Tinyflow {
     private LlmProvider llmProvider;
     private KnowledgeProvider knowledgeProvider;
     private SearchEngineProvider searchEngineProvider;
+    private FileStorage fileStorage;
     private ChainParser chainParser = new ChainParser();
 
     public Tinyflow() {
@@ -75,6 +77,14 @@ public class Tinyflow {
 
     public void setSearchEngineProvider(SearchEngineProvider searchEngineProvider) {
         this.searchEngineProvider = searchEngineProvider;
+    }
+
+    public FileStorage getFileStorage() {
+        return fileStorage;
+    }
+
+    public void setFileStorage(FileStorage fileStorage) {
+        this.fileStorage = fileStorage;
     }
 
     public Chain toChain() {

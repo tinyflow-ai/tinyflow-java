@@ -34,6 +34,7 @@ public class HttpNodeParser extends BaseNodeParser {
         httpNode.setBodyJson(data.getString("bodyJson"));
         httpNode.setRawBody(data.getString("rawBody"));
         httpNode.setBodyType(data.getString("bodyType"));
+        httpNode.setFileStorage(tinyflow.getFileStorage());
 
         List<Parameter> headers = getParameters(data, "headers");
         httpNode.setHeaders(headers);

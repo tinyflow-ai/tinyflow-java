@@ -24,9 +24,11 @@ import com.agentsflex.core.prompt.template.TextPromptTemplate;
 import com.agentsflex.core.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import dev.tinyflow.core.file.FileStorage;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.HashMap;
@@ -45,6 +47,7 @@ public class HttpNode extends BaseNode {
     private List<Parameter> formUrlencoded;
     private String bodyJson;
     private String rawBody;
+    private FileStorage fileStorage;
 
     public static String mapToQueryString(Map<String, Object> map) {
         if (map == null || map.isEmpty()) {
@@ -140,6 +143,14 @@ public class HttpNode extends BaseNode {
         this.rawBody = rawBody;
     }
 
+    public FileStorage getFileStorage() {
+        return fileStorage;
+    }
+
+    public void setFileStorage(FileStorage fileStorage) {
+        this.fileStorage = fileStorage;
+    }
+
     @Override
     protected Map<String, Object> execute(Chain chain) {
 
@@ -165,33 +176,40 @@ public class HttpNode extends BaseNode {
             result.put("statusCode", response.code());
 
             Map<String, String> responseHeaders = new HashMap<>();
-            for (String name : response.headers().names()) {
+            Headers headers = response.headers();
+            for (String name : headers.names()) {
                 responseHeaders.put(name, response.header(name));
             }
             result.put("headers", responseHeaders);
 
             ResponseBody body = response.body();
-            String bodyString = null;
-            if (body != null) bodyString = body.string();
+            if (body == null) {
+                result.put("body", null);
+                return result;
+            }
 
-            if (StringUtil.hasText(bodyString)) {
-                DataType outDataType = null;
-                List<Parameter> outputDefs = getOutputDefs();
-                if (outputDefs != null) {
-                    for (Parameter outputDef : outputDefs) {
-                        if ("body".equalsIgnoreCase(outputDef.getName())) {
-                            outDataType = outputDef.getDataType();
-                            break;
-                        }
+            DataType bodyDataType = null;
+            List<Parameter> outputDefs = getOutputDefs();
+            if (outputDefs != null) {
+                for (Parameter outputDef : outputDefs) {
+                    if ("body".equalsIgnoreCase(outputDef.getName())) {
+                        bodyDataType = outputDef.getDataType();
+                        break;
                     }
                 }
+            }
 
-                if (outDataType != null && (outDataType == DataType.Object || outDataType
-                        .getValue().startsWith("Array"))) {
-                    result.put("body", JSON.parse(bodyString));
-                } else {
-                    result.put("body", bodyString);
+            if (bodyDataType == null) {
+                result.put("body", body.string());
+            } else if (bodyDataType == DataType.Object || bodyDataType.getValue().startsWith("Array")) {
+                result.put("body", JSON.parse(body.string()));
+            } else if (bodyDataType == DataType.File) {
+                try (InputStream stream = body.byteStream()) {
+                    String fileUrl = fileStorage.saveFile(stream, responseHeaders);
+                    result.put("body", fileUrl);
                 }
+            } else {
+                result.put("body", body.string());
             }
             return result;
         } catch (IOException e) {
