@@ -42,6 +42,7 @@ public class ChainParser {
     private void initDefaultParsers() {
         nodeParserMap.put("startNode", new StartNodeParser());
         nodeParserMap.put("codeNode", new CodeNodeParser());
+        nodeParserMap.put("confirmNode", new ConfirmNodeParser());
 
         nodeParserMap.put("httpNode", new HttpNodeParser());
         nodeParserMap.put("knowledgeNode", new KnowledgeNodeParser());
