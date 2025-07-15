@@ -56,6 +56,8 @@ public class ConfirmNodeParser extends BaseNodeParser {
                 // ConfirmParameter 内容
                 parameter.setSelectionDataType(parameterJsonObject.getString("selectionDataType"));
                 parameter.setSelectionMode(parameterJsonObject.getString("selectionMode"));
+                parameter.setFormLabel(parameterJsonObject.getString("formLabel"));
+                parameter.setFormDescription(parameterJsonObject.getString("formDescription"));
 
                 parameters.add(parameter);
             }
