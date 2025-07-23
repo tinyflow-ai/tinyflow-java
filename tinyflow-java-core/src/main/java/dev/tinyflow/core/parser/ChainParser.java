@@ -97,17 +97,28 @@ public class ChainParser {
         }
 
         for (int i = 0; i < edges.size(); i++) {
-            JSONObject edgeObject = edges.getJSONObject(i);
-            JSONObject edgeData = edgeObject.getJSONObject("data");
+//            JSONObject edgeObject = edges.getJSONObject(i);
+//            JSONObject edgeData = edgeObject.getJSONObject("data");
+//            if ((parentNode == null && (edgeData == null || StringUtil.noText(edgeData.getString("parentNodeId"))))
+//                    || (parentNode != null && edgeData != null && edgeData.getString("parentNodeId").equals(parentNode.getString("id"))
+//                    //不添加子流程里的第一条 edge（也就是父节点连接子节点的第一条线）
+//                    && !parentNode.getString("id").equals(edgeObject.getString("source")))) {
+//                ChainEdge edge = parseEdge(edgeObject);
+//                if (edge != null) {
+//                    chain.addEdge(edge);
+//                }
+//            }
 
-            if ((parentNode == null && (edgeData == null || StringUtil.noText(edgeData.getString("parentNodeId"))))
-                    || (parentNode != null && edgeData != null && edgeData.getString("parentNodeId").equals(parentNode.getString("id"))
+            JSONObject edgeObject = edges.getJSONObject(i);
+            ChainEdge edge = parseEdge(edgeObject);
+            if (edge == null) {
+                continue;
+            }
+            if (parentNode == null ||
                     //不添加子流程里的第一条 edge（也就是父节点连接子节点的第一条线）
-                    && !parentNode.getString("id").equals(edgeObject.getString("source")))) {
-                ChainEdge edge = parseEdge(edgeObject);
-                if (edge != null) {
-                    chain.addEdge(edge);
-                }
+                    (!parentNode.getString("id").equals(edgeObject.getString("source")))
+            ) {
+                chain.addEdge(edge);
             }
         }
 
