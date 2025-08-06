@@ -59,10 +59,19 @@ public abstract class BaseNodeParser implements NodeParser {
             parameter.setDescription(parameterJsonObject.getString("description"));
             parameter.setDataType(DataType.ofValue(parameterJsonObject.getString("dataType")));
             parameter.setRef(parameterJsonObject.getString("ref"));
+            parameter.setValue(parameterJsonObject.getString("value"));
+            parameter.setDefaultValue(parameterJsonObject.getString("defaultValue"));
             parameter.setRefType(RefType.ofValue(parameterJsonObject.getString("refType")));
+            parameter.setDataType(DataType.ofValue(parameterJsonObject.getString("dataType")));
             parameter.setRequired(parameterJsonObject.getBooleanValue("required"));
             parameter.setDefaultValue(parameterJsonObject.getString("defaultValue"));
-            parameter.setValue(parameterJsonObject.getString("value"));
+
+            //新增
+            parameter.setContentType(parameterJsonObject.getString("contentType"));
+            parameter.setEnums(parameterJsonObject.getJSONArray("enums"));
+            parameter.setFormType(parameterJsonObject.getString("formType"));
+            parameter.setFormLabel(parameterJsonObject.getString("formLabel"));
+            parameter.setFormDescription(parameterJsonObject.getString("formDescription"));
 
             JSONArray children = parameterJsonObject.getJSONArray("children");
             if (children != null && !children.isEmpty()) {
@@ -77,31 +86,13 @@ public abstract class BaseNodeParser implements NodeParser {
 
 
     public void addOutputDefs(BaseNode node, JSONObject data) {
-        JSONArray outputDefs = data.getJSONArray("outputDefs");
+        List<Parameter> outputDefs = getParameters(data, "outputDefs");
         if (outputDefs == null || outputDefs.isEmpty()) {
             return;
         }
-
-        for (int i = 0; i < outputDefs.size(); i++) {
-            JSONObject outputDefJsonObject = outputDefs.getJSONObject(i);
-            Parameter parameter = new Parameter();
-            parameter.setId(outputDefJsonObject.getString("id"));
-            parameter.setName(outputDefJsonObject.getString("name"));
-            parameter.setDescription(outputDefJsonObject.getString("description"));
-            parameter.setRef(outputDefJsonObject.getString("ref"));
-            parameter.setValue(outputDefJsonObject.getString("value"));
-            parameter.setDefaultValue(outputDefJsonObject.getString("defaultValue"));
-            parameter.setRefType(RefType.ofValue(outputDefJsonObject.getString("refType")));
-            parameter.setDataType(DataType.ofValue(outputDefJsonObject.getString("dataType")));
-
-            JSONArray children = outputDefJsonObject.getJSONArray("children");
-            if (children != null && !children.isEmpty()) {
-                parameter.addChildren(getParameters(children));
-            }
-
-            node.addOutputDef(parameter);
-        }
+        node.setOutputDefs(outputDefs);
     }
+
 
     @Override
     public ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
