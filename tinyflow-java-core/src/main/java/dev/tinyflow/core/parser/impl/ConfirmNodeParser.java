@@ -15,16 +15,13 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.DataType;
-import com.agentsflex.core.chain.RefType;
+import com.agentsflex.core.chain.Parameter;
 import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.chain.node.ConfirmNode;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ConfirmNodeParser extends BaseNodeParser {
@@ -35,35 +32,10 @@ public class ConfirmNodeParser extends BaseNodeParser {
         ConfirmNode confirmNode = new ConfirmNode();
         confirmNode.setMessage(data.getString("message"));
 
-        JSONArray confirmsJSONArray = data.getJSONArray("confirms");
-        if (confirmsJSONArray != null && !confirmsJSONArray.isEmpty()) {
-            List<ConfirmNode.ConfirmParameter> parameters = new ArrayList<>(confirmsJSONArray.size());
-            for (int i = 0; i < confirmsJSONArray.size(); i++) {
-                JSONObject parameterJsonObject = confirmsJSONArray.getJSONObject(i);
-                ConfirmNode.ConfirmParameter parameter = new ConfirmNode.ConfirmParameter();
-
-                // Parameter 基础信息
-                parameter.setId(parameterJsonObject.getString("id"));
-                parameter.setName(parameterJsonObject.getString("name"));
-                parameter.setDescription(parameterJsonObject.getString("description"));
-                parameter.setDataType(DataType.ofValue(parameterJsonObject.getString("dataType")));
-                parameter.setRef(parameterJsonObject.getString("ref"));
-                parameter.setRefType(RefType.ofValue(parameterJsonObject.getString("refType")));
-                parameter.setRequired(parameterJsonObject.getBooleanValue("required"));
-                parameter.setDefaultValue(parameterJsonObject.getString("defaultValue"));
-                parameter.setValue(parameterJsonObject.getString("value"));
-
-                // ConfirmParameter 内容
-                parameter.setSelectionDataType(parameterJsonObject.getString("selectionDataType"));
-                parameter.setSelectionMode(parameterJsonObject.getString("selectionMode"));
-                parameter.setFormLabel(parameterJsonObject.getString("formLabel"));
-                parameter.setFormDescription(parameterJsonObject.getString("formDescription"));
-
-                parameters.add(parameter);
-            }
-            confirmNode.setConfirms(parameters);
+        List<Parameter> confirms = getParameters(data, "confirms");
+        if (confirms != null && !confirms.isEmpty()) {
+            confirmNode.setConfirms(confirms);
         }
-
 
         return confirmNode;
     }
