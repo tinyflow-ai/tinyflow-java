@@ -71,6 +71,8 @@ public abstract class BaseNodeParser implements NodeParser {
             parameter.setEnums(parameterJsonObject.getJSONArray("enums"));
             parameter.setFormType(parameterJsonObject.getString("formType"));
             parameter.setFormLabel(parameterJsonObject.getString("formLabel"));
+            parameter.setFormPlaceholder(parameterJsonObject.getString("formPlaceholder"));
+            parameter.setFormAttrs(parameterJsonObject.getString("formAttrs"));
             parameter.setFormDescription(parameterJsonObject.getString("formDescription"));
 
             JSONArray children = parameterJsonObject.getJSONArray("children");
