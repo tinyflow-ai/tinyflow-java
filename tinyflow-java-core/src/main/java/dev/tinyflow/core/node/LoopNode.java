@@ -48,6 +48,14 @@ public class LoopNode extends BaseNode {
     protected Map<String, Object> execute(Chain chain) {
         loopChain.setStatus(ChainStatus.READY);
 
+        // 复制父流程的参数
+        loopChain.setEventListeners(chain.getEventListeners());
+        loopChain.setOutputListeners(chain.getOutputListeners());
+        loopChain.setChainErrorListeners(chain.getChainErrorListeners());
+        loopChain.setNodeErrorListeners(chain.getNodeErrorListeners());
+        loopChain.setSuspendNodes(chain.getSuspendNodes());
+
+
         Map<String, Object> executeResult = new HashMap<>();
         Map<String, Object> chainMemory = chain.getMemory().getAll();
 
