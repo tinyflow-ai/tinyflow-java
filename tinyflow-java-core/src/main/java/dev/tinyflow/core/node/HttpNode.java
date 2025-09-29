@@ -219,7 +219,7 @@ public class HttpNode extends BaseNode {
 
     private RequestBody getRequestBody(Chain chain, Map<String, Object> formatArgs) {
         if ("json".equals(bodyType)) {
-            String bodyJsonString = TextPromptTemplate.of(bodyJson).formatToString(formatArgs);
+            String bodyJsonString = TextPromptTemplate.of(bodyJson).formatToString(formatArgs, true);
             JSONObject jsonObject = JSON.parseObject(bodyJsonString);
             return RequestBody.create(jsonObject.toString(), MediaType.parse("application/json"));
         }
