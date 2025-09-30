@@ -15,6 +15,7 @@
  */
 package dev.tinyflow.core.parser.impl;
 
+import com.agentsflex.core.chain.Parameter;
 import com.agentsflex.core.chain.node.BaseNode;
 import com.agentsflex.core.chain.node.LlmNode;
 import com.agentsflex.core.llm.ChatOptions;
@@ -23,6 +24,8 @@ import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.parser.BaseNodeParser;
 import dev.tinyflow.core.provider.LlmProvider;
+
+import java.util.List;
 
 public class LlmNodeParser extends BaseNodeParser {
 
@@ -45,6 +48,10 @@ public class LlmNodeParser extends BaseNodeParser {
             Llm llm = llmProvider.getLlm(data.getString("llmId"));
             llmNode.setLlm(llm);
         }
+
+        // 支持图片识别输入
+        List<Parameter> files = getParameters(data, "images");
+        llmNode.setImages(files);
 
         return llmNode;
     }
