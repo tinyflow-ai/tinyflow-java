@@ -22,15 +22,13 @@ import dev.tinyflow.core.util.StringUtil;
 public class Tinyflow {
 
     private String data;
-    private ChainParser chainParser;
+    private boolean addDefaultNodeParsers = true;
+    private ChainParser chainParser = new ChainParser();
 
     public Tinyflow() {
-        this.chainParser = new ChainParser();
-        this.chainParser.addAllParsers(TinyflowConfig.getDefaultNodeParsers());
     }
 
     public Tinyflow(String flowData) {
-        this();
         this.data = flowData;
     }
 
@@ -50,9 +48,20 @@ public class Tinyflow {
         this.chainParser = chainParser;
     }
 
+    public boolean isAddDefaultNodeParsers() {
+        return addDefaultNodeParsers;
+    }
+
+    public void setAddDefaultNodeParsers(boolean addDefaultNodeParsers) {
+        this.addDefaultNodeParsers = addDefaultNodeParsers;
+    }
+
     public Chain toChain() {
         if (StringUtil.noText(data)) {
             throw new IllegalStateException("data is empty");
+        }
+        if (addDefaultNodeParsers) {
+            chainParser.addAllParsers(TinyflowConfig.getDefaultNodeParsers());
         }
         return chainParser.parse(this);
     }

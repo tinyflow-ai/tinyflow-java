@@ -32,4 +32,8 @@ public class TinyflowConfig {
     public static void registerDefaultNodeParser(String type, NodeParser<?> nodeParser) {
         defaultNodeParsers.put(type, nodeParser);
     }
+
+    public static void unregisterDefaultNodeParser(String type) {
+        defaultNodeParsers.remove(type);
+    }
 }
