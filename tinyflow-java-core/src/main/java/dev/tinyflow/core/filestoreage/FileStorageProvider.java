@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.provider;
+package dev.tinyflow.core.filestoreage;
 
-import dev.tinyflow.core.knowledge.Knowledge;
 
-public interface KnowledgeProvider {
-    Knowledge getKnowledge(Object id);
+public interface FileStorageProvider {
+    FileStorage getFileStorage();
 }

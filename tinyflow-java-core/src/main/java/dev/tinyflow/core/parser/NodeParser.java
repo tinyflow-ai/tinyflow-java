@@ -15,12 +15,12 @@
  */
 package dev.tinyflow.core.parser;
 
-import com.agentsflex.core.chain.ChainNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
+import dev.tinyflow.core.chain.ChainNode;
 
-public interface NodeParser {
+public interface NodeParser<T extends ChainNode> {
 
-    ChainNode parse(JSONObject nodeJSONObject, Tinyflow tinyflow);
+    T parse(JSONObject nodeJSONObject, Tinyflow tinyflow);
 
 }

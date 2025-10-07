@@ -15,22 +15,21 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.chain.Parameter;
-import com.agentsflex.core.chain.node.BaseNode;
+import dev.tinyflow.core.chain.Chain;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
+import dev.tinyflow.core.chain.Parameter;
 import dev.tinyflow.core.node.LoopNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
 import java.util.List;
 
-public class LoopNodeParser extends BaseNodeParser {
+public class LoopNodeParser extends BaseNodeParser<LoopNode> {
 
     @Override
-    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public LoopNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         LoopNode loopNode = new LoopNode();
         List<Parameter> loopVars = getParameters(data, "loopVars");
         if (!loopVars.isEmpty()) {

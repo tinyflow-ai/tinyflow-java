@@ -15,17 +15,15 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.node.BaseNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.SearchEngineNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
-import dev.tinyflow.core.searchengine.SearchEngine;
 
-public class SearchEngineNodeParser extends BaseNodeParser {
+public class SearchEngineNodeParser extends BaseNodeParser<SearchEngineNode> {
 
     @Override
-    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public SearchEngineNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         SearchEngineNode searchEngineNode = new SearchEngineNode();
         searchEngineNode.setKeyword(data.getString("keyword"));
         searchEngineNode.setLimit(data.getString("limit"));
@@ -33,10 +31,10 @@ public class SearchEngineNodeParser extends BaseNodeParser {
         String engine = data.getString("engine");
         searchEngineNode.setEngine(engine);
 
-        if (tinyflow.getSearchEngineProvider() != null) {
-            SearchEngine searchEngine = tinyflow.getSearchEngineProvider().getSearchEngine(engine);
-            searchEngineNode.setSearchEngine(searchEngine);
-        }
+//        if (tinyflow.getSearchEngineProvider() != null) {
+//            SearchEngine searchEngine = tinyflow.getSearchEngineProvider().getSearchEngine(engine);
+//            searchEngineNode.setSearchEngine(searchEngine);
+//        }
 
         return searchEngineNode;
     }

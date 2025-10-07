@@ -15,55 +15,58 @@
  */
 package dev.tinyflow.core.parser;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.chain.ChainEdge;
-import com.agentsflex.core.chain.ChainNode;
-import com.agentsflex.core.chain.JsCodeCondition;
-import com.agentsflex.core.util.CollectionUtil;
-import com.agentsflex.core.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
+import dev.tinyflow.core.chain.Chain;
+import dev.tinyflow.core.chain.ChainEdge;
+import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.JsCodeCondition;
 import dev.tinyflow.core.parser.impl.*;
+import dev.tinyflow.core.util.CollectionUtil;
+import dev.tinyflow.core.util.StringUtil;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class ChainParser {
 
-    private Map<String, NodeParser> nodeParserMap = new HashMap<>();
+    private Map<String, NodeParser<?>> nodeParserMap = new HashMap<>();
 
     public ChainParser() {
-
-        initDefaultParsers();
+//        initDefaultParsers();
     }
 
-    private void initDefaultParsers() {
-        nodeParserMap.put("startNode", new StartNodeParser());
-        nodeParserMap.put("codeNode", new CodeNodeParser());
-        nodeParserMap.put("confirmNode", new ConfirmNodeParser());
+//    private void initDefaultParsers() {
+//        nodeParserMap.put("startNode", new StartNodeParser());
+//        nodeParserMap.put("codeNode", new CodeNodeParser());
+//        nodeParserMap.put("confirmNode", new ConfirmNodeParser());
+//
+//        nodeParserMap.put("httpNode", new HttpNodeParser());
+//        nodeParserMap.put("knowledgeNode", new KnowledgeNodeParser());
+//        nodeParserMap.put("loopNode", new LoopNodeParser());
+//        nodeParserMap.put("searchEngineNode", new SearchEngineNodeParser());
+//        nodeParserMap.put("templateNode", new TemplateNodeParser());
+//
+//        nodeParserMap.put("endNode", new EndNodeParser());
+//        nodeParserMap.put("llmNode", new LlmNodeParser());
+//    }
 
-        nodeParserMap.put("httpNode", new HttpNodeParser());
-        nodeParserMap.put("knowledgeNode", new KnowledgeNodeParser());
-        nodeParserMap.put("loopNode", new LoopNodeParser());
-        nodeParserMap.put("searchEngineNode", new SearchEngineNodeParser());
-        nodeParserMap.put("templateNode", new TemplateNodeParser());
-
-        nodeParserMap.put("endNode", new EndNodeParser());
-        nodeParserMap.put("llmNode", new LlmNodeParser());
-    }
-
-    public Map<String, NodeParser> getNodeParserMap() {
+    public Map<String, NodeParser<?>> getNodeParserMap() {
         return nodeParserMap;
     }
 
-    public void setNodeParserMap(Map<String, NodeParser> nodeParserMap) {
+    public void setNodeParserMap(Map<String, NodeParser<?>> nodeParserMap) {
         this.nodeParserMap = nodeParserMap;
     }
 
-    public void addNodeParser(String type, NodeParser nodeParser) {
+    public void addNodeParser(String type, NodeParser<?> nodeParser) {
         this.nodeParserMap.put(type, nodeParser);
+    }
+
+    public void removeNodeParser(String type) {
+        this.nodeParserMap.remove(type);
     }
 
     public Chain parse(Tinyflow tinyflow) {
@@ -153,5 +156,9 @@ public class ChainParser {
             edge.setCondition(new JsCodeCondition(conditionString.trim()));
         }
         return edge;
+    }
+
+    public void addAllParsers(Map<String, NodeParser<?>> defaultNodeParsers) {
+        this.nodeParserMap.putAll(defaultNodeParsers);
     }
 }

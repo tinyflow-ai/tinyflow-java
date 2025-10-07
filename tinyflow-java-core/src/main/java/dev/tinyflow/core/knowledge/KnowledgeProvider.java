@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.provider;
+package dev.tinyflow.core.knowledge;
 
-import dev.tinyflow.core.searchengine.SearchEngine;
-
-public interface SearchEngineProvider {
-    SearchEngine getSearchEngine(Object id);
+public interface KnowledgeProvider {
+    Knowledge getKnowledge(Object id);
 }

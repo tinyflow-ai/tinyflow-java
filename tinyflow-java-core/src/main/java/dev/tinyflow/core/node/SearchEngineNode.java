@@ -15,13 +15,12 @@
  */
 package dev.tinyflow.core.node;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.chain.node.BaseNode;
-import com.agentsflex.core.document.Document;
-import com.agentsflex.core.prompt.template.TextPromptTemplate;
-import com.agentsflex.core.util.Maps;
-import com.agentsflex.core.util.StringUtil;
+import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.searchengine.SearchEngine;
+import dev.tinyflow.core.searchengine.SearchEngineManager;
+import dev.tinyflow.core.util.Maps;
+import dev.tinyflow.core.util.StringUtil;
+import dev.tinyflow.core.util.TextTemplate;
 import org.slf4j.Logger;
 
 import java.util.Collections;
@@ -32,9 +31,7 @@ public class SearchEngineNode extends BaseNode {
 
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(SearchEngineNode.class);
 
-
     private String engine;
-    private SearchEngine searchEngine;
     private String limit;
     private String keyword;
 
@@ -44,14 +41,6 @@ public class SearchEngineNode extends BaseNode {
 
     public void setEngine(String engine) {
         this.engine = engine;
-    }
-
-    public SearchEngine getSearchEngine() {
-        return searchEngine;
-    }
-
-    public void setSearchEngine(SearchEngine searchEngine) {
-        this.searchEngine = searchEngine;
     }
 
     public String getLimit() {
@@ -73,8 +62,8 @@ public class SearchEngineNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
         Map<String, Object> argsMap = chain.getParameterValues(this);
-        String realKeyword = TextPromptTemplate.of(keyword).formatToString(argsMap);
-        String realLimitString = TextPromptTemplate.of(limit).formatToString(argsMap);
+        String realKeyword = TextTemplate.of(keyword).formatToString(argsMap);
+        String realLimitString = TextTemplate.of(limit).formatToString(argsMap);
         int realLimit = 10;
         if (StringUtil.hasText(realLimitString)) {
             try {
@@ -84,13 +73,14 @@ public class SearchEngineNode extends BaseNode {
             }
         }
 
+        SearchEngine searchEngine = SearchEngineManager.getInstance().geSearchEngine(engine);
+
         if (searchEngine == null) {
             return Collections.emptyMap();
         }
 
-        List<Document> result = searchEngine.search(realKeyword, realLimit, this, chain);
+        List<Map<String, Object>> result = searchEngine.search(realKeyword, realLimit, this, chain);
         return Maps.of("documents", result);
-
     }
 
 
@@ -98,7 +88,6 @@ public class SearchEngineNode extends BaseNode {
     public String toString() {
         return "SearchEngineNode{" +
                 "engine='" + engine + '\'' +
-                ", searchEngine=" + searchEngine +
                 ", limit='" + limit + '\'' +
                 ", keyword='" + keyword + '\'' +
                 ", description='" + description + '\'' +

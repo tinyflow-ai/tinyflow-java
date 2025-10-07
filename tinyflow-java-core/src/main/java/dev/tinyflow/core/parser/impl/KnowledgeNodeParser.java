@@ -15,26 +15,19 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.node.BaseNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.KnowledgeNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
-import dev.tinyflow.core.provider.KnowledgeProvider;
 
-public class KnowledgeNodeParser extends BaseNodeParser {
+public class KnowledgeNodeParser extends BaseNodeParser<KnowledgeNode> {
 
     @Override
-    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public KnowledgeNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         KnowledgeNode knowledgeNode = new KnowledgeNode();
         knowledgeNode.setKnowledgeId(data.get("knowledgeId"));
         knowledgeNode.setLimit(data.getString("limit"));
         knowledgeNode.setKeyword(data.getString("keyword"));
-
-        KnowledgeProvider knowledgeProvider = tinyflow.getKnowledgeProvider();
-        if (knowledgeProvider != null) {
-            knowledgeNode.setKnowledge(knowledgeProvider.getKnowledge(data.get("knowledgeId")));
-        }
 
         return knowledgeNode;
     }

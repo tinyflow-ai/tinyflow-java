@@ -15,16 +15,15 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.node.BaseNode;
-import com.agentsflex.core.chain.node.StartNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
+import dev.tinyflow.core.node.StartNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
-public class StartNodeParser extends BaseNodeParser {
+public class StartNodeParser extends BaseNodeParser<StartNode> {
 
     @Override
-    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public StartNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         return new StartNode();
     }
 }

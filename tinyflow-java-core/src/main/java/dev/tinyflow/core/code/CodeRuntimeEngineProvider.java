@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.provider;
+package dev.tinyflow.core.code;
 
-import com.agentsflex.core.llm.Llm;
-
-public interface LlmProvider {
-
-    Llm getLlm(Object id);
+public interface CodeRuntimeEngineProvider {
+    CodeRuntimeEngine getCodeRuntimeEngine(Object engineId);
 }

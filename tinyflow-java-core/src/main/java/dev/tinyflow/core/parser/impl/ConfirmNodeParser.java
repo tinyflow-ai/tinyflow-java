@@ -15,19 +15,18 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.Parameter;
-import com.agentsflex.core.chain.node.BaseNode;
-import com.agentsflex.core.chain.node.ConfirmNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
+import dev.tinyflow.core.chain.Parameter;
+import dev.tinyflow.core.node.ConfirmNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
 import java.util.List;
 
-public class ConfirmNodeParser extends BaseNodeParser {
+public class ConfirmNodeParser extends BaseNodeParser<ConfirmNode> {
 
     @Override
-    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public ConfirmNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
 
         ConfirmNode confirmNode = new ConfirmNode();
         confirmNode.setMessage(data.getString("message"));

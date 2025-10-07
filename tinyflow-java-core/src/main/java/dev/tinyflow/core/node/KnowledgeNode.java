@@ -15,13 +15,12 @@
  */
 package dev.tinyflow.core.node;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.chain.node.BaseNode;
-import com.agentsflex.core.document.Document;
-import com.agentsflex.core.prompt.template.TextPromptTemplate;
-import com.agentsflex.core.util.Maps;
-import com.agentsflex.core.util.StringUtil;
+import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.knowledge.Knowledge;
+import dev.tinyflow.core.knowledge.KnowledgeManager;
+import dev.tinyflow.core.util.Maps;
+import dev.tinyflow.core.util.StringUtil;
+import dev.tinyflow.core.util.TextTemplate;
 import org.slf4j.Logger;
 
 import java.util.Collections;
@@ -33,7 +32,6 @@ public class KnowledgeNode extends BaseNode {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(KnowledgeNode.class);
 
     private Object knowledgeId;
-    private Knowledge knowledge;
     private String keyword;
     private String limit;
 
@@ -43,14 +41,6 @@ public class KnowledgeNode extends BaseNode {
 
     public void setKnowledgeId(Object knowledgeId) {
         this.knowledgeId = knowledgeId;
-    }
-
-    public Knowledge getKnowledge() {
-        return knowledge;
-    }
-
-    public void setKnowledge(Knowledge knowledge) {
-        this.knowledge = knowledge;
     }
 
     public String getKeyword() {
@@ -72,8 +62,8 @@ public class KnowledgeNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
         Map<String, Object> argsMap = chain.getParameterValues(this);
-        String realKeyword = TextPromptTemplate.of(keyword).formatToString(argsMap);
-        String realLimitString = TextPromptTemplate.of(limit).formatToString(argsMap);
+        String realKeyword = TextTemplate.of(keyword).formatToString(argsMap);
+        String realLimitString = TextTemplate.of(limit).formatToString(argsMap);
         int realLimit = 10;
         if (StringUtil.hasText(realLimitString)) {
             try {
@@ -83,11 +73,13 @@ public class KnowledgeNode extends BaseNode {
             }
         }
 
+        Knowledge knowledge = KnowledgeManager.getInstance().getKnowledge(knowledgeId);
+
         if (knowledge == null) {
             return Collections.emptyMap();
         }
 
-        List<Document> result = knowledge.search(realKeyword, realLimit, this, chain);
+        List<Map<String, Object>> result = knowledge.search(realKeyword, realLimit, this, chain);
         return Maps.of("documents", result);
     }
 
@@ -95,7 +87,6 @@ public class KnowledgeNode extends BaseNode {
     public String toString() {
         return "KnowledgeNode{" +
                 "knowledgeId=" + knowledgeId +
-                ", knowledge=" + knowledge +
                 ", keyword='" + keyword + '\'' +
                 ", limit='" + limit + '\'' +
                 ", description='" + description + '\'' +

@@ -44,6 +44,10 @@
 
     <modules>
         <module>tinyflow-java-core</module>
+        <module>tinyflow-java-springai</module>
+        <module>tinyflow-java-langchain4j</module>
+        <module>tinyflow-java-agentsflex</module>
+        <module>tinyflow-java-nodes</module>
     </modules>
 
     <properties>

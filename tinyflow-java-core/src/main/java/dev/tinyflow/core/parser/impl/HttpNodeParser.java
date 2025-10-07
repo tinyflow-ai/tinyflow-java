@@ -15,26 +15,25 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.Parameter;
-import com.agentsflex.core.chain.node.BaseNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
+import dev.tinyflow.core.chain.Parameter;
 import dev.tinyflow.core.node.HttpNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
 import java.util.List;
 
-public class HttpNodeParser extends BaseNodeParser {
+public class HttpNodeParser extends BaseNodeParser<HttpNode> {
 
     @Override
-    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public HttpNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         HttpNode httpNode = new HttpNode();
         httpNode.setUrl(data.getString("url"));
         httpNode.setMethod(data.getString("method"));
         httpNode.setBodyJson(data.getString("bodyJson"));
         httpNode.setRawBody(data.getString("rawBody"));
         httpNode.setBodyType(data.getString("bodyType"));
-        httpNode.setFileStorage(tinyflow.getFileStorage());
+//        httpNode.setFileStorage(tinyflow.getFileStorage());
 
         List<Parameter> headers = getParameters(data, "headers");
         httpNode.setHeaders(headers);

@@ -15,16 +15,15 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.agentsflex.core.chain.node.BaseNode;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.TemplateNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
-public class TemplateNodeParser extends BaseNodeParser {
+public class TemplateNodeParser extends BaseNodeParser<TemplateNode> {
 
     @Override
-    public BaseNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public TemplateNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
         TemplateNode templateNode = new TemplateNode();
         templateNode.setTemplate(data.getString("template"));
         return templateNode;

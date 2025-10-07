@@ -15,16 +15,16 @@
  */
 package dev.tinyflow.core.node;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.chain.DataType;
-import com.agentsflex.core.chain.Parameter;
-import com.agentsflex.core.chain.node.BaseNode;
-import com.agentsflex.core.llm.client.OkHttpClientUtil;
-import com.agentsflex.core.prompt.template.TextPromptTemplate;
-import com.agentsflex.core.util.StringUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import dev.tinyflow.core.file.FileStorage;
+import dev.tinyflow.core.chain.Chain;
+import dev.tinyflow.core.chain.DataType;
+import dev.tinyflow.core.chain.Parameter;
+import dev.tinyflow.core.filestoreage.FileStorage;
+import dev.tinyflow.core.filestoreage.FileStorageManager;
+import dev.tinyflow.core.util.OkHttpClientUtil;
+import dev.tinyflow.core.util.StringUtil;
+import dev.tinyflow.core.util.TextTemplate;
 import okhttp3.*;
 
 import java.io.IOException;
@@ -47,7 +47,6 @@ public class HttpNode extends BaseNode {
     private List<Parameter> formUrlencoded;
     private String bodyJson;
     private String rawBody;
-    private FileStorage fileStorage;
 
     public static String mapToQueryString(Map<String, Object> map) {
         if (map == null || map.isEmpty()) {
@@ -143,19 +142,11 @@ public class HttpNode extends BaseNode {
         this.rawBody = rawBody;
     }
 
-    public FileStorage getFileStorage() {
-        return fileStorage;
-    }
-
-    public void setFileStorage(FileStorage fileStorage) {
-        this.fileStorage = fileStorage;
-    }
-
     @Override
     protected Map<String, Object> execute(Chain chain) {
 
         Map<String, Object> argsMap = chain.getParameterValues(this);
-        String newUrl = TextPromptTemplate.of(url).formatToString(argsMap);
+        String newUrl = TextTemplate.of(url).formatToString(argsMap);
 
         Request.Builder reqBuilder = new Request.Builder().url(newUrl);
 
@@ -205,7 +196,8 @@ public class HttpNode extends BaseNode {
                 result.put("body", JSON.parse(body.string()));
             } else if (bodyDataType == DataType.File) {
                 try (InputStream stream = body.byteStream()) {
-                    String fileUrl = fileStorage.saveFile(stream, responseHeaders);
+                    FileStorage fileStorage = FileStorageManager.getInstance().getFileStorage();
+                    String fileUrl = fileStorage.saveFile(stream, responseHeaders, this, chain);
                     result.put("body", fileUrl);
                 }
             } else {
@@ -219,7 +211,7 @@ public class HttpNode extends BaseNode {
 
     private RequestBody getRequestBody(Chain chain, Map<String, Object> formatArgs) {
         if ("json".equals(bodyType)) {
-            String bodyJsonString = TextPromptTemplate.of(bodyJson).formatToString(formatArgs, true);
+            String bodyJsonString = TextTemplate.of(bodyJson).formatToString(formatArgs, true);
             JSONObject jsonObject = JSON.parseObject(bodyJsonString);
             return RequestBody.create(jsonObject.toString(), MediaType.parse("application/json"));
         }
@@ -256,7 +248,7 @@ public class HttpNode extends BaseNode {
         }
 
         if ("raw".equals(bodyType)) {
-            String rawBodyString = TextPromptTemplate.of(rawBody).formatToString(formatArgs);
+            String rawBodyString = TextTemplate.of(rawBody).formatToString(formatArgs);
             return RequestBody.create(rawBodyString, null);
         }
         //none

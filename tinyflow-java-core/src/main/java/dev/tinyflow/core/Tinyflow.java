@@ -15,27 +15,22 @@
  */
 package dev.tinyflow.core;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.util.StringUtil;
-import dev.tinyflow.core.file.FileStorage;
+import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.parser.ChainParser;
-import dev.tinyflow.core.provider.KnowledgeProvider;
-import dev.tinyflow.core.provider.LlmProvider;
-import dev.tinyflow.core.provider.SearchEngineProvider;
+import dev.tinyflow.core.util.StringUtil;
 
 public class Tinyflow {
 
     private String data;
-    private LlmProvider llmProvider;
-    private KnowledgeProvider knowledgeProvider;
-    private SearchEngineProvider searchEngineProvider;
-    private FileStorage fileStorage;
-    private ChainParser chainParser = new ChainParser();
+    private ChainParser chainParser;
 
     public Tinyflow() {
+        this.chainParser = new ChainParser();
+        this.chainParser.addAllParsers(TinyflowConfig.getDefaultNodeParsers());
     }
 
     public Tinyflow(String flowData) {
+        this();
         this.data = flowData;
     }
 
@@ -47,44 +42,12 @@ public class Tinyflow {
         this.data = data;
     }
 
-    public LlmProvider getLlmProvider() {
-        return llmProvider;
-    }
-
-    public void setLlmProvider(LlmProvider llmProvider) {
-        this.llmProvider = llmProvider;
-    }
-
-    public KnowledgeProvider getKnowledgeProvider() {
-        return knowledgeProvider;
-    }
-
-    public void setKnowledgeProvider(KnowledgeProvider knowledgeProvider) {
-        this.knowledgeProvider = knowledgeProvider;
-    }
-
     public ChainParser getChainParser() {
         return chainParser;
     }
 
     public void setChainParser(ChainParser chainParser) {
         this.chainParser = chainParser;
-    }
-
-    public SearchEngineProvider getSearchEngineProvider() {
-        return searchEngineProvider;
-    }
-
-    public void setSearchEngineProvider(SearchEngineProvider searchEngineProvider) {
-        this.searchEngineProvider = searchEngineProvider;
-    }
-
-    public FileStorage getFileStorage() {
-        return fileStorage;
-    }
-
-    public void setFileStorage(FileStorage fileStorage) {
-        this.fileStorage = fileStorage;
     }
 
     public Chain toChain() {

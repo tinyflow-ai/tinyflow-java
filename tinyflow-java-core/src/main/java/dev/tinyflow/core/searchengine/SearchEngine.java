@@ -15,14 +15,14 @@
  */
 package dev.tinyflow.core.searchengine;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.document.Document;
+import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.node.SearchEngineNode;
 
 import java.util.List;
+import java.util.Map;
 
 public interface SearchEngine {
 
-    List<Document> search(String keyword, int limit, SearchEngineNode searchEngineNode, Chain chain);
+    List<Map<String, Object>> search(String keyword, int limit, SearchEngineNode searchEngineNode, Chain chain);
 
 }

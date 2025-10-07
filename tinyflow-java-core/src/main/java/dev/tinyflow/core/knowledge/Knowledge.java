@@ -15,14 +15,12 @@
  */
 package dev.tinyflow.core.knowledge;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.document.Document;
+import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.node.KnowledgeNode;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Knowledge {
-
-    List<Document> search(String keyword, int limit, KnowledgeNode knowledgeNode, Chain chain);
-
+    List<Map<String, Object>> search(String keyword, int limit, KnowledgeNode knowledgeNode, Chain chain);
 }

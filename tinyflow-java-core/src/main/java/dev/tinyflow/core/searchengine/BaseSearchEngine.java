@@ -15,7 +15,6 @@
  */
 package dev.tinyflow.core.searchengine;
 
-import com.agentsflex.core.llm.client.HttpClient;
 
 public abstract class BaseSearchEngine implements SearchEngine {
 
@@ -24,7 +23,6 @@ public abstract class BaseSearchEngine implements SearchEngine {
     protected String keyword;
     protected String searchCount;
     protected String otherProperties;
-    protected HttpClient httpClient = new HttpClient();
 
     public String getApiUrl() {
         return apiUrl;
@@ -66,11 +64,4 @@ public abstract class BaseSearchEngine implements SearchEngine {
         this.otherProperties = otherProperties;
     }
 
-    public HttpClient getHttpClient() {
-        return httpClient;
-    }
-
-    public void setHttpClient(HttpClient httpClient) {
-        this.httpClient = httpClient;
-    }
 }

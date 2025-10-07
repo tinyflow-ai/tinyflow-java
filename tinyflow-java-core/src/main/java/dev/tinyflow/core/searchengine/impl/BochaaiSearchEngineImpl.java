@@ -15,28 +15,36 @@
  */
 package dev.tinyflow.core.searchengine.impl;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.document.Document;
-import com.agentsflex.core.util.Maps;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.node.SearchEngineNode;
 import dev.tinyflow.core.searchengine.BaseSearchEngine;
+import dev.tinyflow.core.util.Maps;
+import dev.tinyflow.core.util.OKHttpClientWrapper;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class BochaaiSearchEngineImpl extends BaseSearchEngine {
 
     private static final String DEFAULT_API_URL = "https://api.bochaai.com/v1/ai-search";
+    private OKHttpClientWrapper okHttpClientWrapper = new OKHttpClientWrapper();
 
     public BochaaiSearchEngineImpl() {
         setApiUrl(DEFAULT_API_URL);
     }
 
+    public OKHttpClientWrapper getOkHttpClientWrapper() {
+        return okHttpClientWrapper;
+    }
+
+    public void setOkHttpClientWrapper(OKHttpClientWrapper okHttpClientWrapper) {
+        this.okHttpClientWrapper = okHttpClientWrapper;
+    }
 
     @Override
-    public List<Document> search(String keyword, int limit, SearchEngineNode searchEngineNode, Chain chain) {
+    public List<Map<String, Object>> search(String keyword, int limit, SearchEngineNode searchEngineNode, Chain chain) {
 
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", "Bearer " + apiKey);
@@ -49,8 +57,18 @@ public class BochaaiSearchEngineImpl extends BaseSearchEngine {
                 .set("stream", false)
                 .toJSON();
 
-        String responseString = httpClient.post(apiUrl, headers, jsonString);
 
+        String responseString = okHttpClientWrapper.post(apiUrl, headers, jsonString);
+        JSONObject object = JSON.parseObject(responseString);
+
+        if (200 == object.getIntValue("code")) {
+            JSONArray messages = object.getJSONArray("messages");
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (int i = 0; i < messages.size(); i++) {
+                result.add(messages.getJSONObject(i));
+            }
+            return result;
+        }
 
         return Collections.emptyList();
     }

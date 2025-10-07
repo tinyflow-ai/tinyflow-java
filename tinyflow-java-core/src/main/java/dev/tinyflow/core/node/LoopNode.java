@@ -15,11 +15,11 @@
  */
 package dev.tinyflow.core.node;
 
-import com.agentsflex.core.chain.Chain;
-import com.agentsflex.core.chain.ChainStatus;
-import com.agentsflex.core.chain.Parameter;
-import com.agentsflex.core.chain.RefType;
-import com.agentsflex.core.chain.node.BaseNode;
+
+import dev.tinyflow.core.chain.Chain;
+import dev.tinyflow.core.chain.ChainStatus;
+import dev.tinyflow.core.chain.Parameter;
+import dev.tinyflow.core.chain.RefType;
 
 import java.util.*;
 
@@ -57,7 +57,7 @@ public class LoopNode extends BaseNode {
 
 
         Map<String, Object> executeResult = new HashMap<>();
-        Map<String, Object> chainMemory = chain.getMemory().getAll();
+        Map<String, Object> chainMemory = chain.getMemory();
 
         Map<String, Object> loopVars = chain.getParameterValues(this, Collections.singletonList(loopVar));
         Object loopValue = loopVars.get(loopVar.getName());
