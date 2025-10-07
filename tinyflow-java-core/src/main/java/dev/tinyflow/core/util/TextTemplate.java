@@ -16,7 +16,6 @@
 package dev.tinyflow.core.util;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONPath;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -165,7 +164,7 @@ public class TextTemplate {
      */
     private Object getValueByJsonPath(Map<String, Object> root, String path, boolean escapeJson) {
         try {
-            Object value = JSONPath.eval(root, "$." + path);
+            Object value = MapUtil.getByPath(root, path);
             if (escapeJson && value instanceof String) {
                 return escapeJsonString(value.toString());
             }

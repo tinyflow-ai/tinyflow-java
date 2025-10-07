@@ -16,10 +16,16 @@
 package dev.tinyflow.core.util;
 
 
-import java.util.Map;
+import com.alibaba.fastjson.JSONPath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
 import java.util.function.Function;
 
 public class MapUtil {
+    private static final Logger log = LoggerFactory.getLogger(MapUtil.class);
+
     private static final boolean IS_JDK8 = (8 == getJvmVersion0());
 
     private MapUtil() {
@@ -66,6 +72,59 @@ public class MapUtil {
             }
         }
         return map.computeIfAbsent(key, mappingFunction);
+    }
+
+    public static Object getByPath(Map<String, Object> from, String keyOrPath) {
+        if (StringUtil.noText(keyOrPath)) {
+            return null;
+        }
+
+        Object result = from.get(keyOrPath);
+        if (result != null) {
+            return result;
+        }
+
+        List<String> parts = Arrays.asList(keyOrPath.split("\\."));
+        if (parts.isEmpty()) {
+            return null;
+        }
+
+        int matchedLevels = 0;
+        for (int i = parts.size(); i > 0; i--) {
+            String tryKey = String.join(".", parts.subList(0, i));
+            Object tempResult = from.get(tryKey);
+            if (tempResult != null) {
+                result = tempResult;
+                matchedLevels = i;
+                break;
+            }
+        }
+
+        if (result == null) {
+            return null;
+        }
+
+        if (result instanceof Collection) {
+            List<Object> results = new ArrayList<>();
+            for (Object item : ((Collection<?>) result)) {
+                results.add(getResult(parts, matchedLevels, item));
+            }
+            return results;
+        }
+
+        return getResult(parts, matchedLevels, result);
+    }
+
+    private static Object getResult(List<String> parts, int matchedLevels, Object result) {
+        List<String> remainingParts = parts.subList(matchedLevels, parts.size());
+        String jsonPath = "$." + String.join(".", remainingParts);
+        try {
+            return JSONPath.eval(result, jsonPath);
+        } catch (Exception e) {
+            log.error(e.toString(), e);
+        }
+
+        return null;
     }
 
 }

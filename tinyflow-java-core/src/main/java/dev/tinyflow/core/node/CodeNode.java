@@ -19,7 +19,9 @@ import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.code.CodeRuntimeEngine;
 import dev.tinyflow.core.code.CodeRuntimeEngineManager;
 import dev.tinyflow.core.util.StringUtil;
+import dev.tinyflow.core.util.TextTemplate;
 
+import java.util.Arrays;
 import java.util.Map;
 
 public class CodeNode extends BaseNode {
@@ -48,8 +50,10 @@ public class CodeNode extends BaseNode {
             throw new IllegalStateException("Code is null or blank.");
         }
 
+        String newCode = TextTemplate.of(code).formatToString(Arrays.asList(chain.getParameterValues(this), chain.getEnvMap()));
+
         CodeRuntimeEngine codeRuntimeEngine = CodeRuntimeEngineManager.getInstance().getCodeRuntimeEngine(this.engine);
-        return codeRuntimeEngine.execute(this.code, this, chain);
+        return codeRuntimeEngine.execute(newCode, this, chain);
     }
 
 }

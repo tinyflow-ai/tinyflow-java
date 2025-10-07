@@ -16,12 +16,9 @@
 package dev.tinyflow.core.chain;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONPath;
 import dev.tinyflow.core.chain.event.*;
 import dev.tinyflow.core.chain.listener.*;
 import dev.tinyflow.core.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +28,6 @@ import java.util.stream.Collectors;
 
 
 public class Chain extends ChainNode {
-    private static final Logger log = LoggerFactory.getLogger(Chain.class);
 
     protected List<ChainNode> nodes;
     protected List<ChainEdge> edges;
@@ -280,64 +276,9 @@ public class Chain extends ChainNode {
 
 
     public Object get(String key) {
-        Object result = get(key, this.memory);
-        return result != null ? result : get(key, this.environment);
+        Object result = MapUtil.getByPath(this.memory, key);
+        return result != null ? result : MapUtil.getByPath(this.environment, key);
     }
-
-
-    public Object get(String key, Map<String, Object> fromSource) {
-        if (StringUtil.noText(key)) {
-            return null;
-        }
-
-        Object result = fromSource.get(key);
-        if (result != null) {
-            return result;
-        }
-
-        List<String> parts = Arrays.asList(key.split("\\."));
-        if (parts.isEmpty()) {
-            return null;
-        }
-
-        int matchedLevels = 0;
-        for (int i = parts.size(); i > 0; i--) {
-            String tryKey = String.join(".", parts.subList(0, i));
-            Object tempResult = fromSource.get(tryKey);
-            if (tempResult != null) {
-                result = tempResult;
-                matchedLevels = i;
-                break;
-            }
-        }
-
-        if (result == null) {
-            return null;
-        }
-
-        if (result instanceof Collection) {
-            List<Object> results = new ArrayList<>();
-            for (Object item : ((Collection<?>) result)) {
-                results.add(getResult(parts, matchedLevels, item));
-            }
-            return results;
-        }
-
-        return getResult(parts, matchedLevels, result);
-    }
-
-    private static Object getResult(List<String> parts, int matchedLevels, Object result) {
-        List<String> remainingParts = parts.subList(matchedLevels, parts.size());
-        String jsonPath = "$." + String.join(".", remainingParts);
-        try {
-            return JSONPath.eval(result, jsonPath);
-        } catch (Exception e) {
-            log.error(e.toString(), e);
-        }
-
-        return null;
-    }
-
 
     @Override
     protected Map<String, Object> execute(Chain parent) {
@@ -804,6 +745,9 @@ public class Chain extends ChainNode {
 
 
     private void notifyError(Throwable error) {
+        if (chainErrorListeners == null || chainErrorListeners.isEmpty()) {
+            throw new ChainException(error);
+        }
         for (ChainErrorListener errorListener : chainErrorListeners) {
             errorListener.onError(error, this);
         }
