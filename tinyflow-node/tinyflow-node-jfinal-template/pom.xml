@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>dev.tinyflow</groupId>
-        <artifactId>tinyflow-java</artifactId>
+        <artifactId>tinyflow-node</artifactId>
         <version>1.2.3</version>
     </parent>
 
-    <name>tinyflow-java-springai</name>
-    <artifactId>tinyflow-java-springai</artifactId>
+    <name>tinyflow-node-jfinal-template</name>
+    <artifactId>tinyflow-node-jfinal-template</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

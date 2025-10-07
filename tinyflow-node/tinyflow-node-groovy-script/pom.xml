@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>dev.tinyflow</groupId>
-        <artifactId>tinyflow-java</artifactId>
+        <artifactId>tinyflow-node</artifactId>
         <version>1.2.3</version>
     </parent>
 
-    <name>tinyflow-java-langchain4j</name>
-    <artifactId>tinyflow-java-langchain4j</artifactId>
+    <name>tinyflow-node-groovy-script</name>
+    <artifactId>tinyflow-node-groovy-script</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

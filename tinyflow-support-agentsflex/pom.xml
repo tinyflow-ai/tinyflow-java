@@ -8,20 +8,29 @@
         <artifactId>tinyflow-java</artifactId>
         <version>1.2.3</version>
     </parent>
-    <packaging>pom</packaging>
 
-    <name>tinyflow-java-nodes</name>
-    <modules>
-        <module>tinyflow-java-node-jfinal-template</module>
-        <module>tinyflow-java-node-groovy-script</module>
-        <module>tinyflow-java-node-qlexpress</module>
-    </modules>
-    <artifactId>tinyflow-java-nodes</artifactId>
+    <name>tinyflow-support-agentsflex</name>
+    <artifactId>tinyflow-support-agentsflex</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.tinyflow</groupId>
+            <artifactId>tinyflow-core</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.agentsflex</groupId>
+            <artifactId>agents-flex-bom</artifactId>
+        </dependency>
+
+
+    </dependencies>
 
 </project>

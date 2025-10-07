@@ -11,7 +11,7 @@
     <packaging>pom</packaging>
 
     <url>https://tinyflow.dev</url>
-    <description>Tinyflow-java is an intelligent agent orchestration solution developed using Java. It is not a product,
+    <description>Tinyflow is an intelligent agent orchestration solution developed using Java. It is not a product,
         but a development component. By integrating Tinyflow-java, you can make any traditional Java Web application
         have the ability to orchestrate AI intelligent agents.
     </description>
@@ -43,11 +43,11 @@
     </scm>
 
     <modules>
-        <module>tinyflow-java-core</module>
-        <module>tinyflow-java-springai</module>
-        <module>tinyflow-java-langchain4j</module>
-        <module>tinyflow-java-agentsflex</module>
-        <module>tinyflow-java-nodes</module>
+        <module>tinyflow-core</module>
+        <module>tinyflow-node</module>
+        <module>tinyflow-support-springai</module>
+        <module>tinyflow-support-langchain4j</module>
+        <module>tinyflow-support-agentsflex</module>
     </modules>
 
     <properties>

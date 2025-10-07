@@ -9,8 +9,8 @@
         <version>1.2.3</version>
     </parent>
 
-    <name>tinyflow-java-core</name>
-    <artifactId>tinyflow-java-core</artifactId>
+    <name>tinyflow-core</name>
+    <artifactId>tinyflow-core</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
