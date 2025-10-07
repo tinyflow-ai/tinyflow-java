@@ -110,7 +110,7 @@ public class LlmNode extends BaseNode {
             return Collections.emptyMap();
         }
 
-        String userPromptString = TextTemplate.of(userPrompt).formatToString(parameterValues);
+        String userPromptString = TextTemplate.of(userPrompt).formatToString(Arrays.asList(parameterValues, chain.getEnvMap()));
 
 
         ChatModel chatModel = ChatModelManager.getInstance().getChatModel(this.llmId);
@@ -119,7 +119,7 @@ public class LlmNode extends BaseNode {
             return Collections.emptyMap();
         }
 
-        String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(parameterValues);
+        String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(Arrays.asList(parameterValues, chain.getEnvMap()));
 
 
         ChatModel.MessageInfo messageInfo = new ChatModel.MessageInfo();

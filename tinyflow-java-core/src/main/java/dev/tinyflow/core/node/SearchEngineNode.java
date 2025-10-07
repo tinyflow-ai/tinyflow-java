@@ -23,6 +23,7 @@ import dev.tinyflow.core.util.StringUtil;
 import dev.tinyflow.core.util.TextTemplate;
 import org.slf4j.Logger;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -62,8 +63,8 @@ public class SearchEngineNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
         Map<String, Object> argsMap = chain.getParameterValues(this);
-        String realKeyword = TextTemplate.of(keyword).formatToString(argsMap);
-        String realLimitString = TextTemplate.of(limit).formatToString(argsMap);
+        String realKeyword = TextTemplate.of(keyword).formatToString(Arrays.asList(argsMap, chain.getEnvMap()));
+        String realLimitString = TextTemplate.of(limit).formatToString(Arrays.asList(argsMap, chain.getEnvMap()));
         int realLimit = 10;
         if (StringUtil.hasText(realLimitString)) {
             try {

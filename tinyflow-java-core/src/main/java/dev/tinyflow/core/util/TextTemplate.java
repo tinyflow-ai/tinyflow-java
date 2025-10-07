@@ -18,10 +18,7 @@ package dev.tinyflow.core.util;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONPath;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,14 +50,33 @@ public class TextTemplate {
     }
 
 
+    public String formatToString(List<Map<String, Object>> rootMaps) {
+        Map<String, Object> rootMap = new HashMap<>();
+        for (Map<String, Object> m : rootMaps) {
+            if (m != null) {
+                rootMap.putAll(m);
+            }
+        }
+        return formatToString(rootMap, false);
+    }
+
     public String formatToString(Map<String, Object> rootMap) {
         return formatToString(rootMap, false);
+    }
+
+    public String formatToString(List<Map<String, Object>> rootMaps, boolean escapeJson) {
+        Map<String, Object> rootMap = new HashMap<>();
+        for (Map<String, Object> m : rootMaps) {
+            if (m != null) {
+                rootMap.putAll(m);
+            }
+        }
+        return formatToString(rootMap, escapeJson);
     }
 
     /**
      * 格式化模板
      */
-
     public String formatToString(Map<String, Object> rootMap, boolean escapeJson) {
         if (tokens.isEmpty()) return "";
 
@@ -138,7 +154,7 @@ public class TextTemplate {
      */
     private String unquote(String str) {
         if ((str.startsWith("'") && str.endsWith("'")) ||
-            (str.startsWith("\"") && str.endsWith("\""))) {
+                (str.startsWith("\"") && str.endsWith("\""))) {
             return str.substring(1, str.length() - 1);
         }
         return str;

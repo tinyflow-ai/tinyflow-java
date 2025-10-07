@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,7 +147,7 @@ public class HttpNode extends BaseNode {
     protected Map<String, Object> execute(Chain chain) {
 
         Map<String, Object> argsMap = chain.getParameterValues(this);
-        String newUrl = TextTemplate.of(url).formatToString(argsMap);
+        String newUrl = TextTemplate.of(url).formatToString(Arrays.asList(argsMap, chain.getEnvMap()));
 
         Request.Builder reqBuilder = new Request.Builder().url(newUrl);
 
@@ -248,7 +249,7 @@ public class HttpNode extends BaseNode {
         }
 
         if ("raw".equals(bodyType)) {
-            String rawBodyString = TextTemplate.of(rawBody).formatToString(formatArgs);
+            String rawBodyString = TextTemplate.of(rawBody).formatToString(Arrays.asList(formatArgs, chain.getEnvMap()));
             return RequestBody.create(rawBodyString, null);
         }
         //none

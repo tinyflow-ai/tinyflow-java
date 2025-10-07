@@ -36,7 +36,8 @@ public class Chain extends ChainNode {
     protected List<ChainNode> nodes;
     protected List<ChainEdge> edges;
 
-    protected Map<String, Object> executeResult = null;
+    protected Map<String, Object> executeResult;
+    protected Map<String, Object> environment;
 
     protected Map<Class<?>, List<ChainEventListener>> eventListeners = new HashMap<>(0);
     protected List<ChainOutputListener> outputListeners = new ArrayList<>();
@@ -69,6 +70,7 @@ public class Chain extends ChainNode {
         this.edges = holder.getEdges();
 
         this.executeResult = holder.getExecuteResult();
+        this.environment = holder.getEnvironment();
         this.nodeContexts = holder.getNodeContexts();
         this.suspendNodes = holder.getSuspendNodes();
         this.suspendForParameters = holder.getSuspendForParameters();
@@ -208,6 +210,14 @@ public class Chain extends ChainNode {
         this.executeResult = executeResult;
     }
 
+    public Map<String, Object> getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(Map<String, Object> environment) {
+        this.environment = environment;
+    }
+
     public List<ChainErrorListener> getChainErrorListeners() {
         return chainErrorListeners;
     }
@@ -270,11 +280,17 @@ public class Chain extends ChainNode {
 
 
     public Object get(String key) {
+        Object result = get(key, this.memory);
+        return result != null ? result : get(key, this.environment);
+    }
+
+
+    public Object get(String key, Map<String, Object> fromSource) {
         if (StringUtil.noText(key)) {
             return null;
         }
 
-        Object result = memory.get(key);
+        Object result = fromSource.get(key);
         if (result != null) {
             return result;
         }
@@ -287,7 +303,7 @@ public class Chain extends ChainNode {
         int matchedLevels = 0;
         for (int i = parts.size(); i > 0; i--) {
             String tryKey = String.join(".", parts.subList(0, i));
-            Object tempResult = memory.get(tryKey);
+            Object tempResult = fromSource.get(tryKey);
             if (tempResult != null) {
                 result = tempResult;
                 matchedLevels = i;
@@ -330,8 +346,8 @@ public class Chain extends ChainNode {
 
     public void execute(Map<String, Object> variables) {
         runInLifeCycle(variables,
-            new ChainStartEvent(this, variables),
-            this::executeInternal);
+                new ChainStartEvent(this, variables),
+                this::executeInternal);
     }
 
 
@@ -402,6 +418,13 @@ public class Chain extends ChainNode {
         return getParameterValues(node, parameters, formatArg, true);
     }
 
+    public Map<String, Object> getEnvMap() {
+        Map<String, Object> formatArgsMap = new HashMap<>();
+        formatArgsMap.put("env", this.environment);
+        formatArgsMap.put("env.sys", System.getenv());
+        return formatArgsMap;
+    }
+
     public Map<String, Object> getParameterValues(ChainNode node, List<? extends Parameter> parameters, Map<String, Object> formatArgs, boolean getValueOnly) {
         if (parameters == null || parameters.isEmpty()) {
             return Collections.emptyMap();
@@ -412,11 +435,8 @@ public class Chain extends ChainNode {
             RefType refType = parameter.getRefType();
             Object value;
             if (refType == RefType.FIXED) {
-                if (formatArgs != null && !formatArgs.isEmpty()) {
-                    value = TextTemplate.of(parameter.getValue()).formatToString(formatArgs);
-                } else {
-                    value = parameter.getValue();
-                }
+                value = TextTemplate.of(parameter.getValue())
+                        .formatToString(Arrays.asList(formatArgs, getEnvMap()));
             } else if (refType == RefType.REF) {
                 value = this.get(parameter.getRef());
             } else {
@@ -463,14 +483,14 @@ public class Chain extends ChainNode {
 
             // 构建参数名称列表
             String missingParams = suspendParameters.stream()
-                .map(Parameter::getName)
-                .collect(Collectors.joining("', '", "'", "'"));
+                    .map(Parameter::getName)
+                    .collect(Collectors.joining("', '", "'", "'"));
 
             String errorMessage = String.format(
-                "Node '%s' (type: %s) is suspended. Waiting for input parameters: %s.",
-                StringUtil.getFirstWithText(node.getName(), node.getId()),
-                node.getClass().getSimpleName(),
-                missingParams
+                    "Node '%s' (type: %s) is suspended. Waiting for input parameters: %s.",
+                    StringUtil.getFirstWithText(node.getName(), node.getId()),
+                    node.getClass().getSimpleName(),
+                    missingParams
             );
 
             throw new ChainSuspendException(errorMessage);
@@ -886,8 +906,8 @@ public class Chain extends ChainNode {
 
     public void resume(Map<String, Object> variables) {
         runInLifeCycle(variables,
-            new ChainResumeEvent(this, variables),
-            this::executeInternal);
+                new ChainResumeEvent(this, variables),
+                this::executeInternal);
     }
 
 
@@ -913,6 +933,7 @@ public class Chain extends ChainNode {
         //chain
         this.status = ChainStatus.READY;
         this.executeResult = null;
+        this.environment = null;
         this.message = null;
         this.exception = null;
         this.nodeContexts.clear();
@@ -965,22 +986,22 @@ public class Chain extends ChainNode {
     @Override
     public String toString() {
         return "Chain{" +
-            "nodes=" + nodes +
-            ", edges=" + edges +
-            ", executeResult=" + executeResult +
-            ", eventListeners=" + eventListeners +
-            ", outputListeners=" + outputListeners +
-            ", chainErrorListeners=" + chainErrorListeners +
-            ", nodeErrorListeners=" + nodeErrorListeners +
-            ", suspendListeners=" + suspendListeners +
-            ", asyncNodeExecutors=" + asyncNodeExecutors +
-            ", phaser=" + phaser +
-            ", nodeContexts=" + nodeContexts +
-            ", suspendNodes=" + suspendNodes +
-            ", suspendForParameters=" + suspendForParameters +
-            ", status=" + status +
-            ", exception=" + exception +
-            ", message='" + message + '\'' +
-            '}';
+                "nodes=" + nodes +
+                ", edges=" + edges +
+                ", executeResult=" + executeResult +
+                ", eventListeners=" + eventListeners +
+                ", outputListeners=" + outputListeners +
+                ", chainErrorListeners=" + chainErrorListeners +
+                ", nodeErrorListeners=" + nodeErrorListeners +
+                ", suspendListeners=" + suspendListeners +
+                ", asyncNodeExecutors=" + asyncNodeExecutors +
+                ", phaser=" + phaser +
+                ", nodeContexts=" + nodeContexts +
+                ", suspendNodes=" + suspendNodes +
+                ", suspendForParameters=" + suspendForParameters +
+                ", status=" + status +
+                ", exception=" + exception +
+                ", message='" + message + '\'' +
+                '}';
     }
 }

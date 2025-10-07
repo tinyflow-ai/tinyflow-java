@@ -42,6 +42,7 @@ public class ChainHolder implements Serializable {
     private List<ChainEdge> edges;
 
     private Map<String, Object> executeResult;
+    private Map<String, Object> environment;
 
     private Map<String, NodeContext> nodeContexts;
 
@@ -64,6 +65,7 @@ public class ChainHolder implements Serializable {
         holder.edges = chain.getEdges();
 
         holder.executeResult = chain.getExecuteResult();
+        holder.environment = chain.getEnvironment();
         holder.nodeContexts = chain.getNodeContexts();
 
         holder.suspendNodes = chain.getSuspendNodes();
@@ -155,6 +157,14 @@ public class ChainHolder implements Serializable {
 
     public void setExecuteResult(Map<String, Object> executeResult) {
         this.executeResult = executeResult;
+    }
+
+    public Map<String, Object> getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(Map<String, Object> environment) {
+        this.environment = environment;
     }
 
     public Map<String, NodeContext> getNodeContexts() {
