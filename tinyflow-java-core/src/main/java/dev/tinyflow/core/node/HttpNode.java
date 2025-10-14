@@ -201,15 +201,22 @@ public class HttpNode extends BaseNode {
 
             if (bodyDataType == null) {
                 result.put("body", body.string());
-            } else if (bodyDataType == DataType.Object || bodyDataType.getValue().startsWith("Array")) {
-                result.put("body", JSON.parse(body.string()));
-            } else if (bodyDataType == DataType.File) {
-                try (InputStream stream = body.byteStream()) {
-                    String fileUrl = fileStorage.saveFile(stream, responseHeaders);
-                    result.put("body", fileUrl);
-                }
             } else {
-                result.put("body", body.string());
+                if (bodyDataType == DataType.Object || bodyDataType.getValue().startsWith("Array")) {
+                    String bodyString = body.string();
+                    try {
+                        result.put("body", JSON.parse(bodyString));
+                    } catch (Exception e) {
+                        throw new RuntimeException("can not parse json: " + bodyString, e);
+                    }
+                } else if (bodyDataType == DataType.File) {
+                    try (InputStream stream = body.byteStream()) {
+                        String fileUrl = fileStorage.saveFile(stream, responseHeaders);
+                        result.put("body", fileUrl);
+                    }
+                } else {
+                    result.put("body", body.string());
+                }
             }
             return result;
         } catch (IOException e) {
