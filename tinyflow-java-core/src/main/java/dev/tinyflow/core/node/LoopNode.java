@@ -54,6 +54,7 @@ public class LoopNode extends BaseNode {
         loopChain.setChainErrorListeners(chain.getChainErrorListeners());
         loopChain.setNodeErrorListeners(chain.getNodeErrorListeners());
         loopChain.setSuspendNodes(chain.getSuspendNodes());
+        loopChain.setComputeCost(0L);
 
 
         Map<String, Object> executeResult = new HashMap<>();
@@ -90,6 +91,7 @@ public class LoopNode extends BaseNode {
         loopParams.putAll(parentMap);
         try {
             loopChain.execute(loopParams);
+            this.computeCost += loopChain.getComputeCost();
         } finally {
             // 正常结束的情况下，填充结果
             if (loopChain.getStatus() == ChainStatus.FINISHED_NORMAL) {
