@@ -91,7 +91,7 @@ public class LoopNode extends BaseNode {
         loopParams.putAll(parentMap);
         try {
             loopChain.execute(loopParams);
-            this.computeCost += loopChain.getComputeCost();
+            this.addComputeCost(loopChain.getComputeCost());
         } finally {
             // 正常结束的情况下，填充结果
             if (loopChain.getStatus() == ChainStatus.FINISHED_NORMAL) {
