@@ -44,9 +44,9 @@ public class ChainHolder implements Serializable {
     private Map<String, Object> executeResult;
     private Map<String, Object> environment;
 
-    private Map<String, NodeContext> nodeContexts;
+    private ConcurrentHashMap<String, NodeContext> nodeContexts;
 
-    protected Map<String, ChainNode> suspendNodes = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<String, ChainNode> suspendNodes = new ConcurrentHashMap<>();
     private List<Parameter> suspendForParameters;
     private ChainStatus status;
     private String message;
@@ -167,19 +167,19 @@ public class ChainHolder implements Serializable {
         this.environment = environment;
     }
 
-    public Map<String, NodeContext> getNodeContexts() {
+    public ConcurrentHashMap<String, NodeContext> getNodeContexts() {
         return nodeContexts;
     }
 
-    public void setNodeContexts(Map<String, NodeContext> nodeContexts) {
+    public void setNodeContexts(ConcurrentHashMap<String, NodeContext> nodeContexts) {
         this.nodeContexts = nodeContexts;
     }
 
-    public Map<String, ChainNode> getSuspendNodes() {
+    public ConcurrentHashMap<String, ChainNode> getSuspendNodes() {
         return suspendNodes;
     }
 
-    public void setSuspendNodes(Map<String, ChainNode> suspendNodes) {
+    public void setSuspendNodes(ConcurrentHashMap<String, ChainNode> suspendNodes) {
         this.suspendNodes = suspendNodes;
     }
 

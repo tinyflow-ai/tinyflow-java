@@ -16,18 +16,13 @@
 package dev.tinyflow.core.chain;
 
 
-import java.util.UUID;
-
 public class ChainEdge {
     private String id;
     private String source;
     private String target;
     private EdgeCondition condition;
-    private int weight;
-    private boolean isDefault;
 
     public ChainEdge() {
-        this.id = UUID.randomUUID().toString();
     }
 
     public ChainEdge(String id) {
@@ -66,19 +61,4 @@ public class ChainEdge {
         this.condition = condition;
     }
 
-    public int getWeight() {
-        return weight;
-    }
-
-    public void setWeight(int weight) {
-        this.weight = weight;
-    }
-
-    public boolean isDefault() {
-        return isDefault;
-    }
-
-    public void setDefault(boolean aDefault) {
-        isDefault = aDefault;
-    }
 }

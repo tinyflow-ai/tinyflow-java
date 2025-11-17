@@ -15,16 +15,21 @@
  */
 package dev.tinyflow.core.chain;
 
-
+import dev.tinyflow.core.util.JsConditionUtil;
+import dev.tinyflow.core.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public abstract class ChainNode implements Serializable {
 
+    private static final Logger log = LoggerFactory.getLogger(ChainNode.class);
     protected String id;
     protected String name;
     protected String description;
@@ -34,7 +39,6 @@ public abstract class ChainNode implements Serializable {
     protected List<ChainEdge> outwardEdges;
 
     protected NodeCondition condition;
-
     protected Map<String, Object> memory = new ConcurrentHashMap<>();
     protected ChainNodeStatus nodeStatus = ChainNodeStatus.READY;
 
@@ -48,7 +52,8 @@ public abstract class ChainNode implements Serializable {
     protected int maxLoopCount = 0;                  // 0 表示不限制循环次数
 
     // 算力消耗定义，积分消耗
-    protected long computeCost = 0;
+    protected Long computeCost;
+    protected String computeCostExpr;
 
     public String getId() {
         return id;
@@ -114,14 +119,13 @@ public abstract class ChainNode implements Serializable {
         this.memory = memory;
     }
 
-    public void setNodeStatus(ChainNodeStatus nodeStatus) {
-        this.nodeStatus = nodeStatus;
-    }
-
     public ChainNodeStatus getNodeStatus() {
         return nodeStatus;
     }
 
+    public void setNodeStatus(ChainNodeStatus nodeStatus) {
+        this.nodeStatus = nodeStatus;
+    }
 
     public void setNodeStatusFinished() {
         if (this.nodeStatus == ChainNodeStatus.ERROR) {
@@ -189,12 +193,64 @@ public abstract class ChainNode implements Serializable {
         return null;
     }
 
-    public long getComputeCost() {
+    public Long getComputeCost() {
         return computeCost;
     }
 
-    public void setComputeCost(long computeCost) {
+    public void setComputeCost(Long computeCost) {
         this.computeCost = computeCost;
+    }
+
+    protected synchronized void addComputeCost(Long computeCost) {
+        if (this.computeCost == null) {
+            this.computeCost = 0L;
+        }
+        if (computeCost == null) {
+            computeCost = 0L;
+        }
+        this.computeCost += computeCost;
+    }
+
+
+    public String getComputeCostExpr() {
+        return computeCostExpr;
+    }
+
+    public void setComputeCostExpr(String computeCostExpr) {
+        if (computeCostExpr != null) {
+            computeCostExpr = computeCostExpr.trim();
+        }
+        this.computeCostExpr = computeCostExpr;
+    }
+
+    public long calculateComputeCost(Chain chain, Map<String, Object> result) {
+        //允许动态设置算力消耗，比如在 for 循环节点等
+        if (this.computeCost != null) {
+            return this.computeCost;
+        }
+
+        if (StringUtil.noText(computeCostExpr)) {
+            return 0;
+        }
+
+        if (computeCostExpr.startsWith("{{") && computeCostExpr.endsWith("}}")) {
+            String expr = computeCostExpr.substring(2, computeCostExpr.length() - 2);
+            return doCalculateComputeCost(expr, chain, result);
+        } else {
+            try {
+                return Long.parseLong(computeCostExpr);
+            } catch (NumberFormatException e) {
+                log.error(e.toString(), e);
+            }
+            return 0;
+        }
+    }
+
+    protected long doCalculateComputeCost(String expr, Chain chain, Map<String, Object> result) {
+        Map<String, Object> parameterValues = chain.getParameterValuesOnly(this, this.getParameters(), null);
+        Map<String, Object> newMap = new HashMap<>(result);
+        newMap.putAll(parameterValues);
+        return JsConditionUtil.evalLong(expr, chain, newMap);
     }
 
     public ChainNodeValidResult validate() throws Exception {

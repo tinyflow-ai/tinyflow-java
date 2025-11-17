@@ -19,6 +19,8 @@ import com.alibaba.fastjson.JSON;
 import dev.tinyflow.core.chain.event.*;
 import dev.tinyflow.core.chain.listener.*;
 import dev.tinyflow.core.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 
 
 public class Chain extends ChainNode {
+    private static final Logger log = LoggerFactory.getLogger(Chain.class);
 
     protected List<ChainNode> nodes;
     protected List<ChainEdge> edges;
@@ -44,9 +47,9 @@ public class Chain extends ChainNode {
 
     protected ExecutorService asyncNodeExecutors = NamedThreadPools.newFixedThreadPool("chain-executor");
     protected Phaser phaser = new Phaser(1);
-    protected Map<String, NodeContext> nodeContexts = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<String, NodeContext> nodeContexts = new ConcurrentHashMap<>();
 
-    protected Map<String, ChainNode> suspendNodes = new ConcurrentHashMap<>();
+    protected ConcurrentHashMap<String, ChainNode> suspendNodes = new ConcurrentHashMap<>();
     protected List<Parameter> suspendForParameters;
     protected ChainStatus status = ChainStatus.READY;
     protected Exception exception;
@@ -154,19 +157,30 @@ public class Chain extends ChainNode {
         this.nodes = chainNodes;
     }
 
-    public void addNode(ChainNode chainNode) {
+    public void addNode(ChainNode node) {
         if (nodes == null) {
             this.nodes = new ArrayList<>();
         }
 
-        if (chainNode instanceof ChainEventListener) {
-            addEventListener((ChainEventListener) chainNode);
+        if (node instanceof ChainEventListener) {
+            addEventListener((ChainEventListener) node);
         }
 
-        if (chainNode.getId() == null) {
-            chainNode.setId(UUID.randomUUID().toString());
+        if (StringUtil.noText(node.getId())) {
+            node.setId(UUID.randomUUID().toString());
         }
-        nodes.add(chainNode);
+
+        nodes.add(node);
+
+        if (this.edges != null) {
+            for (ChainEdge edge : edges) {
+                if (node.getId().equals(edge.getSource())) {
+                    node.addOutwardEdge(edge);
+                } else if (node.getId().equals(edge.getTarget())) {
+                    node.addInwardEdge(edge);
+                }
+            }
+        }
     }
 
 
@@ -191,7 +205,11 @@ public class Chain extends ChainNode {
         for (Map.Entry<Class<?>, List<ChainEventListener>> entry : eventListeners.entrySet()) {
             if (entry.getKey().isInstance(event)) {
                 for (ChainEventListener chainEventListener : entry.getValue()) {
-                    chainEventListener.onEvent(event, this);
+                    try {
+                        chainEventListener.onEvent(event, this);
+                    } catch (Exception e) {
+                        log.error(e.toString(), e);
+                    }
                 }
             }
         }
@@ -238,19 +256,19 @@ public class Chain extends ChainNode {
         this.suspendListeners = suspendListeners;
     }
 
-    public Map<String, NodeContext> getNodeContexts() {
+    public ConcurrentHashMap<String, NodeContext> getNodeContexts() {
         return nodeContexts;
     }
 
-    public void setNodeContexts(Map<String, NodeContext> nodeContexts) {
+    public void setNodeContexts(ConcurrentHashMap<String, NodeContext> nodeContexts) {
         this.nodeContexts = nodeContexts;
     }
 
-    public Map<String, ChainNode> getSuspendNodes() {
+    public ConcurrentHashMap<String, ChainNode> getSuspendNodes() {
         return suspendNodes;
     }
 
-    public void setSuspendNodes(Map<String, ChainNode> suspendNodes) {
+    public void setSuspendNodes(ConcurrentHashMap<String, ChainNode> suspendNodes) {
         this.suspendNodes = suspendNodes;
     }
 
@@ -496,16 +514,29 @@ public class Chain extends ChainNode {
         return result;
     }
 
-    private synchronized void addComputeCost(long computeCost) {
+    protected synchronized void addComputeCost(Long computeCost) {
+        if (this.computeCost == null) {
+            this.computeCost = 0L;
+        }
+        if (computeCost == null) {
+            computeCost = 0L;
+        }
         this.computeCost += computeCost;
     }
 
 
     protected void doExecuteNode(ExecuteNode executeNode) {
+        ChainNode currentNode = executeNode.currentNode;
+
+        if (this.getStatus() == ChainStatus.SUSPEND) {
+            this.suspendNodes.put(currentNode.getId(), currentNode);
+            return;
+        }
+
         if (this.getStatus() != ChainStatus.RUNNING) {
             return;
         }
-        ChainNode currentNode = executeNode.currentNode;
+
         NodeContext nodeContext = getNodeContext(currentNode.id);
 
         Map<String, Object> executeResult = null;
@@ -528,7 +559,7 @@ public class Chain extends ChainNode {
                 try {
                     suspendNodes.remove(currentNode.getId());
                     executeResult = currentNode.execute(this);
-                    addComputeCost(currentNode.getComputeCost());
+                    addComputeCost(currentNode.calculateComputeCost(this, executeResult));
                 } finally {
                     nodeContext.recordExecute(executeNode);
                     this.executeResult = executeResult;
@@ -553,9 +584,9 @@ public class Chain extends ChainNode {
             onNodeExecuteAfter(nodeContext);
         }
 
-        if (this.getStatus() != ChainStatus.RUNNING) {
-            return;
-        }
+//        if (this.getStatus() != ChainStatus.RUNNING) {
+//            return;
+//        }
 
         // 继续执行下一个节点
         if (!currentNode.isLoopEnable()) {
@@ -840,6 +871,11 @@ public class Chain extends ChainNode {
         this.suspendForParameters.add(suspendForParameter);
     }
 
+    public synchronized void suspend() {
+        setStatusAndNotifyEvent(ChainStatus.SUSPEND);
+    }
+
+
     public synchronized void suspend(ChainNode node) {
         try {
             suspendNodes.putIfAbsent(node.getId(), node);
@@ -883,7 +919,7 @@ public class Chain extends ChainNode {
         this.nodeContexts.clear();
 
         //算力消耗
-        this.computeCost = 0;
+        this.computeCost = 0L;
 
         if (this.suspendNodes != null) {
             this.suspendNodes.clear();
