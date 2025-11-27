@@ -46,22 +46,6 @@ public class LlmNode extends BaseNode {
         this.llmId = llmId;
     }
 
-    //    public LlmNode(Llm llm, String userPrompt) {
-//        this.llm = llm;
-//        this.userPrompt = userPrompt;
-//        this.userPromptTemplate = StringUtil.hasText(userPrompt)
-//                ? TextPromptTemplate.of(userPrompt) : null;
-//    }
-//
-//
-//    public Llm getLlm() {
-//        return llm;
-//    }
-//
-//    public void setLlm(Llm llm) {
-//        this.llm = llm;
-//    }
-
     public String getUserPrompt() {
         return userPrompt;
     }
@@ -121,7 +105,6 @@ public class LlmNode extends BaseNode {
 
         String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(Arrays.asList(parameterValues, chain.getEnvMap()));
 
-
         Llm.MessageInfo messageInfo = new Llm.MessageInfo();
         messageInfo.setMessage(userPromptString);
         messageInfo.setSystemMessage(systemPromptString);
@@ -145,7 +128,7 @@ public class LlmNode extends BaseNode {
         String responseContent = llm.chat(messageInfo, chatOptions, this, chain);
 
         if (StringUtil.noText(responseContent)) {
-            return Collections.emptyMap();
+            throw new RuntimeException("Can not get response from llm");
         } else {
             responseContent = responseContent.trim();
         }
@@ -160,28 +143,13 @@ public class LlmNode extends BaseNode {
                 return Collections.emptyMap();
             }
 
-
             if (CollectionUtil.noItems(this.outputDefs)) {
                 return Maps.of("root", jsonObjectOrArray);
             } else {
                 Parameter parameter = this.outputDefs.get(0);
                 return Maps.of(parameter.getName(), jsonObjectOrArray);
             }
-//            if (this.outputDefs != null) {
-//                JSONObject jsonObject;
-//                try {
-//                    jsonObject = JSON.parseObject(unWrapMarkdown(responseContent));
-//                } catch (Exception e) {
-//                    chain.stopError("Can not parse json: " + response.getResponse() + " " + e.getMessage());
-//                    return Collections.emptyMap();
-//                }
-//                return getExecuteResultMap(outputDefs, jsonObject);
-//            }
-//            return Collections.emptyMap();
-        }
-
-//        if (outType == null || outType.equalsIgnoreCase("text") || outType.equalsIgnoreCase("markdown")) {
-        else {
+        } else {
             if (CollectionUtil.noItems(this.outputDefs)) {
                 return Maps.of("output", responseContent);
             } else {
@@ -216,89 +184,6 @@ public class LlmNode extends BaseNode {
         }
         return markdown.trim();
     }
-
-//    public static Map<String, Object> getExecuteResultMap(List<Parameter> outputDefs, JSONObject data) {
-//        Map<String, Object> result = new HashMap<>();
-//        outputDefs.forEach(output -> {
-//            result.put(output.getName(), getOutputDefData(output, data, false));
-//        });
-//        return result;
-//    }
-
-//    private static Object getOutputDefData(Parameter output, JSONObject data, boolean sub) {
-//        String name = output.getName();
-//        DataType dataType = output.getDataType();
-//        switch (dataType) {
-//            case Array:
-//            case Array_Object:
-//                if (output.getChildren() == null || output.getChildren().isEmpty()) {
-//                    return data.get(name);
-//                }
-//                List<Object> subResultList = new ArrayList<>();
-//                Object dataObj = data.get(name);
-//                if (dataObj instanceof JSONArray) {
-//                    JSONArray contentFields = ((JSONArray) dataObj);
-//                    if (!contentFields.isEmpty()) {
-//                        contentFields.forEach(field -> {
-//                            if (field instanceof JSONObject) {
-//                                subResultList.add(getChildrenResult(output.getChildren(), (JSONObject) field, sub));
-//                            }
-//                        });
-//                    }
-//                }
-//                return subResultList;
-//            case Object:
-//                return (output.getChildren() != null && !output.getChildren().isEmpty()) ? getChildrenResult(output.getChildren(), sub ? data : (JSONObject) data.get(name), sub) : data.get(name);
-//            case String:
-//            case Number:
-//            case Boolean:
-//                Object obj = data.get(name);
-//                return (DataType.String == dataType) ? (obj instanceof String ? obj : "") : (DataType.Number == dataType) ? (obj instanceof Number ? obj : 0) : obj instanceof Boolean ? obj : false;
-//            case Array_String:
-//            case Array_Number:
-//            case Array_Boolean:
-//                Object arrayObj = data.get(name);
-//                if (arrayObj instanceof JSONArray) {
-//                    ((JSONArray) arrayObj).removeIf(o -> arrayRemoveFlag(dataType, o));
-//                    return arrayObj;
-//                }
-//                return Collections.emptyList();
-//            default:
-//                return ""; // FILE和其他不支持的类型，默认空字符串
-//        }
-//    }
-
-//    private static boolean arrayRemoveFlag(DataType dataType, Object arrayObj) {
-//        boolean removeFlag = false;
-//        if (DataType.Array_String == dataType) {
-//            if (!(arrayObj instanceof String)) {
-//                removeFlag = true;
-//            }
-//        } else if (DataType.Array_Number == dataType) {
-//            if (!(arrayObj instanceof Number)) {
-//                removeFlag = true;
-//            }
-//        } else {
-//            if (!(arrayObj instanceof Boolean)) {
-//                removeFlag = true;
-//            }
-//        }
-//        return removeFlag;
-//    }
-
-//    private static Map<String, Object> getChildrenResult(List<Parameter> children, JSONObject data, boolean sub) {
-//        Map<String, Object> childrenResult = new HashMap<>();
-//        children.forEach(child -> {
-//            String childName = child.getName();
-//            Object subData = getOutputDefData(child, data, sub);
-//            if ((subData instanceof JSONObject) && (child.getChildren() != null && !child.getChildren().isEmpty())) {
-//                getChildrenResult(child.getChildren(), (JSONObject) subData, true);
-//            } else {
-//                childrenResult.put(childName, subData);
-//            }
-//        });
-//        return childrenResult;
-//    }
 
 
     @Override

@@ -22,9 +22,12 @@ import java.util.stream.Collectors;
 
 public class NodeContext {
 
-    public ChainNode currentNode;
-    public ChainNode prevNode;
-    public String fromEdgeId;
+    private ChainNode currentNode;
+    private ChainNode prevNode;
+    private String fromEdgeId;
+
+    private int retryCount = 0;
+
 
     private AtomicInteger triggerCount = new AtomicInteger(0);
     private List<String> triggerEdgeIds = new ArrayList<>();
@@ -46,6 +49,14 @@ public class NodeContext {
 
     public int getTriggerCount() {
         return triggerCount.get();
+    }
+
+    public int getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(int retryCount) {
+        this.retryCount = retryCount;
     }
 
     public List<String> getTriggerEdgeIds() {

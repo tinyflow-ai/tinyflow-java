@@ -514,17 +514,6 @@ public class Chain extends ChainNode {
         return result;
     }
 
-    protected synchronized void addComputeCost(Long computeCost) {
-        if (this.computeCost == null) {
-            this.computeCost = 0L;
-        }
-        if (computeCost == null) {
-            computeCost = 0L;
-        }
-        this.computeCost += computeCost;
-    }
-
-
     protected void doExecuteNode(ExecuteNode executeNode) {
         ChainNode currentNode = executeNode.currentNode;
 
@@ -565,9 +554,21 @@ public class Chain extends ChainNode {
                     this.executeResult = executeResult;
                 }
             } catch (Throwable error) {
-                currentNode.setNodeStatus(ChainNodeStatus.ERROR);
-                notifyNodeError(error, currentNode, executeResult);
-                throw error;
+                // 错误重试
+                if (currentNode.isRetryEnable()
+                        && currentNode.getMaxRetryCount() > 0
+                        && nodeContext.getRetryCount() <= currentNode.getMaxRetryCount()) {
+
+                    nodeContext.setRetryCount(nodeContext.getRetryCount() + 1);
+                    safeSleep(currentNode.getRetryIntervalMs());
+                    doExecuteNode(executeNode);
+                }
+                // 异常处理
+                else {
+                    currentNode.setNodeStatus(ChainNodeStatus.ERROR);
+                    notifyNodeError(error, currentNode, executeResult);
+                    throw error;
+                }
             } finally {
                 currentNode.setNodeStatusFinished();
                 onNodeExecuteEnd(nodeContext);
@@ -582,6 +583,11 @@ public class Chain extends ChainNode {
             }
         } finally {
             onNodeExecuteAfter(nodeContext);
+        }
+
+        // 重置重试次数
+        if (currentNode.isRetryEnable() && currentNode.isResetRetryCountAfterNormal()) {
+            nodeContext.setRetryCount(0);
         }
 
 //        if (this.getStatus() != ChainStatus.RUNNING) {
@@ -608,19 +614,21 @@ public class Chain extends ChainNode {
             return;
         }
 
-
         // 等待间隔
-        long loopIntervalMs = currentNode.getLoopIntervalMs();
-        if (loopIntervalMs > 0) {
-            try {
-                Thread.sleep(loopIntervalMs);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt(); // 恢复中断状态
-            }
-        }
-
+        safeSleep(currentNode.getLoopIntervalMs());
         // 继续执行当前节点
         doExecuteNode(executeNode);
+    }
+
+    private void safeSleep(long retryIntervalMs) {
+        if (retryIntervalMs <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(retryIntervalMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // 恢复中断状态
+        }
     }
 
 

@@ -51,6 +51,11 @@ public abstract class ChainNode implements Serializable {
     protected NodeCondition loopBreakCondition;      // 跳出循环的条件
     protected int maxLoopCount = 0;                  // 0 表示不限制循环次数
 
+    protected boolean retryEnable = false;
+    protected boolean resetRetryCountAfterNormal = false;
+    protected int maxRetryCount = 0;
+    protected long retryIntervalMs = 1000;
+
     // 算力消耗定义，积分消耗
     protected Long computeCost;
     protected String computeCostExpr;
@@ -191,6 +196,38 @@ public abstract class ChainNode implements Serializable {
 
     public List<Parameter> getParameters() {
         return null;
+    }
+
+    public boolean isRetryEnable() {
+        return retryEnable;
+    }
+
+    public void setRetryEnable(boolean retryEnable) {
+        this.retryEnable = retryEnable;
+    }
+
+    public boolean isResetRetryCountAfterNormal() {
+        return resetRetryCountAfterNormal;
+    }
+
+    public void setResetRetryCountAfterNormal(boolean resetRetryCountAfterNormal) {
+        this.resetRetryCountAfterNormal = resetRetryCountAfterNormal;
+    }
+
+    public int getMaxRetryCount() {
+        return maxRetryCount;
+    }
+
+    public void setMaxRetryCount(int maxRetryCount) {
+        this.maxRetryCount = maxRetryCount;
+    }
+
+    public long getRetryIntervalMs() {
+        return retryIntervalMs;
+    }
+
+    public void setRetryIntervalMs(long retryIntervalMs) {
+        this.retryIntervalMs = retryIntervalMs;
     }
 
     public Long getComputeCost() {

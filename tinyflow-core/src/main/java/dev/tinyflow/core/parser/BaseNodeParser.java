@@ -99,7 +99,7 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
     @Override
     public T parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
         JSONObject data = getData(nodeJSONObject);
-        BaseNode node = doParse(nodeJSONObject, data, tinyflow);
+        T node = doParse(nodeJSONObject, data, tinyflow);
         if (node != null) {
 
             node.setId(nodeJSONObject.getString("id"));
@@ -132,6 +132,7 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
                     node.setDescription(description);
                 }
 
+                // 循环执行 start =======
                 Boolean loopEnable = data.getBoolean("loopEnable");
                 if (loopEnable != null) {
                     node.setLoopEnable(loopEnable);
@@ -151,10 +152,35 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
                 if (StringUtil.hasText(loopBreakCondition)) {
                     node.setLoopBreakCondition(new JsCodeCondition(loopBreakCondition.trim()));
                 }
+                // 循环执行 end =======
+
+
+                // 错误重试 start =======
+                Boolean retryEnable = data.getBoolean("retryEnable");
+                if (retryEnable != null) {
+                    node.setRetryEnable(retryEnable);
+                }
+
+                Boolean resetRetryCountAfterNormal = data.getBoolean("resetRetryCountAfterNormal");
+                if (resetRetryCountAfterNormal != null) {
+                    node.setResetRetryCountAfterNormal(resetRetryCountAfterNormal);
+                }
+
+                Long retryIntervalMs = data.getLong("retryIntervalMs");
+                if (retryIntervalMs != null) {
+                    node.setRetryIntervalMs(retryIntervalMs);
+                }
+
+                Integer maxRetryCount = data.getInteger("maxRetryCount");
+                if (maxRetryCount != null) {
+                    node.setMaxRetryCount(maxRetryCount);
+                }
+                // 错误重试 end =======
+
             }
         }
 
-        return (T) node;
+        return node;
     }
 
     protected abstract T doParse(JSONObject root, JSONObject data, Tinyflow tinyflow);
