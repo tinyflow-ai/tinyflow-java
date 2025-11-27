@@ -13,7 +13,6 @@
     <name>tinyflow-node</name>
     <artifactId>tinyflow-node</artifactId>
     <modules>
-        <module>tinyflow-node-jfinal-template</module>
         <module>tinyflow-node-groovy-script</module>
         <module>tinyflow-node-qlexpress</module>
     </modules>
