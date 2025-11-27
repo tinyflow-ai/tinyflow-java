@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ChainHolder implements Serializable {
+public class ChainState implements Serializable {
 
     private String id;
     private String name;
@@ -51,37 +51,32 @@ public class ChainHolder implements Serializable {
     private ChainStatus status;
     private String message;
 
-    public ChainHolder() {
+    public ChainState() {
+    }
+
+    public ChainState(Chain chain) {
+        this.id = chain.getId();
+        this.name = chain.getName();
+        this.description = chain.getDescription();
+
+        this.nodes = chain.getNodes();
+        this.edges = chain.getEdges();
+
+        this.executeResult = chain.getExecuteResult();
+        this.environment = chain.getEnvironment();
+        this.nodeContexts = chain.getNodeContexts();
+
+        this.suspendNodes = chain.getSuspendNodes();
+        this.suspendForParameters = chain.getSuspendForParameters();
+        this.status = chain.getStatus();
+        this.message = chain.getMessage();
     }
 
 
-    public static ChainHolder fromChain(Chain chain) {
-        ChainHolder holder = new ChainHolder();
-        holder.id = chain.getId();
-        holder.name = chain.getName();
-        holder.description = chain.getDescription();
-
-        holder.nodes = chain.getNodes();
-        holder.edges = chain.getEdges();
-
-        holder.executeResult = chain.getExecuteResult();
-        holder.environment = chain.getEnvironment();
-        holder.nodeContexts = chain.getNodeContexts();
-
-        holder.suspendNodes = chain.getSuspendNodes();
-        holder.suspendForParameters = chain.getSuspendForParameters();
-        holder.status = chain.getStatus();
-
-        holder.message = chain.getMessage();
-
-        return holder;
-    }
-
-
-    public static ChainHolder fromJSON(String jsonString) {
+    public static ChainState fromJSON(String jsonString) {
         ParserConfig config = new ParserConfig();
         config.putDeserializer(Chain.class, new ChainDeserializer());
-        return JSON.parseObject(jsonString, ChainHolder.class, config, Feature.SupportAutoType);
+        return JSON.parseObject(jsonString, ChainState.class, config, Feature.SupportAutoType);
     }
 
     public String toJSON() {
@@ -231,19 +226,19 @@ public class ChainHolder implements Serializable {
     @Override
     public String toString() {
         return "ChainHolder{" +
-            "id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", description='" + description + '\'' +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
 //            ", parent=" + parent +
 //            ", children=" + children +
-            ", nodes=" + nodes +
-            ", edges=" + edges +
-            ", executeResult=" + executeResult +
-            ", nodeContexts=" + nodeContexts +
-            ", suspendNodes=" + suspendNodes +
-            ", suspendForParameters=" + suspendForParameters +
-            ", status=" + status +
-            ", message='" + message + '\'' +
-            '}';
+                ", nodes=" + nodes +
+                ", edges=" + edges +
+                ", executeResult=" + executeResult +
+                ", nodeContexts=" + nodeContexts +
+                ", suspendNodes=" + suspendNodes +
+                ", suspendForParameters=" + suspendForParameters +
+                ", status=" + status +
+                ", message='" + message + '\'' +
+                '}';
     }
 }

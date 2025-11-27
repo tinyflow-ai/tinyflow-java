@@ -60,21 +60,21 @@ public class Chain extends ChainNode {
         this.id = UUID.randomUUID().toString();
     }
 
-    public Chain(ChainHolder holder) {
-        this.id = holder.getId();
-        this.name = holder.getName();
-        this.description = holder.getDescription();
+    public Chain(ChainState state) {
+        this.id = state.getId();
+        this.name = state.getName();
+        this.description = state.getDescription();
 
-        this.nodes = holder.getNodes();
-        this.edges = holder.getEdges();
+        this.nodes = state.getNodes();
+        this.edges = state.getEdges();
 
-        this.executeResult = holder.getExecuteResult();
-        this.environment = holder.getEnvironment();
-        this.nodeContexts = holder.getNodeContexts();
-        this.suspendNodes = holder.getSuspendNodes();
-        this.suspendForParameters = holder.getSuspendForParameters();
-        this.status = holder.getStatus();
-        this.message = holder.getMessage();
+        this.executeResult = state.getExecuteResult();
+        this.environment = state.getEnvironment();
+        this.nodeContexts = state.getNodeContexts();
+        this.suspendNodes = state.getSuspendNodes();
+        this.suspendForParameters = state.getSuspendForParameters();
+        this.status = state.getStatus();
+        this.message = state.getMessage();
     }
 
 
@@ -934,11 +934,11 @@ public class Chain extends ChainNode {
     }
 
     public String toJSON() {
-        return ChainHolder.fromChain(this).toJSON();
+        return new ChainState(this).toJSON();
     }
 
     public static Chain fromJSON(String jsonString) {
-        return ChainHolder.fromJSON(jsonString).toChain();
+        return ChainState.fromJSON(jsonString).toChain();
     }
 
     @Override
