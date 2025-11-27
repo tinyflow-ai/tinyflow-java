@@ -6,7 +6,7 @@ import dev.tinyflow.core.node.LlmNode;
 import java.io.Serializable;
 import java.util.List;
 
-public interface ChatModel {
+public interface Llm {
 
     String chat(MessageInfo messageInfo, ChatOptions options, LlmNode llmNode, Chain chain);
 

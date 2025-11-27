@@ -3,7 +3,7 @@ package dev.tinyflow.core.parser.impl;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.chain.Parameter;
-import dev.tinyflow.core.llm.ChatModel;
+import dev.tinyflow.core.llm.Llm;
 import dev.tinyflow.core.node.LlmNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
@@ -20,7 +20,7 @@ public class LlmNodeParser extends BaseNodeParser<LlmNode> {
         llmNode.setOutType(data.getString("outType"));
 
 
-        ChatModel.ChatOptions chatOptions = new ChatModel.ChatOptions();
+        Llm.ChatOptions chatOptions = new Llm.ChatOptions();
         chatOptions.setTopK(data.containsKey("topK") ? data.getInteger("topK") : 10);
         chatOptions.setTopP(data.containsKey("topP") ? data.getFloat("topP") : 0.8F);
         chatOptions.setTemperature(data.containsKey("temperature") ? data.getFloat("temperature") : 0.8F);

@@ -17,7 +17,7 @@ package dev.tinyflow.core.llm;
 
 
 
-public interface ChatModelProvider {
+public interface LlmProvider {
 
-    ChatModel getChatModel(Object modelId);
+    Llm getChatModel(Object modelId);
 }

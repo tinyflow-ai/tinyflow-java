@@ -18,8 +18,8 @@ package dev.tinyflow.core.node;
 import com.alibaba.fastjson.JSON;
 import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.chain.Parameter;
-import dev.tinyflow.core.llm.ChatModel;
-import dev.tinyflow.core.llm.ChatModelManager;
+import dev.tinyflow.core.llm.Llm;
+import dev.tinyflow.core.llm.LlmManager;
 import dev.tinyflow.core.util.*;
 
 import java.io.File;
@@ -28,7 +28,7 @@ import java.util.*;
 public class LlmNode extends BaseNode {
 
     protected String llmId;
-    protected ChatModel.ChatOptions chatOptions;
+    protected Llm.ChatOptions chatOptions;
     protected String userPrompt;
 
     protected String systemPrompt;
@@ -78,11 +78,11 @@ public class LlmNode extends BaseNode {
         this.systemPrompt = systemPrompt;
     }
 
-    public ChatModel.ChatOptions getChatOptions() {
+    public Llm.ChatOptions getChatOptions() {
         return chatOptions;
     }
 
-    public void setChatOptions(ChatModel.ChatOptions chatOptions) {
+    public void setChatOptions(Llm.ChatOptions chatOptions) {
         this.chatOptions = chatOptions;
     }
 
@@ -113,8 +113,8 @@ public class LlmNode extends BaseNode {
         String userPromptString = TextTemplate.of(userPrompt).formatToString(Arrays.asList(parameterValues, chain.getEnvMap()));
 
 
-        ChatModel chatModel = ChatModelManager.getInstance().getChatModel(this.llmId);
-        if (chatModel == null) {
+        Llm llm = LlmManager.getInstance().getChatModel(this.llmId);
+        if (llm == null) {
             chain.stopError("Can not find llm: " + this.llmId);
             return Collections.emptyMap();
         }
@@ -122,7 +122,7 @@ public class LlmNode extends BaseNode {
         String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(Arrays.asList(parameterValues, chain.getEnvMap()));
 
 
-        ChatModel.MessageInfo messageInfo = new ChatModel.MessageInfo();
+        Llm.MessageInfo messageInfo = new Llm.MessageInfo();
         messageInfo.setMessage(userPromptString);
         messageInfo.setSystemMessage(systemPromptString);
 
@@ -142,7 +142,7 @@ public class LlmNode extends BaseNode {
         }
 
 
-        String responseContent = chatModel.chat(messageInfo, chatOptions, this, chain);
+        String responseContent = llm.chat(messageInfo, chatOptions, this, chain);
 
         if (StringUtil.noText(responseContent)) {
             return Collections.emptyMap();
