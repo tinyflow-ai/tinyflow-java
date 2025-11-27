@@ -892,7 +892,11 @@ public class Chain extends ChainNode {
         }
     }
 
-    public void resume(Map<String, Object> variables) {
+    public synchronized void resume() {
+        resume(Collections.emptyMap());
+    }
+
+    public synchronized void resume(Map<String, Object> variables) {
         runInLifeCycle(variables,
                 new ChainResumeEvent(this, variables),
                 this::executeInternal);
