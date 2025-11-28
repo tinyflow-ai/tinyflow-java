@@ -20,6 +20,7 @@ import dev.tinyflow.core.chain.event.*;
 import dev.tinyflow.core.chain.listener.*;
 import dev.tinyflow.core.chain.repository.ChainStateRepository;
 import dev.tinyflow.core.util.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -32,14 +33,12 @@ public class Chain {
 
     protected final ChainDefinition definition;
     protected final ChainState state;
-
     protected ChainStateRepository stateRepository;
 
     protected EventManager eventManager = new EventManager();
     protected ExecutorService asyncNodeExecutors = NamedThreadPools.newFixedThreadPool("chain-executor");
     protected Phaser phaser = new Phaser(1);
     protected Throwable error;
-
 
     public static Chain currentChain() {
         return EXECUTION_THREAD_LOCAL.get();
@@ -92,13 +91,6 @@ public class Chain {
         eventManager.removeNodeErrorListener(listener);
     }
 
-    public synchronized void addSuspendListener(ChainSuspendListener listener) {
-        eventManager.addSuspendListener(listener);
-    }
-
-    public synchronized void removeSuspendListener(ChainSuspendListener listener) {
-        eventManager.removeSuspendListener(listener);
-    }
 
     public void addOutputListener(ChainOutputListener outputListener) {
         eventManager.addOutputListener(outputListener);
@@ -109,7 +101,13 @@ public class Chain {
         state.setStatus(status);
 
         if (before != status) {
-            notifyEvent(new ChainStatusChangeEvent(this, state.getStatus(), before));
+            try {
+                notifyEvent(new ChainStatusChangeEvent(this, state.getStatus(), before));
+            } finally {
+                if (stateRepository != null) {
+                    stateRepository.updateChainStatus(state.getInstanceId(), status);
+                }
+            }
         }
     }
 
@@ -287,31 +285,41 @@ public class Chain {
         return variables;
     }
 
-    protected List<Node> getSuspendOrStartNodes() {
-        Set<String> suspendNodeIds = state.getSuspendNodeIds();
-        if (suspendNodeIds != null && !suspendNodeIds.isEmpty()) {
-            List<Node> result = new ArrayList<>(suspendNodeIds.size());
-            for (String suspendNodeId : suspendNodeIds) {
-                Node suspendNode = definition.getNodeById(suspendNodeId);
-                if (suspendNode != null) {
-                    result.add(suspendNode);
+    protected List<Node> getStartNodes() {
+        List<Node> waitingNodes = getNodeByIds(state.getWaitingNodeIds());
+        if (waitingNodes != null) return waitingNodes;
+
+        List<Node> suspendNodes = getNodeByIds(state.getSuspendNodeIds());
+        if (suspendNodes != null) return suspendNodes;
+
+        return definition.getStartNodes();
+    }
+
+    @Nullable
+    private List<Node> getNodeByIds(Set<String> nodeIds) {
+        if (nodeIds != null && !nodeIds.isEmpty()) {
+            List<Node> result = new ArrayList<>(nodeIds.size());
+            for (String waitingNodeId : nodeIds) {
+                Node waitingNode = definition.getNodeById(waitingNodeId);
+                if (waitingNode != null) {
+                    result.add(waitingNode);
                 }
             }
             return result;
         }
-        return definition.getStartNodes();
+        return null;
     }
 
 
     protected void executeInternal() {
-        List<Node> currentNodes = getSuspendOrStartNodes();
-        if (currentNodes == null || currentNodes.isEmpty()) {
+        List<Node> startNodes = getStartNodes();
+        if (startNodes == null || startNodes.isEmpty()) {
             return;
         }
 
         List<ExecutionContext> executionContexts = new ArrayList<>();
-        for (Node currentNode : currentNodes) {
-            executionContexts.add(new ExecutionContext(currentNode, null, ""));
+        for (Node node : startNodes) {
+            executionContexts.add(new ExecutionContext(node, null, ""));
         }
 
         doExecuteNodes(executionContexts);
@@ -328,12 +336,17 @@ public class Chain {
                         EXECUTION_THREAD_LOCAL.set(Chain.this);
                         doExecuteNode(context);
                     } finally {
+                        saveOrUpdateState();
                         EXECUTION_THREAD_LOCAL.remove();
                         phaser.arriveAndDeregister();
                     }
                 });
             } else {
-                doExecuteNode(context);
+                try {
+                    doExecuteNode(context);
+                } finally {
+                    saveOrUpdateState();
+                }
             }
         }
     }
@@ -359,6 +372,7 @@ public class Chain {
 
 
     protected void doExecuteNode(ExecutionContext context) {
+
         Node currentNode = context.currentNode;
         String fromEdgeId = context.fromEdgeId;
 
@@ -379,59 +393,56 @@ public class Chain {
         NodeState nodeState = state.getOrCreateNodeState(currentNode.id);
         Map<String, Object> executeResult = null;
 
-        try {
-            onNodeExecuteBefore(nodeState);
 
-            if (shouldSkipCurrentNode(context, nodeState, currentNode)) {
+        if (shouldSkipCurrentNode(context, nodeState, currentNode)) {
+            return;
+        }
+
+        try {
+            notifyEvent(new NodeStartEvent(this, currentNode));
+            if (state.getStatus() != ChainStatus.RUNNING) {
                 return;
             }
-
+            nodeState.setNodeStatus(NodeStatus.RUNNING);
             try {
-                notifyEvent(new NodeStartEvent(this, currentNode));
-                if (state.getStatus() != ChainStatus.RUNNING) {
-                    return;
-                }
-                nodeState.setNodeStatus(NodeStatus.RUNNING);
-                onNodeExecuteStart(nodeState);
-                try {
-                    state.removeSuspendNodeId(currentNode.getId());
-                    executeResult = currentNode.execute(this);
-                    state.addComputeCost(currentNode.calculateComputeCost(this, executeResult));
-                } finally {
-                    nodeState.recordExecute(fromEdgeId);
-                    state.setExecuteResult(executeResult);
-                }
-            } catch (Throwable error) {
-                nodeState.setNodeStatus(NodeStatus.ERROR);
-                nodeState.setError(new ExceptionSummary(error));
-                eventManager.notifyNodeError(error, currentNode, executeResult, this);
-
-                // 错误重试
-                if (currentNode.isRetryEnable()
-                        && currentNode.getMaxRetryCount() > 0
-                        && nodeState.getRetryCount() <= currentNode.getMaxRetryCount()) {
-
-                    nodeState.setRetryCount(nodeState.getRetryCount() + 1);
-                    safeSleep(currentNode.getRetryIntervalMs());
-                    doExecuteNode(context);
-                }
-                // 异常处理
-                else {
-                    throw error;
-                }
+                state.removeSuspendNodeId(currentNode.getId());
+                executeResult = currentNode.execute(this);
+                state.addComputeCost(currentNode.calculateComputeCost(this, executeResult));
             } finally {
-                nodeState.setNodeStatusFinished();
-                onNodeExecuteEnd(nodeState);
-                notifyEvent(new NodeEndEvent(this, currentNode, executeResult));
+                nodeState.recordExecute(fromEdgeId);
+                state.setExecuteResult(executeResult);
             }
+        } catch (Throwable error) {
+            nodeState.setNodeStatus(NodeStatus.ERROR);
+            nodeState.setError(new ExceptionSummary(error));
+            eventManager.notifyNodeError(error, currentNode, executeResult, this);
 
-            if (executeResult != null && !executeResult.isEmpty()) {
-                executeResult.forEach((s, o) -> {
-                    Chain.this.state.getMemory().put(currentNode.id + "." + s, o);
-                });
+            // 错误重试
+            if (currentNode.isRetryEnable()
+                    && currentNode.getMaxRetryCount() > 0
+                    && nodeState.getRetryCount() <= currentNode.getMaxRetryCount()) {
+
+                nodeState.setRetryCount(nodeState.getRetryCount() + 1);
+
+                // 保存状态
+                saveOrUpdateState();
+
+                safeSleep(currentNode.getRetryIntervalMs());
+                doExecuteNode(context);
+            }
+            // 异常处理
+            else {
+                throw error;
             }
         } finally {
-            onNodeExecuteAfter(nodeState);
+            nodeState.setNodeStatusFinished();
+            notifyEvent(new NodeEndEvent(this, currentNode, executeResult));
+        }
+
+        if (executeResult != null && !executeResult.isEmpty()) {
+            executeResult.forEach((s, o) -> {
+                Chain.this.state.getMemory().put(currentNode.id + "." + s, o);
+            });
         }
 
         // 重置重试次数
@@ -439,9 +450,9 @@ public class Chain {
             nodeState.setRetryCount(0);
         }
 
-//        if (this.getStatus() != ChainStatus.RUNNING) {
-//            return;
-//        }
+        // 保存状态
+        saveOrUpdateState();
+
 
         // 继续执行下一个节点
         if (!currentNode.isLoopEnable()) {
@@ -523,7 +534,6 @@ public class Chain {
         if (CollectionUtil.hasItems(outwardEdges)) {
             List<ExecutionContext> nextExecutionContexts = new ArrayList<>(outwardEdges.size());
             for (Edge edge : outwardEdges) {
-//                NodeDefinition nextNode = getNodeById(edgeDefinition.getTarget());
                 Node nextNode = definition.getNodeById(edge.getTarget());
                 if (nextNode == null) {
                     continue;
@@ -535,22 +545,6 @@ public class Chain {
             }
             doExecuteNodes(nextExecutionContexts);
         }
-    }
-
-    protected void onNodeExecuteAfter(NodeState nodeState) {
-
-    }
-
-    protected void onNodeExecuteEnd(NodeState nodeState) {
-
-    }
-
-    protected void onNodeExecuteStart(NodeState nodeState) {
-
-    }
-
-    protected void onNodeExecuteBefore(NodeState nodeState) {
-
     }
 
 
@@ -566,7 +560,6 @@ public class Chain {
                 runnable.run();
             } catch (ChainSuspendException cse) {
                 this.error = cse;
-                eventManager.notifySuspend(this);
                 state.setError(new ExceptionSummary(cse));
             } catch (Exception e) {
                 this.error = e;
@@ -583,8 +576,11 @@ public class Chain {
             } else if (state.getStatus() == ChainStatus.ERROR) {
                 setStatusAndNotifyEvent(ChainStatus.FAILED);
             }
+
+            saveOrUpdateState();
+
             // 通过 WaitingScheduler 来恢复运行
-            else if (state.getStatus() == ChainStatus.WAITING) {
+            if (state.getStatus() == ChainStatus.WAITING) {
                 // todo  通过 WaitingScheduler 来恢复运行
             }
         } finally {
@@ -689,6 +685,22 @@ public class Chain {
 
     public void setEventManager(EventManager eventManager) {
         this.eventManager = eventManager;
+    }
+
+    public void saveOrUpdateState() {
+        if (stateRepository == null) {
+            return;
+        }
+        stateRepository.saveOrUpdateChainState(state);
+    }
+
+
+    public ChainStateRepository getStateRepository() {
+        return stateRepository;
+    }
+
+    public void setStateRepository(ChainStateRepository stateRepository) {
+        this.stateRepository = stateRepository;
     }
 
     public ChainDefinition getDefinition() {

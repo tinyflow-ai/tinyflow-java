@@ -16,7 +16,7 @@ public class EventManager {
     protected final List<ChainOutputListener> outputListeners = Collections.synchronizedList(new ArrayList<>());
     protected final List<ChainErrorListener> chainErrorListeners = Collections.synchronizedList(new ArrayList<>());
     protected final List<NodeErrorListener> nodeErrorListeners = Collections.synchronizedList(new ArrayList<>());
-    protected final List<ChainSuspendListener> suspendListeners = Collections.synchronizedList(new ArrayList<>());
+//    protected final List<ChainSuspendListener> suspendListeners = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * ---------- 通用事件监听器 ----------
@@ -113,27 +113,6 @@ public class EventManager {
                 listener.onError(error, node, result, chain);
             } catch (Exception e) {
                 log.error("Error in node error listener: {}", e.toString(), e);
-            }
-        }
-    }
-
-    /**
-     * ---------- Suspend Listener ----------
-     */
-    public void addSuspendListener(ChainSuspendListener listener) {
-        suspendListeners.add(listener);
-    }
-
-    public void removeSuspendListener(ChainSuspendListener listener) {
-        suspendListeners.remove(listener);
-    }
-
-    public void notifySuspend(Chain chain) {
-        for (ChainSuspendListener listener : suspendListeners) {
-            try {
-                listener.onSuspend(chain);
-            } catch (Exception e) {
-                log.error("Error in suspend listener: {}", e.toString(), e);
             }
         }
     }

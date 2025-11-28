@@ -16,6 +16,7 @@
 package dev.tinyflow.core.chain.repository;
 
 import dev.tinyflow.core.chain.ChainState;
+import dev.tinyflow.core.chain.ChainStatus;
 
 import java.util.List;
 
@@ -24,6 +25,8 @@ public interface ChainStateRepository {
     ChainState loadChainState(String instanceId);
 
     void saveOrUpdateChainState(ChainState chainState);
+
+    void updateChainStatus(String instanceId, ChainStatus status);
 
     void deleteChainState(String instanceId);
 
