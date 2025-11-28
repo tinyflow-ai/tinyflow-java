@@ -286,31 +286,31 @@ public class Chain {
             return;
         }
 
-        List<ExecuteNode> executeNodes = new ArrayList<>();
+        List<ExecutionContext> executionContexts = new ArrayList<>();
         for (Node currentNode : currentNodes) {
-            executeNodes.add(new ExecuteNode(currentNode, null, ""));
+            executionContexts.add(new ExecutionContext(currentNode, null, ""));
         }
 
-        doExecuteNodes(executeNodes);
+        doExecuteNodes(executionContexts);
     }
 
 
-    protected void doExecuteNodes(List<ExecuteNode> executeNodes) {
-        for (ExecuteNode executeNode : executeNodes) {
-            Node currentNode = executeNode.currentNode;
+    protected void doExecuteNodes(List<ExecutionContext> executionContexts) {
+        for (ExecutionContext executionContext : executionContexts) {
+            Node currentNode = executionContext.currentNode;
             if (currentNode.isAsync()) {
                 phaser.register();
                 asyncNodeExecutors.execute(() -> {
                     try {
                         EXECUTION_THREAD_LOCAL.set(Chain.this);
-                        doExecuteNode(executeNode);
+                        doExecuteNode(executionContext);
                     } finally {
                         EXECUTION_THREAD_LOCAL.remove();
                         phaser.arriveAndDeregister();
                     }
                 });
             } else {
-                doExecuteNode(executeNode);
+                doExecuteNode(executionContext);
             }
         }
     }
@@ -334,9 +334,9 @@ public class Chain {
         return result;
     }
 
-    protected void doExecuteNode(ExecuteNode executeNode) {
-        Node currentNode = executeNode.currentNode;
-        String fromEdgeId = executeNode.fromEdgeId;
+    protected void doExecuteNode(ExecutionContext context) {
+        Node currentNode = context.currentNode;
+        String fromEdgeId = context.fromEdgeId;
 
         if (state.getStatus() == ChainStatus.SUSPEND) {
             state.addSuspendNode(currentNode.getId(), currentNode);
@@ -354,7 +354,7 @@ public class Chain {
         try {
             onNodeExecuteBefore(nodeState);
 
-            if (shouldSkipCurrentNode(fromEdgeId, nodeState, currentNode)) {
+            if (shouldSkipCurrentNode(context, nodeState, currentNode)) {
                 return;
             }
 
@@ -384,7 +384,7 @@ public class Chain {
 
                     nodeState.setRetryCount(nodeState.getRetryCount() + 1);
                     safeSleep(currentNode.getRetryIntervalMs());
-                    doExecuteNode(executeNode);
+                    doExecuteNode(context);
                 }
                 // 异常处理
                 else {
@@ -438,7 +438,7 @@ public class Chain {
         // 等待间隔
         safeSleep(currentNode.getLoopIntervalMs());
         // 继续执行当前节点
-        doExecuteNode(executeNode);
+        doExecuteNode(context);
     }
 
     private void safeSleep(long retryIntervalMs) {
@@ -457,26 +457,24 @@ public class Chain {
      * 记录节点触发，并检查当前节点的执行条件是否未通过。
      * 若条件未通过，则返回 true，表示应跳过该节点的执行。
      *
-     * @param fromEdgeId  来源于哪个边触发
+     * @param executionContext 来源于哪个边触发
      * @param nodeState   节点上下文，用于记录触发信息
      * @param currentNode 当前链路节点配置
      * @return 如果条件不满足（需要跳过），返回 true；否则返回 false
      */
-    private synchronized boolean shouldSkipCurrentNode(String fromEdgeId, NodeState nodeState, Node currentNode) {
+    private synchronized boolean shouldSkipCurrentNode(ExecutionContext executionContext, NodeState nodeState, Node currentNode) {
 
         // NodeState.recordTrigger 和 condition.check 必须在同步块内执行，
         // 否则会导致并发问题: 异步执行的情况下，可能出现全部节点触发了 trigger，但是 check 还未开始执行
-        nodeState.recordTrigger(fromEdgeId);
+        nodeState.recordTrigger(executionContext.fromEdgeId);
 
         NodeCondition condition = currentNode.getCondition();
         if (condition == null) {
             return false; // 无条件则不应跳过
         }
 
-        Edge edge = definition.getEdge(fromEdgeId);
-
-//        NodeDefinition prevNode = executeNode.prevNode;
-        Map<String, Object> prevNodeExecuteResult = edge != null ? getNodeExecuteResult(edge.getSource()) : Collections.emptyMap();
+        Node prevNode = executionContext.prevNode;
+        Map<String, Object> prevNodeExecuteResult = prevNode != null ? getNodeExecuteResult(prevNode.getId()) : Collections.emptyMap();
 
         // 返回 true 表示条件不满足，应跳过当前节点
         return !condition.check(this, nodeState, prevNodeExecuteResult);
@@ -492,7 +490,7 @@ public class Chain {
     private void doExecuteNextNodes(Node currentNode, Map<String, Object> executeResult) {
         List<Edge> outwardEdges = currentNode.getOutwardEdges();
         if (CollectionUtil.hasItems(outwardEdges)) {
-            List<ExecuteNode> nextExecuteNodes = new ArrayList<>(outwardEdges.size());
+            List<ExecutionContext> nextExecutionContexts = new ArrayList<>(outwardEdges.size());
             for (Edge edge : outwardEdges) {
 //                NodeDefinition nextNode = getNodeById(edgeDefinition.getTarget());
                 Node nextNode = definition.getNodeById(edge.getTarget());
@@ -501,10 +499,10 @@ public class Chain {
                 }
                 EdgeCondition condition = edge.getCondition();
                 if (condition == null || condition.check(this, edge, executeResult)) {
-                    nextExecuteNodes.add(new ExecuteNode(nextNode, currentNode, edge.getId()));
+                    nextExecutionContexts.add(new ExecutionContext(nextNode, currentNode, edge.getId()));
                 }
             }
-            doExecuteNodes(nextExecuteNodes);
+            doExecuteNodes(nextExecutionContexts);
         }
     }
 
@@ -629,18 +627,17 @@ public class Chain {
     }
 
 
-    public static class ExecuteNode {
-
+    public static class ExecutionContext {
         final Node currentNode;
         final Node prevNode;
         final String fromEdgeId;
-
-        public ExecuteNode(Node currentNode, Node prevNode, String fromEdgeId) {
+        public ExecutionContext(Node currentNode, Node prevNode, String fromEdgeId) {
             this.currentNode = currentNode;
             this.prevNode = prevNode;
             this.fromEdgeId = fromEdgeId;
         }
     }
+
 
     public void reset() {
         //node
