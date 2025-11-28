@@ -164,20 +164,6 @@ public class Chain {
     }
 
 
-    public List<Parameter> getParameters() {
-        List<Node> startNodes = this.getStartNodes();
-        if (startNodes == null || startNodes.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<Parameter> parameters = new ArrayList<>();
-        for (Node node : startNodes) {
-            List<Parameter> nodeParameters = node.getParameters();
-            if (nodeParameters != null) parameters.addAll(nodeParameters);
-        }
-        return parameters;
-    }
-
     public Map<String, Object> getParameterValues(Node node) {
         return getParameterValues(node, node.getParameters());
     }
@@ -279,9 +265,17 @@ public class Chain {
         return variables;
     }
 
+    protected List<Node> getSuspendOrStartNodes() {
+        ConcurrentHashMap<String, Node> suspendNodes = state.getSuspendNodes();
+        if (suspendNodes != null && !suspendNodes.isEmpty()) {
+            return new ArrayList<>(suspendNodes.values());
+        }
+        return definition.getStartNodes();
+    }
+
 
     protected void executeInternal() {
-        List<Node> currentNodes = getStartNodes();
+        List<Node> currentNodes = getSuspendOrStartNodes();
         if (currentNodes == null || currentNodes.isEmpty()) {
             return;
         }
@@ -458,8 +452,8 @@ public class Chain {
      * 若条件未通过，则返回 true，表示应跳过该节点的执行。
      *
      * @param executionContext 来源于哪个边触发
-     * @param nodeState   节点上下文，用于记录触发信息
-     * @param currentNode 当前链路节点配置
+     * @param nodeState        节点上下文，用于记录触发信息
+     * @param currentNode      当前链路节点配置
      * @return 如果条件不满足（需要跳过），返回 true；否则返回 false
      */
     private synchronized boolean shouldSkipCurrentNode(ExecutionContext executionContext, NodeState nodeState, Node currentNode) {
@@ -520,26 +514,6 @@ public class Chain {
 
     protected void onNodeExecuteBefore(NodeState nodeState) {
 
-    }
-
-    private List<Node> getStartNodes() {
-        if (definition.nodes == null || definition.nodes.isEmpty()) {
-            return null;
-        }
-
-        ConcurrentHashMap<String, Node> suspendNodes = state.getSuspendNodes();
-        if (suspendNodes != null && !suspendNodes.isEmpty()) {
-            return new ArrayList<>(suspendNodes.values());
-        }
-
-        List<Node> nodes = new ArrayList<>();
-
-        for (Node node : definition.nodes) {
-            if (CollectionUtil.noItems(node.getInwardEdges())) {
-                nodes.add(node);
-            }
-        }
-        return nodes;
     }
 
 
@@ -631,6 +605,7 @@ public class Chain {
         final Node currentNode;
         final Node prevNode;
         final String fromEdgeId;
+
         public ExecutionContext(Node currentNode, Node prevNode, String fromEdgeId) {
             this.currentNode = currentNode;
             this.prevNode = prevNode;

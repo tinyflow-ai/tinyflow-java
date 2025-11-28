@@ -15,10 +15,12 @@
  */
 package dev.tinyflow.core.chain;
 
+import dev.tinyflow.core.util.CollectionUtil;
 import dev.tinyflow.core.util.StringUtil;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -108,6 +110,37 @@ public class ChainDefinition implements Serializable {
             }
         }
     }
+
+    public List<Node> getStartNodes() {
+        if (nodes == null || nodes.isEmpty()) {
+            return null;
+        }
+
+        List<Node> result = new ArrayList<>();
+
+        for (Node node : nodes) {
+            if (CollectionUtil.noItems(node.getInwardEdges())) {
+                result.add(node);
+            }
+        }
+        return result;
+    }
+
+
+    public List<Parameter> getStartParameters() {
+        List<Node> startNodes = this.getStartNodes();
+        if (startNodes == null || startNodes.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Parameter> parameters = new ArrayList<>();
+        for (Node node : startNodes) {
+            List<Parameter> nodeParameters = node.getParameters();
+            if (nodeParameters != null) parameters.addAll(nodeParameters);
+        }
+        return parameters;
+    }
+
 
     public Chain createChain() {
         return new Chain(this);

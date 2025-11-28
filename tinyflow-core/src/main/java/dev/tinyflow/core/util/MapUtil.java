@@ -75,7 +75,7 @@ public class MapUtil {
     }
 
     public static Object getByPath(Map<String, Object> from, String keyOrPath) {
-        if (StringUtil.noText(keyOrPath)) {
+        if (StringUtil.noText(keyOrPath) || from == null || from.isEmpty()) {
             return null;
         }
 
