@@ -2,8 +2,9 @@ package dev.tinyflow.core.test;
 
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.chain.Chain;
+import dev.tinyflow.core.chain.ChainDefinition;
 import dev.tinyflow.core.chain.Event;
-import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.Node;
 import dev.tinyflow.core.chain.listener.ChainEventListener;
 import dev.tinyflow.core.chain.listener.ChainOutputListener;
 
@@ -22,7 +23,9 @@ public class TinyflowTest {
         Map<String, Object> variables = new HashMap<>();
         variables.put("name", "michael");
 
-        Chain chain = tinyflow.toChain();
+        ChainDefinition definition = tinyflow.toChain();
+        Chain chain = definition.createChain();
+
         chain.addEventListener(new ChainEventListener() {
             @Override
             public void onEvent(Event event, Chain chain) {
@@ -32,7 +35,7 @@ public class TinyflowTest {
 
         chain.addOutputListener(new ChainOutputListener() {
             @Override
-            public void onOutput(Chain chain, ChainNode node, Object outputMessage) {
+            public void onOutput(Chain chain, Node node, Object outputMessage) {
                 System.out.println("outputMessage: " + outputMessage);
             }
         });

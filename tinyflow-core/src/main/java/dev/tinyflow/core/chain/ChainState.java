@@ -35,80 +35,36 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ChainState implements Serializable {
 
-    String chainDefinitionId;
-    ConcurrentHashMap<String, Object> memory;
+    private String chainDefinitionId;
+    private ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<>();
 
-    Map<String, Object> executeResult;
-    Map<String, Object> environment;
+    private Map<String, Object> executeResult;
+    private Map<String, Object> environment;
 
-    ConcurrentHashMap<String, NodeState> nodeContexts;
+    private ConcurrentHashMap<String, NodeState> nodeStates = new ConcurrentHashMap<>();
 
     // 算力消耗定义，积分消耗
-    private Long computeCost;
+    private long computeCost;
 
-    ConcurrentHashMap<String, Node> suspendNodes = new ConcurrentHashMap<>();
-    List<Parameter> suspendForParameters;
-    ChainStatus status;
-    String message;
-    ExceptionSummary error;
+    private ConcurrentHashMap<String, Node> suspendNodes;
+    private List<Parameter> suspendForParameters;
+    private ChainStatus status;
+    private String message;
+    private ExceptionSummary error;
 
-
-    public static ChainState fromJSON(String jsonString) {
-        ParserConfig config = new ParserConfig();
-        config.putDeserializer(ChainState.class, new ChainDeserializer());
-        return JSON.parseObject(jsonString, ChainState.class, config, Feature.SupportAutoType);
+    public ChainState() {
+        this.status = ChainStatus.READY;
+        this.computeCost = 0;
     }
 
-    public String toJSON() {
-        SerializeConfig config = new SerializeConfig();
-        config.put(ChainState.class, new ChainSerializer());
-        return JSON.toJSONString(this, config, SerializerFeature.WriteClassName);
+
+    public String getChainDefinitionId() {
+        return chainDefinitionId;
     }
 
-//    public Chain toChain() {
-//        return new Chain(this);
-//    }
-
-
-//    public String getId() {
-//        return id;
-//    }
-//
-//    public void setId(String id) {
-//        this.id = id;
-//    }
-//
-//    public String getName() {
-//        return name;
-//    }
-//
-//    public void setName(String name) {
-//        this.name = name;
-//    }
-//
-//    public String getDescription() {
-//        return description;
-//    }
-//
-//    public void setDescription(String description) {
-//        this.description = description;
-//    }
-
-//    public List<NodeDefinition> getNodes() {
-//        return nodes;
-//    }
-//
-//    public void setNodes(List<NodeDefinition> nodes) {
-//        this.nodes = nodes;
-//    }
-//
-//    public List<EdgeDefinition> getEdges() {
-//        return edges;
-//    }
-//
-//    public void setEdges(List<EdgeDefinition> edgeDefinitions) {
-//        this.edges = edgeDefinitions;
-//    }
+    public void setChainDefinitionId(String chainDefinitionId) {
+        this.chainDefinitionId = chainDefinitionId;
+    }
 
     public ConcurrentHashMap<String, Object> getMemory() {
         return memory;
@@ -134,12 +90,27 @@ public class ChainState implements Serializable {
         this.environment = environment;
     }
 
-    public ConcurrentHashMap<String, NodeState> getNodeContexts() {
-        return nodeContexts;
+    public ConcurrentHashMap<String, NodeState> getNodeStates() {
+        return nodeStates;
     }
 
-    public void setNodeContexts(ConcurrentHashMap<String, NodeState> nodeContexts) {
-        this.nodeContexts = nodeContexts;
+    public void setNodeStates(ConcurrentHashMap<String, NodeState> nodeStates) {
+        this.nodeStates = nodeStates;
+    }
+
+    public void addNodeState(String nodeId, NodeState nodeState) {
+        if (nodeStates == null) {
+            nodeStates = new ConcurrentHashMap<>();
+        }
+        nodeStates.put(nodeId, nodeState);
+    }
+
+    public Long getComputeCost() {
+        return computeCost;
+    }
+
+    public void setComputeCost(Long computeCost) {
+        this.computeCost = computeCost;
     }
 
     public ConcurrentHashMap<String, Node> getSuspendNodes() {
@@ -148,6 +119,20 @@ public class ChainState implements Serializable {
 
     public void setSuspendNodes(ConcurrentHashMap<String, Node> suspendNodes) {
         this.suspendNodes = suspendNodes;
+    }
+
+    public void removeSuspendNode(String nodeId) {
+        if (suspendNodes == null) {
+            return;
+        }
+        suspendNodes.remove(nodeId);
+    }
+
+    public void addSuspendNode(String nodeId, Node node) {
+        if (suspendNodes == null) {
+            suspendNodes = new ConcurrentHashMap<>();
+        }
+        suspendNodes.putIfAbsent(nodeId, node);
     }
 
     public List<Parameter> getSuspendForParameters() {
@@ -174,19 +159,45 @@ public class ChainState implements Serializable {
         this.message = message;
     }
 
-    public void clear() {
+    public ExceptionSummary getError() {
+        return error;
+    }
 
-        memory.clear();
+    public void setError(ExceptionSummary error) {
+        this.error = error;
+    }
+
+    public static ChainState fromJSON(String jsonString) {
+        ParserConfig config = new ParserConfig();
+        config.putDeserializer(ChainState.class, new ChainDeserializer());
+        return JSON.parseObject(jsonString, ChainState.class, config, Feature.SupportAutoType);
+    }
+
+    public String toJSON() {
+        SerializeConfig config = new SerializeConfig();
+        config.put(ChainState.class, new ChainSerializer());
+        return JSON.toJSONString(this, config, SerializerFeature.WriteClassName);
+    }
+
+    public void reset() {
+        this.chainDefinitionId = null;
+        this.memory.clear();
+        this.executeResult = null;
+        this.environment = null;
+        this.nodeStates = null;
+        this.computeCost = 0;
+        this.suspendNodes = null;
+        this.suspendForParameters = null;
+        this.status = ChainStatus.READY;
+        this.message = null;
+        this.error = null;
     }
 
     public NodeState getNodeState(String nodeId) {
-        return MapUtil.computeIfAbsent(nodeContexts, nodeId, NodeState::new);
+        return MapUtil.computeIfAbsent(nodeStates, nodeId, NodeState::new);
     }
 
     public void addComputeCost(Long value) {
-        if (this.computeCost == null) {
-            this.computeCost = 0L;
-        }
         if (value == null) {
             value = 0L;
         }
@@ -214,13 +225,6 @@ public class ChainState implements Serializable {
         }
     }
 
-    public ExceptionSummary getError() {
-        return error;
-    }
-
-    public void setError(ExceptionSummary error) {
-        this.error = error;
-    }
 
     @Override
     public String toString() {
@@ -229,7 +233,7 @@ public class ChainState implements Serializable {
                 ", memory=" + memory +
                 ", executeResult=" + executeResult +
                 ", environment=" + environment +
-                ", nodeContexts=" + nodeContexts +
+                ", nodeContexts=" + nodeStates +
                 ", computeCost=" + computeCost +
                 ", suspendNodes=" + suspendNodes +
                 ", suspendForParameters=" + suspendForParameters +

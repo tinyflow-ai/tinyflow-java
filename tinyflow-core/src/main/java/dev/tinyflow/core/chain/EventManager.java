@@ -87,7 +87,6 @@ public class EventManager {
     }
 
     public void notifyChainError(Throwable error, Chain execution) {
-        if (chainErrorListeners.isEmpty()) throw new RuntimeException(error);
         for (ChainErrorListener listener : chainErrorListeners) {
             try {
                 listener.onError(error, execution);
