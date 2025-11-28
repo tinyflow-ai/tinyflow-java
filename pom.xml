@@ -55,6 +55,8 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <langchain4j.version>1.7.1</langchain4j.version>
+        <agentsflexbom.version>2.0.0-beta.1</agentsflexbom.version>
     </properties>
 
     <dependencyManagement>
@@ -62,7 +64,13 @@
             <dependency>
                 <groupId>com.agentsflex</groupId>
                 <artifactId>agents-flex-bom</artifactId>
-                <version>2.0.0-beta.1</version>
+                <version>${agentsflexbom.version}</version>
+            </dependency>
+            <dependency>
+                <!--            核心依赖-->
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j</artifactId>
+                <version>${langchain4j.version}</version>
             </dependency>
 
             <!--使用 enjoy 模板引擎-->
