@@ -13,30 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.chain.impl;
+package dev.tinyflow.core.chain;
 
 
-import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainEdge;
-import dev.tinyflow.core.chain.ChainNode;
-
-public class SequentialChain extends Chain {
-
-    @Override
-    public void addNode(ChainNode chainNode) {
-        super.addNode(chainNode);
-
-        if (this.nodes.size() < 2) {
-            return;
-        }
-
-        String sourceId = this.nodes.get(this.nodes.size() - 2).getId();
-        String targetId = this.nodes.get(this.nodes.size() - 1).getId();
-
-        ChainEdge edge = new ChainEdge();
-        edge.setSource(sourceId);
-        edge.setTarget(targetId);
-
-        super.addEdge(edge);
-    }
+public interface NodeValidator {
+    NodeValidResult validate(Node node);
 }

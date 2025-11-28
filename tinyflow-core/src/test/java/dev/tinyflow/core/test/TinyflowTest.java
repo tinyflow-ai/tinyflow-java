@@ -2,7 +2,7 @@ package dev.tinyflow.core.test;
 
 import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainEvent;
+import dev.tinyflow.core.chain.Event;
 import dev.tinyflow.core.chain.ChainNode;
 import dev.tinyflow.core.chain.listener.ChainEventListener;
 import dev.tinyflow.core.chain.listener.ChainOutputListener;
@@ -25,7 +25,7 @@ public class TinyflowTest {
         Chain chain = tinyflow.toChain();
         chain.addEventListener(new ChainEventListener() {
             @Override
-            public void onEvent(ChainEvent event, Chain chain) {
+            public void onEvent(Event event, Chain chain) {
                 System.out.println(event.toString());
             }
         });

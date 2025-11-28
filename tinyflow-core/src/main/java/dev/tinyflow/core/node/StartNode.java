@@ -28,18 +28,6 @@ public class StartNode extends BaseNode {
 
     @Override
     public String toString() {
-        return "StartNode{" +
-            "description='" + description + '\'' +
-            ", parameters=" + parameters +
-            ", outputDefs=" + outputDefs +
-            ", id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", async=" + async +
-            ", inwardEdges=" + inwardEdges +
-            ", outwardEdges=" + outwardEdges +
-            ", condition=" + condition +
-            ", memory=" + memory +
-            ", nodeStatus=" + nodeStatus +
-            '}';
+        return super.toString();
     }
 }

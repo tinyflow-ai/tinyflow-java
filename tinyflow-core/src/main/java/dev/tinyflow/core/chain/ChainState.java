@@ -24,6 +24,7 @@ import com.alibaba.fastjson.serializer.JSONSerializer;
 import com.alibaba.fastjson.serializer.ObjectSerializer;
 import com.alibaba.fastjson.serializer.SerializeConfig;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import dev.tinyflow.core.util.MapUtil;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -34,116 +35,87 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ChainState implements Serializable {
 
-    private String id;
-    private String name;
-    private String description;
+    String chainDefinitionId;
+    ConcurrentHashMap<String, Object> memory;
 
-    private List<ChainNode> nodes;
-    private List<ChainEdge> edges;
+    Map<String, Object> executeResult;
+    Map<String, Object> environment;
 
-    private Map<String, Object> executeResult;
-    private Map<String, Object> environment;
+    ConcurrentHashMap<String, NodeState> nodeContexts;
 
-    private ConcurrentHashMap<String, NodeContext> nodeContexts;
+    // 算力消耗定义，积分消耗
+    private Long computeCost;
 
-    protected ConcurrentHashMap<String, ChainNode> suspendNodes = new ConcurrentHashMap<>();
-    private List<Parameter> suspendForParameters;
-    private ChainStatus status;
-    private String message;
-
-    public ChainState() {
-    }
-
-    public ChainState(Chain chain) {
-        this.id = chain.getId();
-        this.name = chain.getName();
-        this.description = chain.getDescription();
-
-        this.nodes = chain.getNodes();
-        this.edges = chain.getEdges();
-
-        this.executeResult = chain.getExecuteResult();
-        this.environment = chain.getEnvironment();
-        this.nodeContexts = chain.getNodeContexts();
-
-        this.suspendNodes = chain.getSuspendNodes();
-        this.suspendForParameters = chain.getSuspendForParameters();
-        this.status = chain.getStatus();
-        this.message = chain.getMessage();
-    }
+    ConcurrentHashMap<String, Node> suspendNodes = new ConcurrentHashMap<>();
+    List<Parameter> suspendForParameters;
+    ChainStatus status;
+    String message;
+    ExceptionSummary error;
 
 
     public static ChainState fromJSON(String jsonString) {
         ParserConfig config = new ParserConfig();
-        config.putDeserializer(Chain.class, new ChainDeserializer());
+        config.putDeserializer(ChainState.class, new ChainDeserializer());
         return JSON.parseObject(jsonString, ChainState.class, config, Feature.SupportAutoType);
     }
 
     public String toJSON() {
         SerializeConfig config = new SerializeConfig();
-        config.put(Chain.class, new ChainSerializer());
+        config.put(ChainState.class, new ChainSerializer());
         return JSON.toJSONString(this, config, SerializerFeature.WriteClassName);
     }
 
-    public Chain toChain() {
-        return new Chain(this);
-    }
+//    public Chain toChain() {
+//        return new Chain(this);
+//    }
 
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-//    public ChainHolder getParent() {
-//        return parent;
+//    public String getId() {
+//        return id;
 //    }
 //
-//    public void setParent(ChainHolder parent) {
-//        this.parent = parent;
+//    public void setId(String id) {
+//        this.id = id;
 //    }
 //
-//    public List<ChainHolder> getChildren() {
-//        return children;
+//    public String getName() {
+//        return name;
 //    }
 //
-//    public void setChildren(List<ChainHolder> children) {
-//        this.children = children;
+//    public void setName(String name) {
+//        this.name = name;
+//    }
+//
+//    public String getDescription() {
+//        return description;
+//    }
+//
+//    public void setDescription(String description) {
+//        this.description = description;
 //    }
 
-    public List<ChainNode> getNodes() {
-        return nodes;
+//    public List<NodeDefinition> getNodes() {
+//        return nodes;
+//    }
+//
+//    public void setNodes(List<NodeDefinition> nodes) {
+//        this.nodes = nodes;
+//    }
+//
+//    public List<EdgeDefinition> getEdges() {
+//        return edges;
+//    }
+//
+//    public void setEdges(List<EdgeDefinition> edgeDefinitions) {
+//        this.edges = edgeDefinitions;
+//    }
+
+    public ConcurrentHashMap<String, Object> getMemory() {
+        return memory;
     }
 
-    public void setNodes(List<ChainNode> nodes) {
-        this.nodes = nodes;
-    }
-
-    public List<ChainEdge> getEdges() {
-        return edges;
-    }
-
-    public void setEdges(List<ChainEdge> edges) {
-        this.edges = edges;
+    public void setMemory(ConcurrentHashMap<String, Object> memory) {
+        this.memory = memory;
     }
 
     public Map<String, Object> getExecuteResult() {
@@ -162,19 +134,19 @@ public class ChainState implements Serializable {
         this.environment = environment;
     }
 
-    public ConcurrentHashMap<String, NodeContext> getNodeContexts() {
+    public ConcurrentHashMap<String, NodeState> getNodeContexts() {
         return nodeContexts;
     }
 
-    public void setNodeContexts(ConcurrentHashMap<String, NodeContext> nodeContexts) {
+    public void setNodeContexts(ConcurrentHashMap<String, NodeState> nodeContexts) {
         this.nodeContexts = nodeContexts;
     }
 
-    public ConcurrentHashMap<String, ChainNode> getSuspendNodes() {
+    public ConcurrentHashMap<String, Node> getSuspendNodes() {
         return suspendNodes;
     }
 
-    public void setSuspendNodes(ConcurrentHashMap<String, ChainNode> suspendNodes) {
+    public void setSuspendNodes(ConcurrentHashMap<String, Node> suspendNodes) {
         this.suspendNodes = suspendNodes;
     }
 
@@ -202,6 +174,25 @@ public class ChainState implements Serializable {
         this.message = message;
     }
 
+    public void clear() {
+
+        memory.clear();
+    }
+
+    public NodeState getNodeState(String nodeId) {
+        return MapUtil.computeIfAbsent(nodeContexts, nodeId, NodeState::new);
+    }
+
+    public void addComputeCost(Long value) {
+        if (this.computeCost == null) {
+            this.computeCost = 0L;
+        }
+        if (value == null) {
+            value = 0L;
+        }
+        this.computeCost += value;
+    }
+
     public static class ChainSerializer implements ObjectSerializer {
         @Override
         public void write(JSONSerializer serializer, Object object, Object fieldName, Type fieldType, int features) throws IOException {
@@ -209,7 +200,7 @@ public class ChainState implements Serializable {
                 serializer.writeNull();
                 return;
             }
-            Chain chain = (Chain) object;
+            ChainState chain = (ChainState) object;
             serializer.write(chain.toJSON());
         }
     }
@@ -219,26 +210,32 @@ public class ChainState implements Serializable {
         public <T> T deserialze(DefaultJSONParser parser, Type type, Object fieldName) {
             String value = parser.parseObject(String.class);
             //noinspection unchecked
-            return (T) Chain.fromJSON(value);
+            return (T) ChainState.fromJSON(value);
         }
+    }
+
+    public ExceptionSummary getError() {
+        return error;
+    }
+
+    public void setError(ExceptionSummary error) {
+        this.error = error;
     }
 
     @Override
     public String toString() {
-        return "ChainHolder{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-//            ", parent=" + parent +
-//            ", children=" + children +
-                ", nodes=" + nodes +
-                ", edges=" + edges +
+        return "ChainState{" +
+                "chainDefinitionId='" + chainDefinitionId + '\'' +
+                ", memory=" + memory +
                 ", executeResult=" + executeResult +
+                ", environment=" + environment +
                 ", nodeContexts=" + nodeContexts +
+                ", computeCost=" + computeCost +
                 ", suspendNodes=" + suspendNodes +
                 ", suspendForParameters=" + suspendForParameters +
                 ", status=" + status +
                 ", message='" + message + '\'' +
+                ", error=" + error +
                 '}';
     }
 }

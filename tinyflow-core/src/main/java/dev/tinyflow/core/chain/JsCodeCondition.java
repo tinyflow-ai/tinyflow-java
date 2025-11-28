@@ -39,7 +39,7 @@ public class JsCodeCondition implements NodeCondition, EdgeCondition {
     }
 
     @Override
-    public boolean check(Chain chain, ChainEdge edge, Map<String, Object> executeResult) {
+    public boolean check(Chain chain, Edge edge, Map<String, Object> executeResult) {
         Maps map = Maps.of("_edge", edge).set("_chain", chain);
         if (executeResult != null) {
             map.putAll(executeResult);
@@ -48,7 +48,7 @@ public class JsCodeCondition implements NodeCondition, EdgeCondition {
     }
 
     @Override
-    public boolean check(Chain chain, NodeContext context, Map<String, Object> executeResult) {
+    public boolean check(Chain chain, NodeState context, Map<String, Object> executeResult) {
         Maps map = Maps.of("_context", context).set("_chain", chain);
         if (executeResult != null) {
             map.putAll(executeResult);

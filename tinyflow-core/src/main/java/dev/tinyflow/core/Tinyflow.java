@@ -15,7 +15,7 @@
  */
 package dev.tinyflow.core;
 
-import dev.tinyflow.core.chain.Chain;
+import dev.tinyflow.core.chain.ChainDefinition;
 import dev.tinyflow.core.parser.ChainParser;
 import dev.tinyflow.core.util.StringUtil;
 
@@ -56,7 +56,7 @@ public class Tinyflow {
         this.addDefaultNodeParsers = addDefaultNodeParsers;
     }
 
-    public Chain toChain() {
+    public ChainDefinition toChain() {
         if (StringUtil.noText(data)) {
             throw new IllegalStateException("data is empty");
         }

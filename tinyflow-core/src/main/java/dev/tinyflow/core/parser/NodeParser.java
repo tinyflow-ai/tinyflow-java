@@ -17,9 +17,9 @@ package dev.tinyflow.core.parser;
 
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
-import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.Node;
 
-public interface NodeParser<T extends ChainNode> {
+public interface NodeParser<T extends Node> {
 
     T parse(JSONObject nodeJSONObject, Tinyflow tinyflow);
 

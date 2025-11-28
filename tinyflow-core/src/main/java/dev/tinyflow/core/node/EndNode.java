@@ -83,19 +83,27 @@ public class EndNode extends BaseNode {
     @Override
     public String toString() {
         return "EndNode{" +
-            "normal=" + normal +
-            ", message='" + message + '\'' +
-            ", description='" + description + '\'' +
-            ", parameters=" + parameters +
-            ", outputDefs=" + outputDefs +
-            ", id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", async=" + async +
-            ", inwardEdges=" + inwardEdges +
-            ", outwardEdges=" + outwardEdges +
-            ", condition=" + condition +
-            ", memory=" + memory +
-            ", nodeStatus=" + nodeStatus +
-            '}';
+                "normal=" + normal +
+                ", message='" + message + '\'' +
+                ", parameters=" + parameters +
+                ", outputDefs=" + outputDefs +
+                ", id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", async=" + async +
+                ", inwardEdges=" + inwardEdges +
+                ", outwardEdges=" + outwardEdges +
+                ", condition=" + condition +
+                ", validator=" + validator +
+                ", loopEnable=" + loopEnable +
+                ", loopIntervalMs=" + loopIntervalMs +
+                ", loopBreakCondition=" + loopBreakCondition +
+                ", maxLoopCount=" + maxLoopCount +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
+                '}';
     }
 }

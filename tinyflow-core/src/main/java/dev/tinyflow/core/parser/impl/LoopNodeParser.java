@@ -15,11 +15,11 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import dev.tinyflow.core.chain.Chain;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
+import dev.tinyflow.core.chain.ChainDefinition;
 import dev.tinyflow.core.chain.Parameter;
 import dev.tinyflow.core.node.LoopNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
@@ -41,7 +41,7 @@ public class LoopNodeParser extends BaseNodeParser<LoopNode> {
         JSONArray nodes = flowRoot.getJSONArray("nodes");
         JSONArray edges = flowRoot.getJSONArray("edges");
 
-        Chain chain = tinyflow.getChainParser().parse(tinyflow, nodes, edges, root);
+        ChainDefinition chain = tinyflow.getChainParser().parse(tinyflow, nodes, edges, root);
         loopNode.setLoopChain(chain);
 
         return loopNode;

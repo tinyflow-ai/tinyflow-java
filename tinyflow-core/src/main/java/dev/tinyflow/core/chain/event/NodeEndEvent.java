@@ -17,22 +17,22 @@ package dev.tinyflow.core.chain.event;
 
 
 import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.Node;
 
 import java.util.Map;
 
-public class NodeEndEvent extends BaseChainEvent {
+public class NodeEndEvent extends BaseEvent {
 
-    private final ChainNode node;
+    private final Node node;
     private final Map<String, Object> result;
 
-    public NodeEndEvent(Chain chain, ChainNode node, Map<String, Object> result) {
+    public NodeEndEvent(Chain chain, Node node, Map<String, Object> result) {
         super(chain);
         this.node = node;
         this.result = result;
     }
 
-    public ChainNode getNode() {
+    public Node getNode() {
         return node;
     }
 

@@ -256,6 +256,7 @@ public class HttpNode extends BaseNode {
         return RequestBody.create("", null);
     }
 
+
     @Override
     public String toString() {
         return "HttpNode{" +
@@ -263,8 +264,8 @@ public class HttpNode extends BaseNode {
                 ", method='" + method + '\'' +
                 ", headers=" + headers +
                 ", bodyType='" + bodyType + '\'' +
-                ", fromData=" + formData +
-                ", fromUrlencoded=" + formUrlencoded +
+                ", formData=" + formData +
+                ", formUrlencoded=" + formUrlencoded +
                 ", bodyJson='" + bodyJson + '\'' +
                 ", rawBody='" + rawBody + '\'' +
                 ", parameters=" + parameters +
@@ -276,8 +277,16 @@ public class HttpNode extends BaseNode {
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
-                ", memory=" + memory +
-                ", nodeStatus=" + nodeStatus +
+                ", validator=" + validator +
+                ", loopEnable=" + loopEnable +
+                ", loopIntervalMs=" + loopIntervalMs +
+                ", loopBreakCondition=" + loopBreakCondition +
+                ", maxLoopCount=" + maxLoopCount +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
                 '}';
     }
 }

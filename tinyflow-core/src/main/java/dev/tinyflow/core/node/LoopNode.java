@@ -16,17 +16,14 @@
 package dev.tinyflow.core.node;
 
 
-import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainStatus;
-import dev.tinyflow.core.chain.Parameter;
-import dev.tinyflow.core.chain.RefType;
+import dev.tinyflow.core.chain.*;
 
 import java.util.*;
 
 public class LoopNode extends BaseNode {
 
     private Parameter loopVar;
-    private Chain loopChain;
+    private ChainDefinition loopChainDefinition;
 
     public Parameter getLoopVar() {
         return loopVar;
@@ -36,28 +33,24 @@ public class LoopNode extends BaseNode {
         this.loopVar = loopVar;
     }
 
-    public Chain getLoopChain() {
-        return loopChain;
+    public ChainDefinition getLoopChain() {
+        return loopChainDefinition;
     }
 
-    public void setLoopChain(Chain loopChain) {
-        this.loopChain = loopChain;
+    public void setLoopChain(ChainDefinition loopChain) {
+        this.loopChainDefinition = loopChain;
     }
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
-        loopChain.setStatus(ChainStatus.READY);
+        Chain loopChain = new Chain(this.loopChainDefinition);
 
-        // 复制父流程的参数
-        loopChain.setEventListeners(chain.getEventListeners());
-        loopChain.setOutputListeners(chain.getOutputListeners());
-        loopChain.setChainErrorListeners(chain.getChainErrorListeners());
-        loopChain.setNodeErrorListeners(chain.getNodeErrorListeners());
-        loopChain.setSuspendNodes(chain.getSuspendNodes());
+        // 复制父流程的监听器
+        loopChain.setEventManager(chain.getEventManager());
 
 
         Map<String, Object> executeResult = new HashMap<>();
-        Map<String, Object> chainMemory = chain.getMemory();
+        Map<String, Object> chainMemory = chain.getState().getMemory();
 
         Map<String, Object> loopVars = chain.getParameterValues(this, Collections.singletonList(loopVar));
         Object loopValue = loopVars.get(loopVar.getName());
@@ -65,25 +58,25 @@ public class LoopNode extends BaseNode {
             Iterable<?> iterable = (Iterable<?>) loopValue;
             int index = 0;
             for (Object o : iterable) {
-                if (this.loopChain.getStatus() != ChainStatus.READY) {
+                if (loopChain.getState().getStatus() != ChainStatus.READY) {
                     break;
                 }
-                executeLoopChain(index++, o, chainMemory, executeResult);
+                executeLoopChain(loopChain, index++, o, chainMemory, executeResult);
             }
         } else if (loopValue instanceof Number || (loopValue instanceof String && isNumeric(loopValue.toString()))) {
             int count = loopValue instanceof Number ? ((Number) loopValue).intValue() : Integer.parseInt(loopValue.toString().trim());
             for (int i = 0; i < count; i++) {
-                if (this.loopChain.getStatus() != ChainStatus.READY) {
+                if (loopChain.getState().getStatus() != ChainStatus.READY) {
                     break;
                 }
-                executeLoopChain(i, i, chainMemory, executeResult);
+                executeLoopChain(loopChain, i, i, chainMemory, executeResult);
             }
         }
 
         return executeResult;
     }
 
-    private void executeLoopChain(int index, Object loopItem, Map<String, Object> parentMap, Map<String, Object> executeResult) {
+    private void executeLoopChain(Chain loopChain, int index, Object loopItem, Map<String, Object> parentMap, Map<String, Object> executeResult) {
         Map<String, Object> loopParams = new HashMap<>();
         loopParams.put(this.id + ".index", index);
         loopParams.put(this.id + ".loopItem", loopItem);
@@ -92,7 +85,7 @@ public class LoopNode extends BaseNode {
             loopChain.execute(loopParams);
         } finally {
             // 正常结束的情况下，填充结果
-            if (loopChain.getStatus() == ChainStatus.FINISHED_NORMAL) {
+            if (loopChain.getState().getStatus() == ChainStatus.FINISHED_NORMAL) {
                 fillResult(executeResult, loopChain);
 
                 //重置 chain statue 为 ready

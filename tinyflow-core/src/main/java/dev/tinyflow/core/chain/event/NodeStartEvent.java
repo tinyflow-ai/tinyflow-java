@@ -17,18 +17,18 @@ package dev.tinyflow.core.chain.event;
 
 
 import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.Node;
 
-public class NodeStartEvent extends BaseChainEvent {
+public class NodeStartEvent extends BaseEvent {
 
-    private final ChainNode node;
+    private final Node node;
 
-    public NodeStartEvent(Chain chain, ChainNode node) {
+    public NodeStartEvent(Chain chain, Node node) {
         super(chain);
         this.node = node;
     }
 
-    public ChainNode getNode() {
+    public Node getNode() {
         return node;
     }
 

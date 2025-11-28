@@ -142,7 +142,7 @@ public class JsConditionUtil {
         Map<String, Object> variables = new ConcurrentHashMap<>();
 
         // 添加 Chain Memory 中的变量（去掉前缀）
-        chain.getMemory().forEach((key, value) -> {
+        chain.getState().getMemory().forEach((key, value) -> {
             int dotIndex = key.indexOf(".");
             String varName = (dotIndex >= 0) ? key.substring(dotIndex + 1) : key;
             variables.put(varName, value);

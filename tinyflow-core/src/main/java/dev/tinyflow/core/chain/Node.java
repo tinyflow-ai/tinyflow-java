@@ -18,46 +18,39 @@ package dev.tinyflow.core.chain;
 import dev.tinyflow.core.util.JsConditionUtil;
 import dev.tinyflow.core.util.StringUtil;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class ChainNode implements Serializable {
+public abstract class Node implements Serializable {
+    private static final Logger log = org.slf4j.LoggerFactory.getLogger(Node.class);
 
-    private static final Logger log = LoggerFactory.getLogger(ChainNode.class);
     protected String id;
     protected String name;
     protected String description;
 
     protected boolean async = false;
-    protected List<ChainEdge> inwardEdges;
-    protected List<ChainEdge> outwardEdges;
+    protected List<Edge> inwardEdges;
+    protected List<Edge> outwardEdges;
 
     protected NodeCondition condition;
-    protected Map<String, Object> memory = new ConcurrentHashMap<>();
-    protected ChainNodeStatus nodeStatus = ChainNodeStatus.READY;
-
-    protected ChainNodeValidator validator;
-
+    protected NodeValidator validator;
 
     // 循环执行相关属性
     protected boolean loopEnable = false;           // 是否启用循环执行
-    protected long loopIntervalMs = 1000;            // 循环间隔时间（毫秒）
+    protected long loopIntervalMs = 3000;            // 循环间隔时间（毫秒）
     protected NodeCondition loopBreakCondition;      // 跳出循环的条件
     protected int maxLoopCount = 0;                  // 0 表示不限制循环次数
 
     protected boolean retryEnable = false;
     protected boolean resetRetryCountAfterNormal = false;
     protected int maxRetryCount = 0;
-    protected long retryIntervalMs = 1000;
+    protected long retryIntervalMs = 3000;
 
     // 算力消耗定义，积分消耗
-    protected Long computeCost;
     protected String computeCostExpr;
 
     public String getId() {
@@ -92,19 +85,19 @@ public abstract class ChainNode implements Serializable {
         this.async = async;
     }
 
-    public List<ChainEdge> getInwardEdges() {
+    public List<Edge> getInwardEdges() {
         return inwardEdges;
     }
 
-    public void setInwardEdges(List<ChainEdge> inwardEdges) {
+    public void setInwardEdges(List<Edge> inwardEdges) {
         this.inwardEdges = inwardEdges;
     }
 
-    public List<ChainEdge> getOutwardEdges() {
+    public List<Edge> getOutwardEdges() {
         return outwardEdges;
     }
 
-    public void setOutwardEdges(List<ChainEdge> outwardEdges) {
+    public void setOutwardEdges(List<Edge> outwardEdges) {
         this.outwardEdges = outwardEdges;
     }
 
@@ -116,46 +109,22 @@ public abstract class ChainNode implements Serializable {
         this.condition = condition;
     }
 
-    public Map<String, Object> getMemory() {
-        return memory;
-    }
-
-    public void setMemory(Map<String, Object> memory) {
-        this.memory = memory;
-    }
-
-    public ChainNodeStatus getNodeStatus() {
-        return nodeStatus;
-    }
-
-    public void setNodeStatus(ChainNodeStatus nodeStatus) {
-        this.nodeStatus = nodeStatus;
-    }
-
-    public void setNodeStatusFinished() {
-        if (this.nodeStatus == ChainNodeStatus.ERROR) {
-            this.setNodeStatus(ChainNodeStatus.FINISHED_ABNORMAL);
-        } else {
-            this.setNodeStatus(ChainNodeStatus.FINISHED_NORMAL);
-        }
-    }
-
-    public ChainNodeValidator getValidator() {
+    public NodeValidator getValidator() {
         return validator;
     }
 
-    public void setValidator(ChainNodeValidator validator) {
+    public void setValidator(NodeValidator validator) {
         this.validator = validator;
     }
 
-    protected void addOutwardEdge(ChainEdge edge) {
+    protected void addOutwardEdge(Edge edge) {
         if (this.outwardEdges == null) {
             this.outwardEdges = new ArrayList<>();
         }
         this.outwardEdges.add(edge);
     }
 
-    protected void addInwardEdge(ChainEdge edge) {
+    protected void addInwardEdge(Edge edge) {
         if (this.inwardEdges == null) {
             this.inwardEdges = new ArrayList<>();
         }
@@ -230,25 +199,6 @@ public abstract class ChainNode implements Serializable {
         this.retryIntervalMs = retryIntervalMs;
     }
 
-    public Long getComputeCost() {
-        return computeCost;
-    }
-
-    public void setComputeCost(Long computeCost) {
-        this.computeCost = computeCost;
-    }
-
-    protected synchronized void addComputeCost(Long computeCost) {
-        if (this.computeCost == null) {
-            this.computeCost = 0L;
-        }
-        if (computeCost == null) {
-            computeCost = 0L;
-        }
-        this.computeCost += computeCost;
-    }
-
-
     public String getComputeCostExpr() {
         return computeCostExpr;
     }
@@ -260,11 +210,14 @@ public abstract class ChainNode implements Serializable {
         this.computeCostExpr = computeCostExpr;
     }
 
-    public long calculateComputeCost(Chain chain, Map<String, Object> result) {
-        //允许动态设置算力消耗，比如在 for 循环节点等
-        if (this.computeCost != null) {
-            return this.computeCost;
-        }
+    public NodeValidResult validate() throws Exception {
+        return validator != null ? validator.validate(this) : NodeValidResult.ok();
+    }
+
+
+    protected abstract Map<String, Object> execute(Chain chain);
+
+    public long calculateComputeCost(Chain chain, Map<String, Object> executeResult) {
 
         if (StringUtil.noText(computeCostExpr)) {
             return 0;
@@ -272,7 +225,7 @@ public abstract class ChainNode implements Serializable {
 
         if (computeCostExpr.startsWith("{{") && computeCostExpr.endsWith("}}")) {
             String expr = computeCostExpr.substring(2, computeCostExpr.length() - 2);
-            return doCalculateComputeCost(expr, chain, result);
+            return doCalculateComputeCost(expr, chain, executeResult);
         } else {
             try {
                 return Long.parseLong(computeCostExpr);
@@ -289,11 +242,4 @@ public abstract class ChainNode implements Serializable {
         newMap.putAll(parameterValues);
         return JsConditionUtil.evalLong(expr, chain, newMap);
     }
-
-    public ChainNodeValidResult validate() throws Exception {
-        return validator != null ? validator.validate(this) : ChainNodeValidResult.ok();
-    }
-
-    protected abstract Map<String, Object> execute(Chain chain);
-
 }

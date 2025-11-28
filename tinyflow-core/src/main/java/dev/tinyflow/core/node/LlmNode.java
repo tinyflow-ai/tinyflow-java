@@ -204,14 +204,16 @@ public class LlmNode extends BaseNode {
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
-                ", memory=" + memory +
-                ", nodeStatus=" + nodeStatus +
                 ", validator=" + validator +
                 ", loopEnable=" + loopEnable +
                 ", loopIntervalMs=" + loopIntervalMs +
                 ", loopBreakCondition=" + loopBreakCondition +
                 ", maxLoopCount=" + maxLoopCount +
-                ", computeCost=" + computeCost +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
                 '}';
     }
 }

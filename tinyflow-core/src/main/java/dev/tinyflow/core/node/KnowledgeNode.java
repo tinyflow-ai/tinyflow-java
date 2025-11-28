@@ -90,17 +90,25 @@ public class KnowledgeNode extends BaseNode {
                 "knowledgeId=" + knowledgeId +
                 ", keyword='" + keyword + '\'' +
                 ", limit='" + limit + '\'' +
-                ", description='" + description + '\'' +
                 ", parameters=" + parameters +
                 ", outputDefs=" + outputDefs +
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
                 ", async=" + async +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
-                ", memory=" + memory +
-                ", nodeStatus=" + nodeStatus +
+                ", validator=" + validator +
+                ", loopEnable=" + loopEnable +
+                ", loopIntervalMs=" + loopIntervalMs +
+                ", loopBreakCondition=" + loopBreakCondition +
+                ", maxLoopCount=" + maxLoopCount +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
                 '}';
     }
 }

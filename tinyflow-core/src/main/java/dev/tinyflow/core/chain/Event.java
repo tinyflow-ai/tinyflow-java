@@ -13,21 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.chain.event;
+package dev.tinyflow.core.chain;
 
-
-import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainEvent;
-
-public class BaseChainEvent implements ChainEvent {
-
-    protected final Chain chain;
-
-    public BaseChainEvent(Chain chain) {
-        this.chain = chain;
-    }
-
-    public Chain getChain() {
-        return chain;
-    }
+public interface Event {
 }

@@ -15,7 +15,7 @@
  */
 package dev.tinyflow.core.chain;
 
-public enum ChainNodeStatus {
+public enum NodeStatus {
     READY(0), // 未开始执行
     RUNNING(1), // 已开始执行，执行中...
     ERROR(10), //发生错误
@@ -24,7 +24,7 @@ public enum ChainNodeStatus {
     ;
     final int value;
 
-    ChainNodeStatus(int value) {
+    NodeStatus(int value) {
         this.value = value;
     }
 

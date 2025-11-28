@@ -1,0 +1,136 @@
+/**
+ * Copyright (c) 2025-2026, Michael Yang 杨福海 (fuhai999@gmail.com).
+ * <p>
+ * Licensed under the GNU Lesser General Public License (LGPL) ,Version 3.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.gnu.org/licenses/lgpl-3.0.txt
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package dev.tinyflow.core.chain;
+
+import dev.tinyflow.core.util.StringUtil;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+
+public class ChainDefinition implements Serializable {
+    protected String id;
+    protected String name;
+    protected String description;
+    protected List<Node> nodes;
+    protected List<Edge> edges;
+
+    public ChainDefinition() {
+    }
+
+
+    public List<Node> getNodes() {
+        return nodes;
+    }
+
+    public void setNodes(List<Node> chainNodes) {
+        this.nodes = chainNodes;
+    }
+
+    public void addNode(Node node) {
+        if (nodes == null) {
+            this.nodes = new ArrayList<>();
+        }
+
+        if (StringUtil.noText(node.getId())) {
+            node.setId(UUID.randomUUID().toString());
+        }
+
+        nodes.add(node);
+
+        if (this.edges != null) {
+            for (Edge edge : edges) {
+                if (node.getId().equals(edge.getSource())) {
+                    node.addOutwardEdge(edge);
+                } else if (node.getId().equals(edge.getTarget())) {
+                    node.addInwardEdge(edge);
+                }
+            }
+        }
+    }
+
+
+    public Node getNodeById(String id) {
+        if (id == null || StringUtil.noText(id)) {
+            return null;
+        }
+
+        for (Node node : this.nodes) {
+            if (id.equals(node.getId())) {
+                return node;
+            }
+        }
+
+        return null;
+    }
+
+    public List<Edge> getEdges() {
+        return edges;
+    }
+
+    public void setEdges(List<Edge> edges) {
+        this.edges = edges;
+    }
+
+    public void addEdge(Edge edge) {
+        if (this.edges == null) {
+            this.edges = new ArrayList<>();
+        }
+        this.edges.add(edge);
+
+        boolean findSource = false, findTarget = false;
+
+        for (Node node : this.nodes) {
+            if (node.getId().equals(edge.getSource())) {
+                node.addOutwardEdge(edge);
+                findSource = true;
+            } else if (node.getId().equals(edge.getTarget())) {
+                node.addInwardEdge(edge);
+                findTarget = true;
+            }
+            if (findSource && findTarget) {
+                break;
+            }
+        }
+    }
+
+    public Chain createChain() {
+        return new Chain(this);
+    }
+
+
+    @Override
+    public String toString() {
+        return "ChainDefinition{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", nodes=" + nodes +
+                ", edges=" + edges +
+                '}';
+    }
+
+    public Edge getEdge(String fromEdgeId) {
+        for (Edge edge : this.edges) {
+            if (fromEdgeId.equals(edge.getId())) {
+                return edge;
+            }
+        }
+        return null;
+    }
+}

@@ -17,13 +17,17 @@ package dev.tinyflow.core.chain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class NodeContext {
+public class NodeState {
 
-    private ChainNode currentNode;
-    private ChainNode prevNode;
+    private String nodeId;
+
+    protected ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<>();
+    protected NodeStatus nodeStatus = NodeStatus.READY;
+
     private String fromEdgeId;
 
     private int retryCount = 0;
@@ -35,13 +39,15 @@ public class NodeContext {
     private AtomicInteger executeCount = new AtomicInteger(0);
     private List<String> executeEdgeIds = new ArrayList<>();
 
-    public ChainNode getCurrentNode() {
-        return currentNode;
+    ExceptionSummary error;
+
+    public NodeState() {
     }
 
-    public ChainNode getPrevNode() {
-        return prevNode;
+    public NodeState(String nodeId) {
+        this.nodeId = nodeId;
     }
+
 
     public String getFromEdgeId() {
         return fromEdgeId;
@@ -71,14 +77,6 @@ public class NodeContext {
         return executeEdgeIds;
     }
 
-    public void setCurrentNode(ChainNode currentNode) {
-        this.currentNode = currentNode;
-    }
-
-    public void setPrevNode(ChainNode prevNode) {
-        this.prevNode = prevNode;
-    }
-
     public void setFromEdgeId(String fromEdgeId) {
         this.fromEdgeId = fromEdgeId;
     }
@@ -99,28 +97,65 @@ public class NodeContext {
         this.executeEdgeIds = executeEdgeIds;
     }
 
+    public String getNodeId() {
+        return nodeId;
+    }
+
+    public void setNodeId(String nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    public ConcurrentHashMap<String, Object> getMemory() {
+        return memory;
+    }
+
+    public void setMemory(ConcurrentHashMap<String, Object> memory) {
+        this.memory = memory;
+    }
+
+    public NodeStatus getNodeStatus() {
+        return nodeStatus;
+    }
+
+    public ExceptionSummary getError() {
+        return error;
+    }
+
+    public void setError(ExceptionSummary error) {
+        this.error = error;
+    }
+
     public boolean isUpstreamFullyExecuted() {
-        List<ChainEdge> inwardEdges = currentNode.getInwardEdges();
+        Node currentNode = Chain.currentChain().getDefinition().getNodeById(nodeId);
+        List<Edge> inwardEdges = currentNode.getInwardEdges();
         if (inwardEdges == null || inwardEdges.isEmpty()) {
             return true;
         }
 
-        List<String> shouldBeTriggerIds = inwardEdges.stream().map(ChainEdge::getId).collect(Collectors.toList());
+        List<String> shouldBeTriggerIds = inwardEdges.stream().map(Edge::getId).collect(Collectors.toList());
         return triggerEdgeIds.size() >= shouldBeTriggerIds.size()
             && shouldBeTriggerIds.parallelStream().allMatch(triggerEdgeIds::contains);
     }
 
-    public void recordTrigger(Chain.ExecuteNode executeNode) {
-        this.currentNode = executeNode.currentNode;
-        this.prevNode = executeNode.prevNode;
-        this.fromEdgeId = executeNode.fromEdgeId;
-
+    public void recordTrigger(String fromEdgeId) {
         triggerCount.incrementAndGet();
-        triggerEdgeIds.add(executeNode.fromEdgeId);
+        triggerEdgeIds.add(fromEdgeId);
     }
 
-    public synchronized void recordExecute(Chain.ExecuteNode executeNode) {
+    public synchronized void recordExecute(String fromEdgeId) {
         executeCount.incrementAndGet();
-        executeEdgeIds.add(executeNode.fromEdgeId);
+        executeEdgeIds.add(fromEdgeId);
+    }
+
+    public void setNodeStatus(NodeStatus nodeStatus) {
+        this.nodeStatus = nodeStatus;
+    }
+
+    public void setNodeStatusFinished() {
+        if (this.nodeStatus == NodeStatus.ERROR) {
+            this.setNodeStatus(NodeStatus.FINISHED_ABNORMAL);
+        } else {
+            this.setNodeStatus(NodeStatus.FINISHED_NORMAL);
+        }
     }
 }

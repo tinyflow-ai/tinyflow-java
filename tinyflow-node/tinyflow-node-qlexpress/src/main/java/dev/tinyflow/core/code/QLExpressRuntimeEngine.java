@@ -36,7 +36,7 @@ public class QLExpressRuntimeEngine implements CodeRuntimeEngine {
         Map<String, Object> result = new HashMap<>();
         context.put("_result", result);
         context.put("_chain", chain);
-        context.put("_context", chain.getNodeContext(node.getId()));
+        context.put("_context", chain.getState().getNodeState(node.getId()));
 
         try {
             runner.execute(code, context, QLOptions.DEFAULT_OPTIONS);

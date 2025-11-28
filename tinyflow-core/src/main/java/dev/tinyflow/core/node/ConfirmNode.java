@@ -84,7 +84,7 @@ public class ConfirmNode extends BaseNode {
         try {
             values = chain.getParameterValues(this, confirmParameters);
         } catch (ChainSuspendException e) {
-            chain.setMessage(message);
+            chain.getState().setMessage(message);
 
             if (confirms != null) {
                 List<Parameter> newParameters = new ArrayList<>();

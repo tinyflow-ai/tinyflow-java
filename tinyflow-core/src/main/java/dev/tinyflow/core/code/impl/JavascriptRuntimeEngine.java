@@ -40,7 +40,7 @@ public class JavascriptRuntimeEngine implements CodeRuntimeEngine {
         try (Context context = CONTEXT_BUILDER.build()) {
             Value bindings = context.getBindings("js");
 
-            Map<String, Object> all = chain.getMemory();
+            Map<String, Object> all = chain.getState().getMemory();
             all.forEach((key, value) -> {
                 if (!key.contains(".")) {
                     bindings.putMember(key, JsInteropUtils.wrapJavaValueForJS(context, value));
@@ -56,7 +56,7 @@ public class JavascriptRuntimeEngine implements CodeRuntimeEngine {
             }
 
             bindings.putMember("_chain", chain);
-            bindings.putMember("_context", chain.getNodeContext(node.getId()));
+            bindings.putMember("_context", chain.getState().getNodeState(node.getId()));
 
 
             // 在 JS 中创建 _result 对象
@@ -64,7 +64,7 @@ public class JavascriptRuntimeEngine implements CodeRuntimeEngine {
 
             // 注入 _chain 和 _context
             bindings.putMember("_chain", chain);
-            bindings.putMember("_context", chain.getNodeContext(node.getId()));
+            bindings.putMember("_context", chain.getState().getNodeState(node.getId()));
 
             // 执行用户脚本
             context.eval("js", code);

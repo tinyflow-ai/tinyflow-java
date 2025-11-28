@@ -26,12 +26,12 @@ import java.util.Objects;
  * <p>
  * 实例是不可变的（immutable），线程安全。
  */
-public class ChainNodeValidResult implements Serializable {
+public class NodeValidResult implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static final ChainNodeValidResult SUCCESS = new ChainNodeValidResult(true, null, null);
-    public static final ChainNodeValidResult FAILURE = new ChainNodeValidResult(false, null, null);
+    public static final NodeValidResult SUCCESS = new NodeValidResult(true, null, null);
+    public static final NodeValidResult FAILURE = new NodeValidResult(false, null, null);
 
     private final boolean success;
     private final String message;
@@ -40,7 +40,7 @@ public class ChainNodeValidResult implements Serializable {
     /**
      * 私有构造器，确保通过工厂方法创建实例。
      */
-    private ChainNodeValidResult(boolean success, String message, Map<String, Object> details) {
+    private NodeValidResult(boolean success, String message, Map<String, Object> details) {
         this.success = success;
         this.message = message;
         // 防御性拷贝，防止外部修改
@@ -74,22 +74,22 @@ public class ChainNodeValidResult implements Serializable {
     /**
      * 创建一个成功的校验结果（无消息、无详情）。
      */
-    public static ChainNodeValidResult ok() {
+    public static NodeValidResult ok() {
         return SUCCESS;
     }
 
     /**
      * 创建一个成功的校验结果，附带消息。
      */
-    public static ChainNodeValidResult ok(String message) {
-        return new ChainNodeValidResult(true, message, null);
+    public static NodeValidResult ok(String message) {
+        return new NodeValidResult(true, message, null);
     }
 
     /**
      * 创建一个成功的校验结果，附带消息和详情。
      */
-    public static ChainNodeValidResult ok(String message, Map<String, Object> details) {
-        return new ChainNodeValidResult(true, message, details);
+    public static NodeValidResult ok(String message, Map<String, Object> details) {
+        return new NodeValidResult(true, message, details);
     }
 
     /**
@@ -102,31 +102,31 @@ public class ChainNodeValidResult implements Serializable {
      * @return ChainNodeValidResult
      * @throws IllegalArgumentException 如果 kvPairs 数量为奇数
      */
-    public static ChainNodeValidResult ok(String message, Object... kvPairs) {
+    public static NodeValidResult ok(String message, Object... kvPairs) {
         Map<String, Object> details = toMapFromPairs(kvPairs);
-        return new ChainNodeValidResult(true, message, details);
+        return new NodeValidResult(true, message, details);
     }
 
 
     /**
      * 创建一个失败的校验结果（无消息、无详情）。
      */
-    public static ChainNodeValidResult fail() {
+    public static NodeValidResult fail() {
         return FAILURE;
     }
 
     /**
      * 创建一个失败的校验结果，仅包含消息。
      */
-    public static ChainNodeValidResult fail(String message) {
-        return new ChainNodeValidResult(false, message, null);
+    public static NodeValidResult fail(String message) {
+        return new NodeValidResult(false, message, null);
     }
 
     /**
      * 创建一个失败的校验结果，包含消息和详情。
      */
-    public static ChainNodeValidResult fail(String message, Map<String, Object> details) {
-        return new ChainNodeValidResult(false, message, details);
+    public static NodeValidResult fail(String message, Map<String, Object> details) {
+        return new NodeValidResult(false, message, details);
     }
 
     /**
@@ -134,9 +134,9 @@ public class ChainNodeValidResult implements Serializable {
      * <p>
      * 示例：fail("验证失败", "field", "email", "reason", "格式错误")
      */
-    public static ChainNodeValidResult fail(String message, Object... kvPairs) {
+    public static NodeValidResult fail(String message, Object... kvPairs) {
         Map<String, Object> details = toMapFromPairs(kvPairs);
-        return new ChainNodeValidResult(false, message, details);
+        return new NodeValidResult(false, message, details);
     }
 
     /**
@@ -147,7 +147,7 @@ public class ChainNodeValidResult implements Serializable {
      * @param reason 错误原因
      * @return 失败结果
      */
-    public static ChainNodeValidResult failOnField(String field, String reason) {
+    public static NodeValidResult failOnField(String field, String reason) {
         Map<String, Object> details = Collections.singletonMap("fieldError", field + ": " + reason);
         return fail(reason, details);
     }
@@ -159,7 +159,7 @@ public class ChainNodeValidResult implements Serializable {
      * @param messageIfFail 条件不满足时的消息
      * @return 根据条件返回对应结果
      */
-    public static ChainNodeValidResult require(boolean condition, String messageIfFail) {
+    public static NodeValidResult require(boolean condition, String messageIfFail) {
         return condition ? ok() : fail(messageIfFail);
     }
 
@@ -190,8 +190,8 @@ public class ChainNodeValidResult implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ChainNodeValidResult)) return false;
-        ChainNodeValidResult that = (ChainNodeValidResult) o;
+        if (!(o instanceof NodeValidResult)) return false;
+        NodeValidResult that = (NodeValidResult) o;
         return success == that.success &&
             Objects.equals(message, that.message) &&
             Objects.equals(details, that.details);

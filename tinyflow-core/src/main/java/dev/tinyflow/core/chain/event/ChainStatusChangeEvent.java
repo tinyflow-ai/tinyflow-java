@@ -19,7 +19,7 @@ package dev.tinyflow.core.chain.event;
 import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.chain.ChainStatus;
 
-public class ChainStatusChangeEvent extends BaseChainEvent {
+public class ChainStatusChangeEvent extends BaseEvent {
 
     private final ChainStatus status;
     private final ChainStatus before;

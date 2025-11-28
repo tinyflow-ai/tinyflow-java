@@ -20,6 +20,6 @@ import java.util.Map;
 
 public interface NodeCondition {
 
-    boolean check(Chain chain, NodeContext context, Map<String, Object> executeResult);
+    boolean check(Chain chain, NodeState context, Map<String, Object> executeResult);
 
 }

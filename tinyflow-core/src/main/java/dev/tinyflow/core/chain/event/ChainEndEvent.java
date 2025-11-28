@@ -18,7 +18,7 @@ package dev.tinyflow.core.chain.event;
 
 import dev.tinyflow.core.chain.Chain;
 
-public class ChainEndEvent extends BaseChainEvent {
+public class ChainEndEvent extends BaseEvent {
 
     public ChainEndEvent(Chain chain) {
         super(chain);
