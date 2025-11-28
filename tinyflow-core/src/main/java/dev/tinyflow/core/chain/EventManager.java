@@ -40,12 +40,12 @@ public class EventManager {
         }
     }
 
-    public void notifyEvent(Event event, Chain execution) {
+    public void notifyEvent(Event event, Chain chain) {
         for (Map.Entry<Class<?>, List<ChainEventListener>> entry : eventListeners.entrySet()) {
             if (entry.getKey().isInstance(event)) {
                 for (ChainEventListener listener : entry.getValue()) {
                     try {
-                        listener.onEvent(event, execution);
+                        listener.onEvent(event, chain);
                     } catch (Exception e) {
                         log.error("Error in event listener: {}", e.toString(), e);
                     }
@@ -65,10 +65,10 @@ public class EventManager {
         outputListeners.remove(listener);
     }
 
-    public void notifyOutput(Chain execution, Node node, Object response) {
+    public void notifyOutput(Chain chain, Node node, Object response) {
         for (ChainOutputListener listener : outputListeners) {
             try {
-                listener.onOutput(execution, node, response);
+                listener.onOutput(chain, node, response);
             } catch (Exception e) {
                 log.error("Error in output listener: {}", e.toString(), e);
             }
@@ -86,10 +86,10 @@ public class EventManager {
         chainErrorListeners.remove(listener);
     }
 
-    public void notifyChainError(Throwable error, Chain execution) {
+    public void notifyChainError(Throwable error, Chain chain) {
         for (ChainErrorListener listener : chainErrorListeners) {
             try {
-                listener.onError(error, execution);
+                listener.onError(error, chain);
             } catch (Exception e) {
                 log.error("Error in chain error listener: {}", e.toString(), e);
             }
@@ -107,10 +107,10 @@ public class EventManager {
         nodeErrorListeners.remove(listener);
     }
 
-    public void notifyNodeError(Throwable error, Node node, Map<String, Object> result, Chain execution) {
+    public void notifyNodeError(Throwable error, Node node, Map<String, Object> result, Chain chain) {
         for (NodeErrorListener listener : nodeErrorListeners) {
             try {
-                listener.onError(error, node, result, execution);
+                listener.onError(error, node, result, chain);
             } catch (Exception e) {
                 log.error("Error in node error listener: {}", e.toString(), e);
             }
@@ -128,10 +128,10 @@ public class EventManager {
         suspendListeners.remove(listener);
     }
 
-    public void notifySuspend(Chain execution) {
+    public void notifySuspend(Chain chain) {
         for (ChainSuspendListener listener : suspendListeners) {
             try {
-                listener.onSuspend(execution);
+                listener.onSuspend(chain);
             } catch (Exception e) {
                 log.error("Error in suspend listener: {}", e.toString(), e);
             }

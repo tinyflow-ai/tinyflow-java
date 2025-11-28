@@ -155,7 +155,7 @@ public class Chain {
         }
 
         if (!ignoreError) {
-            if (state.getStatus() == ChainStatus.FINISHED_ABNORMAL) {
+            if (state.getStatus() == ChainStatus.FAILED) {
                 if (this.error != null) {
                     if (this.error instanceof RuntimeException) {
                         throw (RuntimeException) this.error;
@@ -357,9 +357,15 @@ public class Chain {
         return result;
     }
 
+
     protected void doExecuteNode(ExecutionContext context) {
         Node currentNode = context.currentNode;
         String fromEdgeId = context.fromEdgeId;
+
+        if (state.getStatus() == ChainStatus.WAITING) {
+            state.addWaitingNodeId(currentNode.getId());
+            return;
+        }
 
         if (state.getStatus() == ChainStatus.SUSPEND) {
             state.addSuspendNodeId(currentNode.getId());
@@ -398,6 +404,7 @@ public class Chain {
             } catch (Throwable error) {
                 nodeState.setNodeStatus(NodeStatus.ERROR);
                 nodeState.setError(new ExceptionSummary(error));
+                eventManager.notifyNodeError(error, currentNode, executeResult, this);
 
                 // 错误重试
                 if (currentNode.isRetryEnable()
@@ -410,7 +417,6 @@ public class Chain {
                 }
                 // 异常处理
                 else {
-                    eventManager.notifyNodeError(error, currentNode, executeResult, this);
                     throw error;
                 }
             } finally {
@@ -458,9 +464,12 @@ public class Chain {
         }
 
         // 等待间隔
-        safeSleep(currentNode.getLoopIntervalMs());
-        // 继续执行当前节点
-        doExecuteNode(context);
+//        safeSleep(currentNode.getLoopIntervalMs());
+//        // 继续执行当前节点
+//        doExecuteNode(context);
+
+        state.addWaitingNodeId(currentNode.getId());
+        setStatusAndNotifyEvent(ChainStatus.WAITING);
     }
 
     private void safeSleep(long retryIntervalMs) {
@@ -570,9 +579,13 @@ public class Chain {
             this.phaser.arriveAndAwaitAdvance();
 
             if (state.getStatus() == ChainStatus.RUNNING) {
-                setStatusAndNotifyEvent(ChainStatus.FINISHED_NORMAL);
+                setStatusAndNotifyEvent(ChainStatus.SUCCEEDED);
             } else if (state.getStatus() == ChainStatus.ERROR) {
-                setStatusAndNotifyEvent(ChainStatus.FINISHED_ABNORMAL);
+                setStatusAndNotifyEvent(ChainStatus.FAILED);
+            }
+            // 通过 WaitingScheduler 来恢复运行
+            else if (state.getStatus() == ChainStatus.WAITING) {
+                // todo  通过 WaitingScheduler 来恢复运行
             }
         } finally {
             notifyEvent(new ChainEndEvent(this));
@@ -583,13 +596,13 @@ public class Chain {
 
     public void stopNormal(String message) {
         state.setMessage(message);
-        setStatusAndNotifyEvent(ChainStatus.FINISHED_NORMAL);
+        setStatusAndNotifyEvent(ChainStatus.SUCCEEDED);
     }
 
 
     public void stopError(String message) {
         state.setMessage(message);
-        setStatusAndNotifyEvent(ChainStatus.FINISHED_ABNORMAL);
+        setStatusAndNotifyEvent(ChainStatus.FAILED);
     }
 
 

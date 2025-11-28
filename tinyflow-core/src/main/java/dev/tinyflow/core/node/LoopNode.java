@@ -85,7 +85,7 @@ public class LoopNode extends BaseNode {
             loopChain.execute(loopParams);
         } finally {
             // 正常结束的情况下，填充结果
-            if (loopChain.getState().getStatus() == ChainStatus.FINISHED_NORMAL) {
+            if (loopChain.getState().getStatus() == ChainStatus.SUCCEEDED) {
                 fillResult(executeResult, loopChain);
 
                 //重置 chain statue 为 ready

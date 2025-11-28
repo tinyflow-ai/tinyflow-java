@@ -50,6 +50,7 @@ public class ChainState implements Serializable {
     private long computeCost;
 
     private Set<String> suspendNodeIds;
+    private Set<String> waitingNodeIds;
     private List<Parameter> suspendForParameters;
     private ChainStatus status;
     private String message;
@@ -149,8 +150,30 @@ public class ChainState implements Serializable {
         suspendNodeIds.remove(nodeId);
     }
 
+    public Set<String> getWaitingNodeIds() {
+        return waitingNodeIds;
+    }
+
+    public void setWaitingNodeIds(Set<String> waitingNodeIds) {
+        this.waitingNodeIds = waitingNodeIds;
+    }
+
     public List<Parameter> getSuspendForParameters() {
         return suspendForParameters;
+    }
+
+    public void addWaitingNodeId(String nodeId) {
+        if (waitingNodeIds == null) {
+            waitingNodeIds = new HashSet<>();
+        }
+        waitingNodeIds.add(nodeId);
+    }
+
+    public void removeWaitingNodeId(String nodeId) {
+        if (waitingNodeIds == null) {
+            return;
+        }
+        waitingNodeIds.remove(nodeId);
     }
 
 
@@ -219,6 +242,7 @@ public class ChainState implements Serializable {
         }
         this.computeCost += value;
     }
+
 
     public static class ChainSerializer implements ObjectSerializer {
         @Override

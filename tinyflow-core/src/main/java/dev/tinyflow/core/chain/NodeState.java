@@ -153,9 +153,9 @@ public class NodeState {
 
     public void setNodeStatusFinished() {
         if (this.nodeStatus == NodeStatus.ERROR) {
-            this.setNodeStatus(NodeStatus.FINISHED_ABNORMAL);
+            this.setNodeStatus(NodeStatus.FAILED);
         } else {
-            this.setNodeStatus(NodeStatus.FINISHED_NORMAL);
+            this.setNodeStatus(NodeStatus.SUCCEEDED);
         }
     }
 }
