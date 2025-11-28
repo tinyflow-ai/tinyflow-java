@@ -29,8 +29,10 @@ import dev.tinyflow.core.util.MapUtil;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Type;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ChainState implements Serializable {
@@ -46,7 +48,7 @@ public class ChainState implements Serializable {
     // 算力消耗定义，积分消耗
     private long computeCost;
 
-    private ConcurrentHashMap<String, Node> suspendNodes;
+    private Set<String> suspendNodeIds;
     private List<Parameter> suspendForParameters;
     private ChainStatus status;
     private String message;
@@ -113,31 +115,36 @@ public class ChainState implements Serializable {
         this.computeCost = computeCost;
     }
 
-    public ConcurrentHashMap<String, Node> getSuspendNodes() {
-        return suspendNodes;
+    public void setComputeCost(long computeCost) {
+        this.computeCost = computeCost;
     }
 
-    public void setSuspendNodes(ConcurrentHashMap<String, Node> suspendNodes) {
-        this.suspendNodes = suspendNodes;
+    public Set<String> getSuspendNodeIds() {
+        return suspendNodeIds;
     }
 
-    public void removeSuspendNode(String nodeId) {
-        if (suspendNodes == null) {
+    public void setSuspendNodeIds(Set<String> suspendNodeIds) {
+        this.suspendNodeIds = suspendNodeIds;
+    }
+
+    public void addSuspendNodeId(String nodeId) {
+        if (suspendNodeIds == null) {
+            suspendNodeIds = new HashSet<>();
+        }
+        suspendNodeIds.add(nodeId);
+    }
+
+    public void removeSuspendNodeId(String nodeId) {
+        if (suspendNodeIds == null) {
             return;
         }
-        suspendNodes.remove(nodeId);
-    }
-
-    public void addSuspendNode(String nodeId, Node node) {
-        if (suspendNodes == null) {
-            suspendNodes = new ConcurrentHashMap<>();
-        }
-        suspendNodes.putIfAbsent(nodeId, node);
+        suspendNodeIds.remove(nodeId);
     }
 
     public List<Parameter> getSuspendForParameters() {
         return suspendForParameters;
     }
+
 
     public void setSuspendForParameters(List<Parameter> suspendForParameters) {
         this.suspendForParameters = suspendForParameters;
@@ -186,7 +193,7 @@ public class ChainState implements Serializable {
         this.environment = null;
         this.nodeStates = null;
         this.computeCost = 0;
-        this.suspendNodes = null;
+        this.suspendNodeIds = null;
         this.suspendForParameters = null;
         this.status = ChainStatus.READY;
         this.message = null;
@@ -233,9 +240,9 @@ public class ChainState implements Serializable {
                 ", memory=" + memory +
                 ", executeResult=" + executeResult +
                 ", environment=" + environment +
-                ", nodeContexts=" + nodeStates +
+                ", nodeStates=" + nodeStates +
                 ", computeCost=" + computeCost +
-                ", suspendNodes=" + suspendNodes +
+                ", suspendNodeIds=" + suspendNodeIds +
                 ", suspendForParameters=" + suspendForParameters +
                 ", status=" + status +
                 ", message='" + message + '\'' +

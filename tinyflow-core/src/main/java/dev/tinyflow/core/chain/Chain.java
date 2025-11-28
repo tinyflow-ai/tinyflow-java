@@ -21,7 +21,6 @@ import dev.tinyflow.core.chain.listener.*;
 import dev.tinyflow.core.util.*;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 import java.util.stream.Collectors;
@@ -266,9 +265,16 @@ public class Chain {
     }
 
     protected List<Node> getSuspendOrStartNodes() {
-        ConcurrentHashMap<String, Node> suspendNodes = state.getSuspendNodes();
-        if (suspendNodes != null && !suspendNodes.isEmpty()) {
-            return new ArrayList<>(suspendNodes.values());
+        Set<String> suspendNodeIds = state.getSuspendNodeIds();
+        if (suspendNodeIds != null && !suspendNodeIds.isEmpty()) {
+            List<Node> result = new ArrayList<>(suspendNodeIds.size());
+            for (String suspendNodeId : suspendNodeIds) {
+                Node suspendNode = definition.getNodeById(suspendNodeId);
+                if (suspendNode != null) {
+                    result.add(suspendNode);
+                }
+            }
+            return result;
         }
         return definition.getStartNodes();
     }
@@ -333,7 +339,7 @@ public class Chain {
         String fromEdgeId = context.fromEdgeId;
 
         if (state.getStatus() == ChainStatus.SUSPEND) {
-            state.addSuspendNode(currentNode.getId(), currentNode);
+            state.addSuspendNodeId(currentNode.getId());
             return;
         }
 
@@ -360,7 +366,7 @@ public class Chain {
                 nodeState.setNodeStatus(NodeStatus.RUNNING);
                 onNodeExecuteStart(nodeState);
                 try {
-                    state.removeSuspendNode(currentNode.getId());
+                    state.removeSuspendNodeId(currentNode.getId());
                     executeResult = currentNode.execute(this);
                     state.addComputeCost(currentNode.calculateComputeCost(this, executeResult));
                 } finally {
@@ -543,7 +549,6 @@ public class Chain {
             } else if (state.getStatus() == ChainStatus.ERROR) {
                 setStatusAndNotifyEvent(ChainStatus.FINISHED_ABNORMAL);
             }
-
         } finally {
             notifyEvent(new ChainEndEvent(this));
             EXECUTION_THREAD_LOCAL.remove();
@@ -584,7 +589,7 @@ public class Chain {
 
     public synchronized void suspend(Node node) {
         try {
-            state.addSuspendNode(node.getId(), node);
+            state.addSuspendNodeId(node.getId());
         } finally {
             setStatusAndNotifyEvent(ChainStatus.SUSPEND);
         }
