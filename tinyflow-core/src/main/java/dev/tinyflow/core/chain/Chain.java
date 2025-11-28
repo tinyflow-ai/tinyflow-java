@@ -18,6 +18,7 @@ package dev.tinyflow.core.chain;
 import com.alibaba.fastjson.JSON;
 import dev.tinyflow.core.chain.event.*;
 import dev.tinyflow.core.chain.listener.*;
+import dev.tinyflow.core.chain.repository.ChainStateRepository;
 import dev.tinyflow.core.util.*;
 
 import java.util.*;
@@ -32,9 +33,13 @@ public class Chain {
     protected final ChainDefinition definition;
     protected final ChainState state;
 
+    protected ChainStateRepository stateRepository;
+
     protected EventManager eventManager = new EventManager();
     protected ExecutorService asyncNodeExecutors = NamedThreadPools.newFixedThreadPool("chain-executor");
     protected Phaser phaser = new Phaser(1);
+    protected Throwable error;
+
 
     public static Chain currentChain() {
         return EXECUTION_THREAD_LOCAL.get();
@@ -43,6 +48,8 @@ public class Chain {
     public Chain(ChainDefinition definition) {
         this.definition = definition;
         this.state = new ChainState();
+        this.state.setInstanceId(UUID.randomUUID().toString());
+        this.state.setChainDefinitionId(definition.getId());
     }
 
 
@@ -149,13 +156,29 @@ public class Chain {
 
         if (!ignoreError) {
             if (state.getStatus() == ChainStatus.FINISHED_ABNORMAL) {
-                if (state.getError() != null) {
+                if (this.error != null) {
+                    if (this.error instanceof RuntimeException) {
+                        throw (RuntimeException) this.error;
+                    } else {
+                        throw new RuntimeException(this.error);
+                    }
+                } else if (state.getError() != null) {
                     throw new ChainException(state.getError().getMessage());
                 } else {
                     throw new ChainException("Chain execute error");
                 }
-            } else if (state.getStatus() == ChainStatus.SUSPEND && state.getError() != null) {
-                throw new ChainSuspendException(state.getError().getMessage());
+            } else if (state.getStatus() == ChainStatus.SUSPEND) {
+                if (this.error != null) {
+                    if (this.error instanceof ChainSuspendException) {
+                        throw (ChainSuspendException) this.error;
+                    } else {
+                        throw new ChainSuspendException(this.error);
+                    }
+                } else if (state.getError() != null) {
+                    throw new ChainSuspendException(state.getError().getMessage());
+                } else {
+                    throw new ChainSuspendException("Chain execute error");
+                }
             }
         }
 
@@ -296,21 +319,21 @@ public class Chain {
 
 
     protected void doExecuteNodes(List<ExecutionContext> executionContexts) {
-        for (ExecutionContext executionContext : executionContexts) {
-            Node currentNode = executionContext.currentNode;
+        for (ExecutionContext context : executionContexts) {
+            Node currentNode = context.currentNode;
             if (currentNode.isAsync()) {
                 phaser.register();
                 asyncNodeExecutors.execute(() -> {
                     try {
                         EXECUTION_THREAD_LOCAL.set(Chain.this);
-                        doExecuteNode(executionContext);
+                        doExecuteNode(context);
                     } finally {
                         EXECUTION_THREAD_LOCAL.remove();
                         phaser.arriveAndDeregister();
                     }
                 });
             } else {
-                doExecuteNode(executionContext);
+                doExecuteNode(context);
             }
         }
     }
@@ -347,8 +370,7 @@ public class Chain {
             return;
         }
 
-        NodeState nodeState = state.getNodeState(currentNode.id);
-
+        NodeState nodeState = state.getOrCreateNodeState(currentNode.id);
         Map<String, Object> executeResult = null;
 
         try {
@@ -534,14 +556,17 @@ public class Chain {
                 setStatusAndNotifyEvent(ChainStatus.RUNNING);
                 runnable.run();
             } catch (ChainSuspendException cse) {
+                this.error = cse;
                 eventManager.notifySuspend(this);
                 state.setError(new ExceptionSummary(cse));
             } catch (Exception e) {
+                this.error = e;
                 state.setError(new ExceptionSummary(e));
                 setStatusAndNotifyEvent(ChainStatus.ERROR);
                 eventManager.notifyChainError(e, this);
             }
 
+            // 等待所有节点执行完成
             this.phaser.arriveAndAwaitAdvance();
 
             if (state.getStatus() == ChainStatus.RUNNING) {

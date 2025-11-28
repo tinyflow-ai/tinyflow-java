@@ -35,13 +35,44 @@ public class ChainDefinition implements Serializable {
     public ChainDefinition() {
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
     public List<Node> getNodes() {
         return nodes;
     }
 
-    public void setNodes(List<Node> chainNodes) {
-        this.nodes = chainNodes;
+    public void setNodes(List<Node> nodes) {
+        this.nodes = nodes;
+    }
+
+    public List<Edge> getEdges() {
+        return edges;
+    }
+
+    public void setEdges(List<Edge> edges) {
+        this.edges = edges;
     }
 
     public void addNode(Node node) {
@@ -81,13 +112,6 @@ public class ChainDefinition implements Serializable {
         return null;
     }
 
-    public List<Edge> getEdges() {
-        return edges;
-    }
-
-    public void setEdges(List<Edge> edges) {
-        this.edges = edges;
-    }
 
     public void addEdge(Edge edge) {
         if (this.edges == null) {
@@ -109,6 +133,16 @@ public class ChainDefinition implements Serializable {
                 break;
             }
         }
+    }
+
+
+    public Edge getEdgeById(String edgeId) {
+        for (Edge edge : this.edges) {
+            if (edgeId.equals(edge.getId())) {
+                return edge;
+            }
+        }
+        return null;
     }
 
     public List<Node> getStartNodes() {
@@ -156,14 +190,5 @@ public class ChainDefinition implements Serializable {
                 ", nodes=" + nodes +
                 ", edges=" + edges +
                 '}';
-    }
-
-    public Edge getEdge(String fromEdgeId) {
-        for (Edge edge : this.edges) {
-            if (fromEdgeId.equals(edge.getId())) {
-                return edge;
-            }
-        }
-        return null;
     }
 }

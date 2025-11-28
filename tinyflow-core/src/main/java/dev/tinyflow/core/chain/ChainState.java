@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ChainState implements Serializable {
 
+    private String instanceId;
     private String chainDefinitionId;
     private ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<>();
 
@@ -59,6 +60,13 @@ public class ChainState implements Serializable {
         this.computeCost = 0;
     }
 
+    public String getInstanceId() {
+        return instanceId;
+    }
+
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
+    }
 
     public String getChainDefinitionId() {
         return chainDefinitionId;
@@ -187,6 +195,7 @@ public class ChainState implements Serializable {
     }
 
     public void reset() {
+        this.instanceId = null;
         this.chainDefinitionId = null;
         this.memory.clear();
         this.executeResult = null;
@@ -200,7 +209,7 @@ public class ChainState implements Serializable {
         this.error = null;
     }
 
-    public NodeState getNodeState(String nodeId) {
+    public NodeState getOrCreateNodeState(String nodeId) {
         return MapUtil.computeIfAbsent(nodeStates, nodeId, NodeState::new);
     }
 
@@ -236,7 +245,8 @@ public class ChainState implements Serializable {
     @Override
     public String toString() {
         return "ChainState{" +
-                "chainDefinitionId='" + chainDefinitionId + '\'' +
+                "instanceId='" + instanceId + '\'' +
+                ", chainDefinitionId='" + chainDefinitionId + '\'' +
                 ", memory=" + memory +
                 ", executeResult=" + executeResult +
                 ", environment=" + environment +
