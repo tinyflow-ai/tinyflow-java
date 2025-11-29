@@ -391,29 +391,25 @@ public class Chain {
             return;
         }
 
-        // 恢复状态
-        if (state.getStatus() == ChainStatus.WAITING) {
-            setStatusAndNotifyEvent(ChainStatus.RUNNING);
-        }
-
-        if (state.getStatus() != ChainStatus.RUNNING) {
+        if (state.getStatus().allowRunning()) {
             return;
         }
 
         NodeState nodeState = state.getOrCreateNodeState(currentNode.id);
-        Map<String, Object> executeResult = null;
-
-
         if (shouldSkipCurrentNode(context, nodeState, currentNode)) {
             return;
         }
 
+        Map<String, Object> executeResult = null;
+
         try {
             notifyEvent(new NodeStartEvent(this, currentNode));
-            if (state.getStatus() != ChainStatus.RUNNING) {
+
+            if (state.getStatus().allowRunning()) {
                 return;
             }
-            nodeState.setNodeStatus(NodeStatus.RUNNING);
+
+            nodeState.setStatus(NodeStatus.RUNNING);
             try {
                 state.removeSuspendNodeId(currentNode.getId());
                 executeResult = currentNode.execute(this);
@@ -424,7 +420,7 @@ public class Chain {
                 state.setExecuteResult(executeResult);
             }
         } catch (Throwable error) {
-            nodeState.setNodeStatus(NodeStatus.ERROR);
+            nodeState.setStatus(NodeStatus.ERROR);
             nodeState.setError(new ExceptionSummary(error));
             eventManager.notifyNodeError(error, currentNode, executeResult, this);
 
@@ -501,10 +497,6 @@ public class Chain {
      * @param context 执行上下文
      */
     private void scheduleLoopNode(ExecutionContext context) {
-        if (state.getStatus() != ChainStatus.RUNNING) {
-            return;
-        }
-
         String instanceId = state.getInstanceId();
         String nodeId = context.currentNode.getId();
         long loopIntervalMs = context.currentNode.getLoopIntervalMs();
@@ -516,7 +508,7 @@ public class Chain {
 
         // 触发后提交到 asyncNodeExecutors 执行 Node
         trigger.task = () -> ChainRuntime.asyncExecutors().submit(() -> {
-            if (state.getStatus() != ChainStatus.RUNNING) {
+            if (state.getStatus().allowRunning()) {
                 return;
             }
             doExecuteNode(context);

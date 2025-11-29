@@ -48,18 +48,6 @@ public enum ChainStatus {
     RUNNING(1),
 
     /**
-     * 暂停（人工干预）：Chain 因缺少外部输入而暂停，需用户主动恢复。
-     * <p>
-     * 典型场景：
-     * - 节点参数缺失且标记为 required（等待用户提交）
-     * - 人工审批节点（等待管理员操作）
-     * <p>
-     * 恢复方式：调用 {@link Chain#resume(Map)} 注入所需变量。
-     * 监听器：通过 {@link dev.tinyflow.core.chain.listener.ChainSuspendListener} 感知。
-     */
-    SUSPEND(5),
-
-    /**
      * 等待（系统调度）：Chain 因系统事件而暂停，将由调度器自动恢复。
      * <p>
      * 典型场景：
@@ -70,7 +58,19 @@ public enum ChainStatus {
      * 恢复方式：由 {@code LoopExecutor} 或 {@code ScheduledRecovery} 等后台任务重建 Chain 并 resume。
      * 不应由用户手动恢复（除非强制干预）。
      */
-    WAITING(6),
+    WAITING(2),
+
+    /**
+     * 暂停（人工干预）：Chain 因缺少外部输入而暂停，需用户主动恢复。
+     * <p>
+     * 典型场景：
+     * - 节点参数缺失且标记为 required（等待用户提交）
+     * - 人工审批节点（等待管理员操作）
+     * <p>
+     * 恢复方式：调用 {@link Chain#resume(Map)} 注入所需变量。
+     * 监听器：通过 {@link dev.tinyflow.core.chain.listener.ChainSuspendListener} 感知。
+     */
+    SUSPEND(5),
 
 
     /**
@@ -143,14 +143,9 @@ public enum ChainStatus {
         return this == SUCCEEDED;
     }
 
-    /**
-     * 判断当前状态是否表示执行已结束（无论成功、失败或取消）
-     *
-     * @return 如果是任意终态，返回 true；否则返回 false
-     * @see #isTerminal()
-     */
-    public boolean isFinished() {
-        return isTerminal();
+
+    public boolean allowRunning() {
+        return this == READY || this == RUNNING || this == WAITING;
     }
 
     /**

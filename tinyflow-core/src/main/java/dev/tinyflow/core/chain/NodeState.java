@@ -26,7 +26,7 @@ public class NodeState {
     private String nodeId;
 
     protected ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<>();
-    protected NodeStatus nodeStatus = NodeStatus.READY;
+    protected NodeStatus status = NodeStatus.READY;
 
     private String fromEdgeId;
 
@@ -112,8 +112,8 @@ public class NodeState {
         this.memory = memory;
     }
 
-    public NodeStatus getNodeStatus() {
-        return nodeStatus;
+    public NodeStatus getStatus() {
+        return status;
     }
 
     public ExceptionSummary getError() {
@@ -146,15 +146,15 @@ public class NodeState {
         executeEdgeIds.add(fromEdgeId);
     }
 
-    public void setNodeStatus(NodeStatus nodeStatus) {
-        this.nodeStatus = nodeStatus;
+    public void setStatus(NodeStatus status) {
+        this.status = status;
     }
 
     public void setNodeStatusFinished() {
-        if (this.nodeStatus == NodeStatus.ERROR) {
-            this.setNodeStatus(NodeStatus.FAILED);
+        if (this.status == NodeStatus.ERROR) {
+            this.setStatus(NodeStatus.FAILED);
         } else {
-            this.setNodeStatus(NodeStatus.SUCCEEDED);
+            this.setStatus(NodeStatus.SUCCEEDED);
         }
     }
 }

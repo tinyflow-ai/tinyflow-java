@@ -6,20 +6,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * TinyFlow LoopScheduler（最终版）
- *
+ * <p>
  * 统一调度 Trigger（Loop / Timer / Webhook / SubChain）
  * 异步执行 Node 通过 asyncNodeExecutors
  * 支持分布式恢复（Leader-only）
  */
 public class LoopScheduler {
 
-    /** 调度线程池（单线程即可，高性能 DelayQueue） */
+    /**
+     * 调度线程池（单线程即可，高性能 DelayQueue）
+     */
     private final ScheduledExecutorService scheduler;
 
-    /** key -> Future，方便取消或覆盖旧任务 */
+    /**
+     * key -> Future，方便取消或覆盖旧任务
+     */
     private final ConcurrentMap<String, ScheduledFuture<?>> futureMap = new ConcurrentHashMap<>();
 
-    /** Scheduler 是否已关闭 */
+    /**
+     * Scheduler 是否已关闭
+     */
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     public LoopScheduler(int threads) {
@@ -55,23 +61,23 @@ public class LoopScheduler {
 
         long delay = Math.max(trigger.triggerAt - System.currentTimeMillis(), 0);
 
-        ScheduledFuture<?> old = futureMap.get(trigger.key);
-        if (old != null) {
-            old.cancel(false);
-        }
-
-        ScheduledFuture<?> future = scheduler.schedule(() -> {
-            try {
-                trigger.task.run();
-            } finally {
-                futureMap.remove(trigger.key);
+        futureMap.compute(trigger.key, (k, old) -> {
+            if (old != null) {
+                old.cancel(false);
             }
-        }, delay, TimeUnit.MILLISECONDS);
-
-        futureMap.put(trigger.key, future);
+            return scheduler.schedule(() -> {
+                try {
+                    trigger.task.run();
+                } finally {
+                    futureMap.remove(k);
+                }
+            }, delay, TimeUnit.MILLISECONDS);
+        });
     }
 
-    /** 取消某个 Trigger */
+    /**
+     * 取消某个 Trigger
+     */
     public void cancel(String key) {
         ScheduledFuture<?> f = futureMap.remove(key);
         if (f != null) {
@@ -79,7 +85,9 @@ public class LoopScheduler {
         }
     }
 
-    /** graceful shutdown */
+    /**
+     * graceful shutdown
+     */
     public void shutdown() {
         if (closed.compareAndSet(false, true)) {
             for (Map.Entry<String, ScheduledFuture<?>> e : futureMap.entrySet()) {
