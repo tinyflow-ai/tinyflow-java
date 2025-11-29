@@ -32,7 +32,6 @@ public class NodeState {
 
     private int retryCount = 0;
 
-
     private AtomicInteger triggerCount = new AtomicInteger(0);
     private List<String> triggerEdgeIds = new ArrayList<>();
 

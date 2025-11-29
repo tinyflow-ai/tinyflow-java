@@ -21,11 +21,12 @@ package dev.tinyflow.core.chain;
  * 该状态机描述了一个 Chain 实例从创建到终止的完整生命周期。
  * 状态分为三类：
  * - <b>初始状态</b>：READY
- * - <b>运行中状态</b>：RUNNING, SUSPEND
+ * - <b>运行中状态</b>：RUNNING, SUSPEND, WAITING
  * - <b>终态（Terminal）</b>：SUCCEEDED, FAILED, CANCELLED（不可再变更）
  * <p>
  * 设计原则：
  * - 使用行业通用术语（如 SUCCEEDED/FAILED，而非 FINISHED_NORMAL/ABNORMAL）
+ * - 明确区分人工干预（SUSPEND）与系统调度（WAITING）
  * - 终态互斥且不可逆，便于状态判断与持久化恢复
  */
 public enum ChainStatus {
@@ -53,8 +54,23 @@ public enum ChainStatus {
      * - 节点参数缺失且标记为 required（等待用户提交）
      * - 人工审批节点（等待管理员操作）
      * <p>
+     * 恢复方式：调用 {@link Chain#resume(Map)} 注入所需变量。
+     * 监听器：通过 {@link dev.tinyflow.core.chain.listener.ChainSuspendListener} 感知。
      */
     SUSPEND(5),
+
+    /**
+     * 等待（系统调度）：Chain 因系统事件而暂停，将由调度器自动恢复。
+     * <p>
+     * 典型场景：
+     * - 循环节点（loop）的间隔等待
+     * - 定时触发节点的延迟执行
+     * - 等待外部系统回调（如 webhook）
+     * <p>
+     * 恢复方式：由 {@code LoopExecutor} 或 {@code ScheduledRecovery} 等后台任务重建 Chain 并 resume。
+     * 不应由用户手动恢复（除非强制干预）。
+     */
+    WAITING(6),
 
 
     /**

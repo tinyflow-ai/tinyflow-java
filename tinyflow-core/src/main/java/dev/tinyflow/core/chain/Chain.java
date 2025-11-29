@@ -110,6 +110,12 @@ public class Chain {
         if (before != status) {
             try {
                 notifyEvent(new ChainStatusChangeEvent(this, state.getStatus(), before));
+
+                // cancel loop task when chain status is terminal
+                if (status.isTerminal()) {
+                    cancelAllLoopTasks();
+                }
+
             } finally {
                 if (stateRepository != null) {
                     stateRepository.updateChainStatus(state.getInstanceId(), status);
@@ -385,6 +391,11 @@ public class Chain {
             return;
         }
 
+        // 恢复状态
+        if (state.getStatus() == ChainStatus.WAITING) {
+            setStatusAndNotifyEvent(ChainStatus.RUNNING);
+        }
+
         if (state.getStatus() != ChainStatus.RUNNING) {
             return;
         }
@@ -408,6 +419,7 @@ public class Chain {
                 executeResult = currentNode.execute(this);
                 state.addComputeCost(currentNode.calculateComputeCost(this, executeResult));
             } finally {
+                // 记录执行结果 和 执行次数，防止在循环执行的情况下，可能导致死循环
                 nodeState.recordExecute(fromEdgeId);
                 state.setExecuteResult(executeResult);
             }
@@ -473,18 +485,26 @@ public class Chain {
             return;
         }
 
-        // 等待间隔
+        // 等待间隔, 下次执行时间
 //        safeSleep(currentNode.getLoopIntervalMs());
-//        // 继续执行当前节点
 //        doExecuteNode(context);
 
-
         // 循环执行
+        setStatusAndNotifyEvent(ChainStatus.WAITING);
         scheduleLoopNode(context);
     }
 
 
-    private void scheduleLoopNode(ExecutionContext context){
+    /**
+     * 循环执行
+     *
+     * @param context 执行上下文
+     */
+    private void scheduleLoopNode(ExecutionContext context) {
+        if (state.getStatus() != ChainStatus.RUNNING) {
+            return;
+        }
+
         String instanceId = state.getInstanceId();
         String nodeId = context.currentNode.getId();
         long loopIntervalMs = context.currentNode.getLoopIntervalMs();
@@ -496,6 +516,9 @@ public class Chain {
 
         // 触发后提交到 asyncNodeExecutors 执行 Node
         trigger.task = () -> ChainRuntime.asyncExecutors().submit(() -> {
+            if (state.getStatus() != ChainStatus.RUNNING) {
+                return;
+            }
             doExecuteNode(context);
         });
 
@@ -503,6 +526,18 @@ public class Chain {
         ChainRuntime.loopScheduler().schedule(trigger);
     }
 
+
+    /**
+     * 取消所有循环任务
+     */
+    private void cancelAllLoopTasks() {
+        String instanceId = state.getInstanceId();
+        // 取消该链实例的所有循环任务
+        for (Node node : definition.getNodes()) {
+            String taskKey = instanceId + ":" + node.getId();
+            ChainRuntime.loopScheduler().cancel(taskKey);
+        }
+    }
 
 
     private void safeSleep(long retryIntervalMs) {
@@ -598,12 +633,11 @@ public class Chain {
             } else if (state.getStatus() == ChainStatus.ERROR) {
                 setStatusAndNotifyEvent(ChainStatus.FAILED);
             }
-
+            // else { // do nothing, 不用理会 WAITING 和 SUSPEND 状态  }
         } finally {
             saveOrUpdateState();
             notifyEvent(new ChainEndEvent(this));
             EXECUTION_THREAD_LOCAL.remove();
-
         }
     }
 
