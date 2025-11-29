@@ -17,8 +17,14 @@ package dev.tinyflow.core.chain;
 
 import com.alibaba.fastjson.JSON;
 import dev.tinyflow.core.chain.event.*;
-import dev.tinyflow.core.chain.listener.*;
+import dev.tinyflow.core.chain.listener.ChainErrorListener;
+import dev.tinyflow.core.chain.listener.ChainEventListener;
+import dev.tinyflow.core.chain.listener.ChainOutputListener;
+import dev.tinyflow.core.chain.listener.NodeErrorListener;
+import dev.tinyflow.core.chain.repository.ChainDefinitionRepository;
 import dev.tinyflow.core.chain.repository.ChainStateRepository;
+import dev.tinyflow.core.chain.runtime.ChainRuntime;
+import dev.tinyflow.core.chain.runtime.LoopScheduler;
 import dev.tinyflow.core.util.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +40,7 @@ public class Chain {
     protected final ChainDefinition definition;
     protected final ChainState state;
     protected ChainStateRepository stateRepository;
+    protected ChainDefinitionRepository definitionRepository;
 
     protected EventManager eventManager = new EventManager();
     protected ExecutorService asyncNodeExecutors = NamedThreadPools.newFixedThreadPool("chain-executor");
@@ -286,9 +293,6 @@ public class Chain {
     }
 
     protected List<Node> getStartNodes() {
-        List<Node> waitingNodes = getNodeByIds(state.getWaitingNodeIds());
-        if (waitingNodes != null) return waitingNodes;
-
         List<Node> suspendNodes = getNodeByIds(state.getSuspendNodeIds());
         if (suspendNodes != null) return suspendNodes;
 
@@ -371,15 +375,10 @@ public class Chain {
     }
 
 
-    protected void doExecuteNode(ExecutionContext context) {
+    public void doExecuteNode(ExecutionContext context) {
 
         Node currentNode = context.currentNode;
         String fromEdgeId = context.fromEdgeId;
-
-        if (state.getStatus() == ChainStatus.WAITING) {
-            state.addWaitingNodeId(currentNode.getId());
-            return;
-        }
 
         if (state.getStatus() == ChainStatus.SUSPEND) {
             state.addSuspendNodeId(currentNode.getId());
@@ -479,9 +478,32 @@ public class Chain {
 //        // 继续执行当前节点
 //        doExecuteNode(context);
 
-        state.addWaitingNodeId(currentNode.getId());
-        setStatusAndNotifyEvent(ChainStatus.WAITING);
+
+        // 循环执行
+        scheduleLoopNode(context);
     }
+
+
+    private void scheduleLoopNode(ExecutionContext context){
+        String instanceId = state.getInstanceId();
+        String nodeId = context.currentNode.getId();
+        long loopIntervalMs = context.currentNode.getLoopIntervalMs();
+
+        LoopScheduler.Trigger trigger = new LoopScheduler.Trigger();
+        trigger.key = instanceId + ":" + nodeId;
+        trigger.type = LoopScheduler.TriggerType.LOOP;
+        trigger.triggerAt = System.currentTimeMillis() + loopIntervalMs;
+
+        // 触发后提交到 asyncNodeExecutors 执行 Node
+        trigger.task = () -> ChainRuntime.asyncExecutors().submit(() -> {
+            doExecuteNode(context);
+        });
+
+        // 提交到 LoopScheduler
+        ChainRuntime.loopScheduler().schedule(trigger);
+    }
+
+
 
     private void safeSleep(long retryIntervalMs) {
         if (retryIntervalMs <= 0) {
@@ -577,15 +599,11 @@ public class Chain {
                 setStatusAndNotifyEvent(ChainStatus.FAILED);
             }
 
-            saveOrUpdateState();
-
-            // 通过 WaitingScheduler 来恢复运行
-            if (state.getStatus() == ChainStatus.WAITING) {
-                // todo  通过 WaitingScheduler 来恢复运行
-            }
         } finally {
+            saveOrUpdateState();
             notifyEvent(new ChainEndEvent(this));
             EXECUTION_THREAD_LOCAL.remove();
+
         }
     }
 
