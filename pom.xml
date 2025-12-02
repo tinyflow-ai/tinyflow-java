@@ -46,7 +46,7 @@
         <module>tinyflow-core</module>
         <module>tinyflow-node</module>
         <module>tinyflow-support-springai</module>
-        <module>tinyflow-support-langchain4j</module>
+<!--        <module>tinyflow-support-langchain4j</module>-->
         <module>tinyflow-support-agentsflex</module>
         <module>tinyflow-support-solonai</module>
     </modules>
@@ -56,7 +56,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <langchain4j.version>1.7.1</langchain4j.version>
-        <agentsflexbom.version>2.0.0-beta.1</agentsflexbom.version>
+        <agentsflexbom.version>2.0.0-beta.2</agentsflexbom.version>
     </properties>
 
     <dependencyManagement>
