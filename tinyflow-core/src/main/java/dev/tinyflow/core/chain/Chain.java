@@ -256,13 +256,13 @@ public class Chain {
 
     private void handleNodeResult(Node node, NodeState nodeState, Map<String, Object> result, String byEdigeId, Throwable error) {
         try {
-
             nodeState.recordExecute(byEdigeId);
 
             if (error == null) {
                 // 成功
                 nodeState.setStatus(NodeStatus.SUCCEEDED);
 
+                // 更新 state 数据
                 updateStateSafely(state -> {
                     EnumSet<ChainStateField> fields = EnumSet.of(ChainStateField.EXECUTE_RESULT);
                     state.setExecuteResult(result);
@@ -281,6 +281,12 @@ public class Chain {
 
                 if (node.isRetryEnable() && node.isResetRetryCountAfterNormal()) {
                     nodeState.setRetryCount(0);
+                }
+
+                // 不调度下一个节点，由 node 自行调度，比如 Loop 循环
+                Boolean scheduleNextNodeDisabled = (Boolean) result.get("__schedule_next_node_disabled");
+                if (scheduleNextNodeDisabled != null && scheduleNextNodeDisabled){
+                    return;
                 }
 
                 scheduleNextForNode(node, result, byEdigeId);

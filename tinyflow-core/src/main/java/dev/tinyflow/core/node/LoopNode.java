@@ -94,8 +94,7 @@ public class LoopNode extends BaseNode {
             executeCurrentStateId = parentNodeState.getMemoryOrDefault("currentStateId", UUID.randomUUID().toString());
         }
 
-
-        Map<String, Object> chainMemory = parentChainState.getMemory();
+        Map<String, Object> parentStateMemory = parentChainState.getMemory();
         Map<String, Object> loopVars = parentChainState.resolveParameters(this, Collections.singletonList(loopVar));
         Object loopValue = loopVars.get(loopVar.getName());
 
@@ -106,40 +105,34 @@ public class LoopNode extends BaseNode {
             shouldLoopCount = loopValue instanceof Number ? ((Number) loopValue).intValue() : Integer.parseInt(loopValue.toString().trim());
         }
 
+        // 执行的次数不够 && 不是第一次执行，合并结果到 subResult
+        if (currentIndex != 0) {
+            ChainState childState = chain.getState();
+            mergeResult(subResult, childState);
+        }
+
+
         // 执行的次数够了,恢复父级触发
         if (currentIndex >= shouldLoopCount) {
             trigger.setParentInstanceId(null);
+            subResult.remove("__schedule_next_node_disabled");
+            chain.updateNodeStateSafely(parentChainState.getInstanceId(), this.getId(), state -> {
+                state.setMemory(null); // 清空缓存（好像有必要？）
+                return EnumSet.of(NodeStateField.MEMORY);
+            });
             return subResult;
-        }
-        // 执行的次数不够
-        else {
-            // 不是第一次执行
-            if (currentIndex != 0) {
-                ChainState childState = chain.getState();
-                mergeResult(subResult, childState);
-            }
         }
 
 
         if (loopValue instanceof Iterable) {
-            Iterable<?> iterable = (Iterable<?>) loopValue;
-            Object loopItem = null;
-            int loopIndex = 0;
-            for (Object o : iterable) {
-                if (currentIndex == loopIndex++) {
-                    loopItem = o;
-                    break;
-                }
-            }
-            executeLoopChain(chain, executeParentInstanceId, executeCurrentStateId, currentIndex, loopItem, chainMemory);
+            Object loopItem = IterableUtil.get((Iterable<?>) loopValue, currentIndex);
+            executeLoopChain(chain, executeParentInstanceId, executeCurrentStateId, currentIndex, loopItem, parentStateMemory);
         } else if (loopValue instanceof Number || (loopValue instanceof String && isNumeric(loopValue.toString()))) {
-            int count = loopValue instanceof Number ? ((Number) loopValue).intValue() : Integer.parseInt(loopValue.toString().trim());
-            if (currentIndex < count) {
-                executeLoopChain(chain, executeParentInstanceId, executeCurrentStateId, currentIndex, currentIndex, chainMemory);
-            }
+            executeLoopChain(chain, executeParentInstanceId, executeCurrentStateId, currentIndex, currentIndex, parentStateMemory);
         }
 
 
+        subResult.put("__schedule_next_node_disabled", true);
         chain.updateNodeStateSafely(parentChainState.getInstanceId(), this.getId(), state -> {
             // 保存当前索引和结果
             state.addMemory("currentIndex", currentIndex + 1);
