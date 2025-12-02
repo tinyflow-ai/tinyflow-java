@@ -48,7 +48,7 @@ public class JavascriptRuntimeEngine implements CodeRuntimeEngine {
             });
 
             // 注入参数
-            Map<String, Object> parameterValues = chain.getParameterValues(node);
+            Map<String, Object> parameterValues = chain.getState().resolveParameters(node);
             if (parameterValues != null) {
                 for (Map.Entry<String, Object> entry : parameterValues.entrySet()) {
                     bindings.putMember(entry.getKey(), JsInteropUtils.wrapJavaValueForJS(context, entry.getValue()));
@@ -56,7 +56,7 @@ public class JavascriptRuntimeEngine implements CodeRuntimeEngine {
             }
 
             bindings.putMember("_chain", chain);
-            bindings.putMember("_context", chain.getState().getOrCreateNodeState(node.getId()));
+            bindings.putMember("_context", chain.getNodeState(node.getId()));
 
 
             // 在 JS 中创建 _result 对象
@@ -64,7 +64,7 @@ public class JavascriptRuntimeEngine implements CodeRuntimeEngine {
 
             // 注入 _chain 和 _context
             bindings.putMember("_chain", chain);
-            bindings.putMember("_context", chain.getState().getOrCreateNodeState(node.getId()));
+            bindings.putMember("_context", chain.getNodeState(node.getId()));
 
             // 执行用户脚本
             context.eval("js", code);

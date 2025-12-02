@@ -62,9 +62,9 @@ public class SearchEngineNode extends BaseNode {
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
-        Map<String, Object> argsMap = chain.getParameterValues(this);
-        String realKeyword = TextTemplate.of(keyword).formatToString(Arrays.asList(argsMap, chain.getEnvMap()));
-        String realLimitString = TextTemplate.of(limit).formatToString(Arrays.asList(argsMap, chain.getEnvMap()));
+        Map<String, Object> argsMap = chain.getState().resolveParameters(this);
+        String realKeyword = TextTemplate.of(keyword).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));
+        String realLimitString = TextTemplate.of(limit).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));
         int realLimit = 10;
         if (StringUtil.hasText(realLimitString)) {
             try {
@@ -96,7 +96,6 @@ public class SearchEngineNode extends BaseNode {
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
-                ", async=" + async +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +

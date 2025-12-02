@@ -16,22 +16,12 @@
 package dev.tinyflow.core.chain.repository;
 
 import dev.tinyflow.core.chain.ChainState;
-import dev.tinyflow.core.chain.ChainStatus;
 
-import java.util.List;
+import java.util.EnumSet;
 
 public interface ChainStateRepository {
 
-    ChainState loadChainState(String instanceId);
+    ChainState load(String instanceId);
 
-    void saveOrUpdateChainState(ChainState chainState);
-
-    void updateChainStatus(String instanceId, ChainStatus status);
-
-    void deleteChainState(String instanceId);
-
-    void updateHeartbeat(String instanceId);
-
-    // 加载需要恢复的链
-    List<ChainState> loadDiedChainStates();
+    boolean tryUpdate(ChainState newState, EnumSet<ChainStateField> fields);
 }

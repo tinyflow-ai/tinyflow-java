@@ -32,7 +32,6 @@ public abstract class Node implements Serializable {
     protected String name;
     protected String description;
 
-    protected boolean async = false;
     protected List<Edge> inwardEdges;
     protected List<Edge> outwardEdges;
 
@@ -75,14 +74,6 @@ public abstract class Node implements Serializable {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public boolean isAsync() {
-        return async;
-    }
-
-    public void setAsync(boolean async) {
-        this.async = async;
     }
 
     public List<Edge> getInwardEdges() {
@@ -237,7 +228,8 @@ public abstract class Node implements Serializable {
     }
 
     protected long doCalculateComputeCost(String expr, Chain chain, Map<String, Object> result) {
-        Map<String, Object> parameterValues = chain.getParameterValuesOnly(this, this.getParameters(), null);
+//        Map<String, Object> parameterValues = chain.getState().getParameterValuesOnly(this, this.getParameters(), null);
+        Map<String, Object> parameterValues = chain.getState().resolveParameters(this, this.getParameters(), null,true);
         Map<String, Object> newMap = new HashMap<>(result);
         newMap.putAll(parameterValues);
         return JsConditionUtil.evalLong(expr, chain, newMap);

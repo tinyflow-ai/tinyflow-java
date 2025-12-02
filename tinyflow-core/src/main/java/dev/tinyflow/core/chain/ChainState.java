@@ -25,15 +25,15 @@ import com.alibaba.fastjson.serializer.ObjectSerializer;
 import com.alibaba.fastjson.serializer.SerializeConfig;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import dev.tinyflow.core.util.MapUtil;
+import dev.tinyflow.core.util.StringUtil;
+import dev.tinyflow.core.util.TextTemplate;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Type;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class ChainState implements Serializable {
 
@@ -44,18 +44,17 @@ public class ChainState implements Serializable {
     private Map<String, Object> executeResult;
     private Map<String, Object> environment;
 
-    private ConcurrentHashMap<String, NodeState> nodeStates = new ConcurrentHashMap<>();
-
     // 算力消耗定义，积分消耗
     private long computeCost;
-
     private Set<String> suspendNodeIds;
     private List<Parameter> suspendForParameters;
     private ChainStatus status;
     private String message;
     private ExceptionSummary error;
+    private long version;
 
     public ChainState() {
+        this.instanceId = UUID.randomUUID().toString();
         this.status = ChainStatus.READY;
         this.computeCost = 0;
     }
@@ -98,21 +97,6 @@ public class ChainState implements Serializable {
 
     public void setEnvironment(Map<String, Object> environment) {
         this.environment = environment;
-    }
-
-    public ConcurrentHashMap<String, NodeState> getNodeStates() {
-        return nodeStates;
-    }
-
-    public void setNodeStates(ConcurrentHashMap<String, NodeState> nodeStates) {
-        this.nodeStates = nodeStates;
-    }
-
-    public void addNodeState(String nodeId, NodeState nodeState) {
-        if (nodeStates == null) {
-            nodeStates = new ConcurrentHashMap<>();
-        }
-        nodeStates.put(nodeId, nodeState);
     }
 
     public Long getComputeCost() {
@@ -181,6 +165,15 @@ public class ChainState implements Serializable {
         this.error = error;
     }
 
+
+    public long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
     public static ChainState fromJSON(String jsonString) {
         ParserConfig config = new ParserConfig();
         config.putDeserializer(ChainState.class, new ChainDeserializer());
@@ -199,7 +192,6 @@ public class ChainState implements Serializable {
         this.memory.clear();
         this.executeResult = null;
         this.environment = null;
-        this.nodeStates = null;
         this.computeCost = 0;
         this.suspendNodeIds = null;
         this.suspendForParameters = null;
@@ -208,15 +200,132 @@ public class ChainState implements Serializable {
         this.error = null;
     }
 
-    public NodeState getOrCreateNodeState(String nodeId) {
-        return MapUtil.computeIfAbsent(nodeStates, nodeId, NodeState::new);
-    }
 
     public void addComputeCost(Long value) {
         if (value == null) {
             value = 0L;
         }
         this.computeCost += value;
+    }
+
+
+    public Map<String, Object> getNodeExecuteResult(String nodeId) {
+        if (memory == null || memory.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> result = new HashMap<>();
+        memory.forEach((k, v) -> {
+            if (k.startsWith(nodeId + ".")) {
+                String newKey = k.substring(nodeId.length() + 1);
+                result.put(newKey, v);
+            }
+        });
+        return result;
+    }
+
+
+    public Object resolveValue(String path) {
+        Object result = MapUtil.getByPath(getMemory(), path);
+        return result != null ? result : MapUtil.getByPath(getEnvironment(), path);
+    }
+
+    public Map<String, Object> resolveParameters(Node node) {
+        return resolveParameters(node, node.getParameters());
+    }
+
+    public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters) {
+        return resolveParameters(node, parameters, null);
+    }
+
+    public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters, Map<String, Object> formatArgs) {
+        return resolveParameters(node, parameters, formatArgs, false);
+    }
+
+    private boolean isNullOrBlank(Object value) {
+        return value == null || value instanceof String && StringUtil.noText((String) value);
+    }
+
+    public Map<String, Object> getEnvMap() {
+        Map<String, Object> formatArgsMap = new HashMap<>();
+        formatArgsMap.put("env", getEnvironment());
+        formatArgsMap.put("env.sys", System.getenv());
+        return formatArgsMap;
+    }
+
+    public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters, Map<String, Object> formatArgs, boolean ignoreRequired) {
+        if (parameters == null || parameters.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> variables = new LinkedHashMap<>();
+        List<Parameter> suspendParameters = null;
+        for (Parameter parameter : parameters) {
+            RefType refType = parameter.getRefType();
+            Object value;
+            if (refType == RefType.FIXED) {
+                value = TextTemplate.of(parameter.getValue())
+                        .formatToString(Arrays.asList(formatArgs, getEnvMap()));
+            } else if (refType == RefType.REF) {
+                value = this.resolveValue(parameter.getRef());
+            }
+            // 默认为 INPUT
+            else {
+                value = this.resolveValue(parameter.getName());
+            }
+
+            if (value == null && parameter.getDefaultValue() != null) {
+                value = parameter.getDefaultValue();
+            }
+
+            if (refType == RefType.INPUT && isNullOrBlank(value)) {
+                if (!ignoreRequired && parameter.isRequired()) {
+                    if (suspendParameters == null) {
+                        suspendParameters = new ArrayList<>();
+                    }
+                    suspendParameters.add(parameter);
+                    continue;
+                }
+            }
+
+            if (parameter.isRequired() && isNullOrBlank(value)) {
+                if (!ignoreRequired) {
+                    throw new ChainException(node.getName() + " Missing required parameter:" + parameter.getName());
+                }
+            }
+
+            if (value instanceof String) {
+                value = ((String) value).trim();
+                if (parameter.getDataType() == DataType.Boolean) {
+                    value = "true".equalsIgnoreCase((String) value) || "1".equalsIgnoreCase((String) value);
+                } else if (parameter.getDataType() == DataType.Number) {
+                    value = Long.parseLong((String) value);
+                } else if (parameter.getDataType() == DataType.Array) {
+                    value = JSON.parseArray((String) value);
+                }
+            }
+
+            variables.put(parameter.getName(), value);
+        }
+
+        if (suspendParameters != null && !suspendParameters.isEmpty()) {
+            this.setSuspendForParameters(suspendParameters);
+//            this.suspend(node);
+
+            // 构建参数名称列表
+            String missingParams = suspendParameters.stream()
+                    .map(Parameter::getName)
+                    .collect(Collectors.joining("', '", "'", "'"));
+
+            String errorMessage = String.format(
+                    "Node '%s' (type: %s) is suspended. Waiting for input parameters: %s.",
+                    StringUtil.getFirstWithText(node.getName(), node.getId()),
+                    node.getClass().getSimpleName(),
+                    missingParams
+            );
+
+            throw new ChainSuspendException(errorMessage);
+        }
+
+        return variables;
     }
 
 
@@ -250,7 +359,6 @@ public class ChainState implements Serializable {
                 ", memory=" + memory +
                 ", executeResult=" + executeResult +
                 ", environment=" + environment +
-                ", nodeStates=" + nodeStates +
                 ", computeCost=" + computeCost +
                 ", suspendNodeIds=" + suspendNodeIds +
                 ", suspendForParameters=" + suspendForParameters +

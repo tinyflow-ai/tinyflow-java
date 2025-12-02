@@ -30,13 +30,13 @@ public class QLExpressRuntimeEngine implements CodeRuntimeEngine {
         Express4Runner runner = new Express4Runner(InitOptions.DEFAULT_OPTIONS);
         Map<String, Object> context = new HashMap<>();
 
-        Map<String, Object> parameterValues = chain.getParameterValues(node);
+        Map<String, Object> parameterValues = chain.getState().resolveParameters(node);
         if (parameterValues != null) context.putAll(parameterValues);
 
         Map<String, Object> result = new HashMap<>();
         context.put("_result", result);
         context.put("_chain", chain);
-        context.put("_context", chain.getState().getOrCreateNodeState(node.getId()));
+        context.put("_context", chain.getNodeState(node.getId()));
 
         try {
             runner.execute(code, context, QLOptions.DEFAULT_OPTIONS);

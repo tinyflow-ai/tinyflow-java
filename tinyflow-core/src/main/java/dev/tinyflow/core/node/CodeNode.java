@@ -50,7 +50,7 @@ public class CodeNode extends BaseNode {
             throw new IllegalStateException("Code is null or blank.");
         }
 
-        String newCode = TextTemplate.of(code).formatToString(Arrays.asList(chain.getParameterValues(this), chain.getEnvMap()));
+        String newCode = TextTemplate.of(code).formatToString(Arrays.asList(chain.getState().resolveParameters(this), chain.getState().getEnvMap()));
 
         CodeRuntimeEngine codeRuntimeEngine = CodeRuntimeEngineManager.getInstance().getCodeRuntimeEngine(this.engine);
         return codeRuntimeEngine.execute(newCode, this, chain);

@@ -1,12 +1,6 @@
 package dev.tinyflow.core.test;
 
 import dev.tinyflow.core.Tinyflow;
-import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainDefinition;
-import dev.tinyflow.core.chain.Event;
-import dev.tinyflow.core.chain.Node;
-import dev.tinyflow.core.chain.listener.ChainEventListener;
-import dev.tinyflow.core.chain.listener.ChainOutputListener;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,25 +17,42 @@ public class TinyflowTest {
         Map<String, Object> variables = new HashMap<>();
         variables.put("name", "michael");
 
-        ChainDefinition definition = tinyflow.toChain();
-        Chain chain = definition.createChain();
 
-        chain.addEventListener(new ChainEventListener() {
-            @Override
-            public void onEvent(Event event, Chain chain) {
-                System.out.println(event.toString());
-            }
-        });
+//        ChainExecutor executor = new ChainExecutor(new ChainDefinitionRepository() {
+//            @Override
+//            public ChainDefinition getChainDefinitionById(String id) {
+//                return new Tinyflow(data1).toChain();
+//            }
+//        }, new InMemoryChainStateRepository());
+//
+//        executor.addEventListener(new ChainEventListener() {
+//            @Override
+//            public void onEvent(Event event, Chain chain) {
+//                System.out.println(event.toString());
+//            }
+//        });
 
-        chain.addOutputListener(new ChainOutputListener() {
-            @Override
-            public void onOutput(Chain chain, Node node, Object outputMessage) {
-                System.out.println("outputMessage: " + outputMessage);
-            }
-        });
 
-        Map<String, Object> result = chain.executeForResult(variables);
+//        ChainDefinition definition = tinyflow.toChain();
+//        Chain chain = definition.createChain();
 
-        System.out.println(result);
+//
+//        chain.addEventListener(new ChainEventListener() {
+//            @Override
+//            public void onEvent(Event event, Chain chain) {
+//                System.out.println(event.toString());
+//            }
+//        });
+//
+//        chain.addOutputListener(new ChainOutputListener() {
+//            @Override
+//            public void onOutput(Chain chain, Node node, Object outputMessage) {
+//                System.out.println("outputMessage: " + outputMessage);
+//            }
+//        });
+
+//        Map<String, Object> result = executor.execute("1", variables);
+//
+//        System.out.println(result);
     }
 }

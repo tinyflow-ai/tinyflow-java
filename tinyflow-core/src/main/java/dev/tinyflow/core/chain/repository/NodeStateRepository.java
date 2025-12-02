@@ -13,27 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.chain;
+package dev.tinyflow.core.chain.repository;
 
-public enum NodeStatus {
-    READY(0), // 未开始执行
-    RUNNING(1), // 已开始执行，执行中...
-    SUSPEND(6),
-    ERROR(10), //发生错误
-    SUCCEEDED(20), //正常结束
-    FAILED(21); //错误结束
+import dev.tinyflow.core.chain.NodeState;
 
-    final int value;
+import java.util.EnumSet;
 
-    NodeStatus(int value) {
-        this.value = value;
-    }
+public interface NodeStateRepository {
 
-    public int getValue() {
-        return value;
-    }
+    NodeState load(String instanceId, String nodeId);
 
-    public boolean isFinished() {
-        return this.value >= SUCCEEDED.value;
-    }
+    boolean tryUpdate(NodeState newState, EnumSet<NodeStateField> fields, long chainStateVersion);
 }

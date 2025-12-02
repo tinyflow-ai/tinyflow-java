@@ -176,9 +176,9 @@ public class ChainDefinition implements Serializable {
     }
 
 
-    public Chain createChain() {
-        return new Chain(this);
-    }
+//    public Chain createChain() {
+//        return new Chain(this);
+//    }
 
 
     @Override

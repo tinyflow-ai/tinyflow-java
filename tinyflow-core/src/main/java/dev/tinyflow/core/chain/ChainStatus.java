@@ -35,7 +35,7 @@ public enum ChainStatus {
      * 初始状态：Chain 已创建，但尚未开始执行。
      * <p>
      * 此状态下，Chain 的内存为空，节点尚未触发。
-     * 调用 {@link Chain#execute} 或 {@link Chain#executeForResult} 后进入 {@link #RUNNING}。
+     * 调用 {@link Chain#execute} 或 {@link Chain#doExecute} 后进入 {@link #RUNNING}。
      */
     READY(0),
 
@@ -46,19 +46,6 @@ public enum ChainStatus {
      * 遇到挂起条件（如缺少参数、loop 间隔）时，会转为 {@link #SUSPEND}
      */
     RUNNING(1),
-
-    /**
-     * 等待（系统调度）：Chain 因系统事件而暂停，将由调度器自动恢复。
-     * <p>
-     * 典型场景：
-     * - 循环节点（loop）的间隔等待
-     * - 定时触发节点的延迟执行
-     * - 等待外部系统回调（如 webhook）
-     * <p>
-     * 恢复方式：由 {@code LoopExecutor} 或 {@code ScheduledRecovery} 等后台任务重建 Chain 并 resume。
-     * 不应由用户手动恢复（除非强制干预）。
-     */
-    WAITING(2),
 
     /**
      * 暂停（人工干预）：Chain 因缺少外部输入而暂停，需用户主动恢复。
@@ -143,10 +130,6 @@ public enum ChainStatus {
         return this == SUCCEEDED;
     }
 
-
-    public boolean allowRunning() {
-        return this == READY || this == RUNNING || this == WAITING;
-    }
 
     /**
      * 获取状态对应的数值标识

@@ -82,7 +82,7 @@ public class ConfirmNode extends BaseNode {
 
         Map<String, Object> values;
         try {
-            values = chain.getParameterValues(this, confirmParameters);
+            values = chain.getState().resolveParameters(this, confirmParameters);
         } catch (ChainSuspendException e) {
             chain.getState().setMessage(message);
 
@@ -96,7 +96,7 @@ public class ConfirmNode extends BaseNode {
                 }
 
                 // 获取参数值，不会触发 ChainSuspendException 错误
-                Map<String, Object> parameterValues = chain.getParameterValuesOnly(this, newParameters, null);
+                Map<String, Object> parameterValues = chain.getState().resolveParameters(this, newParameters, null, true);
 
                 // 设置 enums，方便前端给用户进行选择
                 for (Parameter confirmParameter : confirmParameters) {

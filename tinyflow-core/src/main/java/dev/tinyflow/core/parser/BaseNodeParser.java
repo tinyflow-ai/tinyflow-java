@@ -117,10 +117,10 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
                     node.setCondition(new JsCodeCondition(conditionString.trim()));
                 }
 
-                Boolean async = data.getBoolean("async");
-                if (async != null) {
-                    node.setAsync(async);
-                }
+//                Boolean async = data.getBoolean("async");
+//                if (async != null) {
+//                    node.setAsync(async);
+//                }
 
                 String name = data.getString("title");
                 if (StringUtil.hasText(name)) {
@@ -176,7 +176,6 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
                     node.setMaxRetryCount(maxRetryCount);
                 }
                 // 错误重试 end =======
-
             }
         }
 

@@ -146,12 +146,12 @@ public class HttpNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
 
-        Map<String, Object> argsMap = chain.getParameterValues(this);
-        String newUrl = TextTemplate.of(url).formatToString(Arrays.asList(argsMap, chain.getEnvMap()));
+        Map<String, Object> argsMap = chain.getState().resolveParameters(this);
+        String newUrl = TextTemplate.of(url).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));
 
         Request.Builder reqBuilder = new Request.Builder().url(newUrl);
 
-        Map<String, Object> headersMap = chain.getParameterValues(this, headers, argsMap);
+        Map<String, Object> headersMap = chain.getState().resolveParameters(this, headers, argsMap);
         headersMap.forEach((s, o) -> reqBuilder.addHeader(s, String.valueOf(o)));
 
         if (StringUtil.noText(method) || "GET".equalsIgnoreCase(method)) {
@@ -218,13 +218,13 @@ public class HttpNode extends BaseNode {
         }
 
         if ("x-www-form-urlencoded".equals(bodyType)) {
-            Map<String, Object> formUrlencodedMap = chain.getParameterValues(this, formUrlencoded);
+            Map<String, Object> formUrlencodedMap = chain.getState().resolveParameters(this, formUrlencoded);
             String bodyString = mapToQueryString(formUrlencodedMap);
             return RequestBody.create(bodyString, MediaType.parse("application/x-www-form-urlencoded"));
         }
 
         if ("form-data".equals(bodyType)) {
-            Map<String, Object> formDataMap = chain.getParameterValues(this, formData, formatArgs);
+            Map<String, Object> formDataMap = chain.getState().resolveParameters(this, formData, formatArgs);
 
             MultipartBody.Builder builder = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM);
@@ -249,7 +249,7 @@ public class HttpNode extends BaseNode {
         }
 
         if ("raw".equals(bodyType)) {
-            String rawBodyString = TextTemplate.of(rawBody).formatToString(Arrays.asList(formatArgs, chain.getEnvMap()));
+            String rawBodyString = TextTemplate.of(rawBody).formatToString(Arrays.asList(formatArgs, chain.getState().getEnvMap()));
             return RequestBody.create(rawBodyString, null);
         }
         //none
@@ -273,7 +273,6 @@ public class HttpNode extends BaseNode {
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
-                ", async=" + async +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
