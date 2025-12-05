@@ -57,20 +57,34 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <langchain4j.version>1.7.1</langchain4j.version>
         <agentsflexbom.version>2.0.0-beta.2</agentsflexbom.version>
+        <agentsflexcore.version>2.0.0-beta.1</agentsflexcore.version>
+        <springai.version>1.0.0-M6</springai.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- 基础核心包 -->
+            <dependency>
+                <groupId>dev.tinyflow</groupId>
+                <artifactId>tinyflow-core</artifactId>
+                <version>${agentsflexcore.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.agentsflex</groupId>
                 <artifactId>agents-flex-bom</artifactId>
                 <version>${agentsflexbom.version}</version>
             </dependency>
             <dependency>
-                <!--            核心依赖-->
+                <!-- langchain4j 核心依赖-->
                 <groupId>dev.langchain4j</groupId>
                 <artifactId>langchain4j</artifactId>
                 <version>${langchain4j.version}</version>
+            </dependency>
+            <!--    spring-ai -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-core</artifactId>
+                <version>${springai.version}</version>
             </dependency>
 
             <!--使用 enjoy 模板引擎-->
