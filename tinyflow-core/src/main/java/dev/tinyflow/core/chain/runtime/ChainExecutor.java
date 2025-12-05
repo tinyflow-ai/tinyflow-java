@@ -55,18 +55,23 @@ public class ChainExecutor {
 
 
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables) {
-        Chain current = createChain(definitionId);
-        if (current == null) {
+        return execute(definitionId, variables, 3, TimeUnit.MINUTES);
+    }
+
+
+    public Map<String, Object> execute(String definitionId, Map<String, Object> variables, long timeout, TimeUnit unit) {
+        Chain chain = createChain(definitionId);
+        if (chain == null) {
             throw new RuntimeException("Chain definition not found");
         }
 
-        String stateInstanceId = current.getStateInstanceId();
+        String stateInstanceId = chain.getStateInstanceId();
         CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
-        ChainEventListener listener = (event, chain) -> {
+        ChainEventListener listener = (event, c) -> {
             if (event instanceof ChainStatusChangeEvent) {
                 if (((ChainStatusChangeEvent) event).getStatus().isTerminal()
-                        && chain.getStateInstanceId().equals(stateInstanceId)) {
+                        && c.getStateInstanceId().equals(stateInstanceId)) {
                     ChainState state = chainStateRepository.load(stateInstanceId);
                     Map<String, Object> execResult = state.getExecuteResult();
                     future.complete(execResult != null ? execResult : Collections.emptyMap());
@@ -74,16 +79,17 @@ public class ChainExecutor {
             }
         };
 
-        ChainErrorListener errorListener = (error, chain) -> {
-            if (chain.getStateInstanceId().equals(stateInstanceId)) {
+        ChainErrorListener errorListener = (error, c) -> {
+            if (c.getStateInstanceId().equals(stateInstanceId)) {
                 future.completeExceptionally(error);
             }
         };
+
         try {
             this.addEventListener(listener);
             this.addErrorListener(errorListener);
-            current.start(variables);
-            return future.get(300, TimeUnit.SECONDS);
+            chain.start(variables);
+            return future.get(timeout, unit);
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Execution timed out", e);
@@ -99,17 +105,18 @@ public class ChainExecutor {
         }
     }
 
-    public void executeAsync(String definitionId, Map<String, Object> variables) {
-        Chain current = createChain(definitionId);
-        if (current == null) {
+    public String executeAsync(String definitionId, Map<String, Object> variables) {
+        Chain chain = createChain(definitionId);
+        if (chain == null) {
             throw new RuntimeException("Chain definition not found");
         }
-        current.start(variables);
+        chain.start(variables);
+        return chain.getStateInstanceId();
     }
 
 
-    public void resumeAsync(String instanceId) {
-        ChainState state = chainStateRepository.load(instanceId);
+    public void resumeAsync(String stateInstanceId) {
+        ChainState state = chainStateRepository.load(stateInstanceId);
         if (state == null) {
             return;
         }
@@ -135,7 +142,8 @@ public class ChainExecutor {
             return null;
         }
 
-        Chain chain = new Chain(definition, UUID.randomUUID().toString());
+        String stateInstanceId = UUID.randomUUID().toString();
+        Chain chain = new Chain(definition, stateInstanceId);
         chain.setTriggerScheduler(triggerScheduler);
         chain.setChainStateRepository(chainStateRepository);
         chain.setNodeStateRepository(nodeStateRepository);
