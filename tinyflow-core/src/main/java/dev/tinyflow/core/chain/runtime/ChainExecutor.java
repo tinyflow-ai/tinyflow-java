@@ -7,6 +7,8 @@ import dev.tinyflow.core.chain.listener.ChainEventListener;
 import dev.tinyflow.core.chain.listener.ChainOutputListener;
 import dev.tinyflow.core.chain.listener.NodeErrorListener;
 import dev.tinyflow.core.chain.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -24,6 +26,7 @@ import java.util.concurrent.*;
  */
 public class ChainExecutor {
 
+    private static final Logger log = LoggerFactory.getLogger(ChainExecutor.class);
     private final ChainDefinitionRepository definitionRepository;
     private final ChainStateRepository chainStateRepository;
     private final NodeStateRepository nodeStateRepository;

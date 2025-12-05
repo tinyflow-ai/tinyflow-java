@@ -34,20 +34,8 @@ public class Chain {
     public Chain(ChainDefinition definition, String stateInstanceId) {
         this.definition = definition;
         this.stateInstanceId = stateInstanceId;
-//        this.state = new ChainState();
-//        this.state.setInstanceId(UUID.randomUUID().toString());
-//        this.state.setChainDefinitionId(definition.getId());
     }
 
-//    public Chain(ChainDefinition definition) {
-//        this.definition = definition;
-
-    /// /        this.state = state;
-    /// /
-    /// /        if (state.getChainDefinitionId() == null) {
-    /// /            state.setChainDefinitionId(definition.getId());
-    /// /        }
-//    }
     public void notifyEvent(Event event) {
         eventManager.notifyEvent(event, this);
     }
@@ -130,7 +118,7 @@ public class Chain {
             }
 
             // 2. 加载 NodeState
-            NodeState nodeState = nodeStateRepository.load(stateInstanceId,nodeId );
+            NodeState nodeState = nodeStateRepository.load(stateInstanceId, nodeId);
             if (nodeState == null) {
                 nodeState = new NodeState();
                 nodeState.setChainInstanceId(chainState.getInstanceId());
@@ -204,7 +192,7 @@ public class Chain {
                 fields.add(ChainStateField.MEMORY);
             }
 
-            if (StringUtil.noText(state.getChainDefinitionId())){
+            if (StringUtil.noText(state.getChainDefinitionId())) {
                 state.setChainDefinitionId(definition.getId());
                 fields.add(ChainStateField.CHAIN_DEFINITION_ID);
             }
@@ -292,8 +280,8 @@ public class Chain {
                 }
 
                 // 不调度下一个节点，由 node 自行调度，比如 Loop 循环
-                Boolean scheduleNextNodeDisabled = (Boolean) result.get("__schedule_next_node_disabled");
-                if (scheduleNextNodeDisabled != null && scheduleNextNodeDisabled){
+                Boolean scheduleNextNodeDisabled = result == null ? null : (Boolean) result.get(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY);
+                if (scheduleNextNodeDisabled != null && scheduleNextNodeDisabled) {
                     return;
                 }
 
@@ -449,12 +437,6 @@ public class Chain {
     public void output(Node node, Object response) {
         eventManager.notifyOutput(this, node, response);
     }
-
-//    public void saveOrUpdateState() {
-//        if (chainStateRepository != null) {
-//            chainStateRepository.tryUpdate(state, EnumSet.of(ChainStateField.STATUS));
-//        }
-//    }
 
 
     public EventManager getEventManager() {

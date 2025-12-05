@@ -82,7 +82,6 @@ public class LoopNode extends BaseNode {
         }
         // 由子循环触发（至少完成了第一次循环）
         else {
-
             parentChainState = chain.getState(parentInstanceId);
             NodeState parentNodeState = chain.getNodeStateRepository().load(parentInstanceId, this.getId());
             // 循环次数的定义
@@ -107,15 +106,16 @@ public class LoopNode extends BaseNode {
 
         // 执行的次数不够 && 不是第一次执行，合并结果到 subResult
         if (currentIndex != 0) {
-            ChainState childState = chain.getState();
-            mergeResult(subResult, childState);
+            ChainState subState = chain.getState();
+            mergeResult(subResult, subState);
         }
 
 
         // 执行的次数够了,恢复父级触发
         if (currentIndex >= shouldLoopCount) {
             trigger.setParentInstanceId(null);
-            subResult.remove("__schedule_next_node_disabled");
+
+            // 删除当前节点的 memory
             chain.updateNodeStateSafely(parentChainState.getInstanceId(), this.getId(), state -> {
                 state.setMemory(null); // 清空缓存（好像有必要？）
                 return EnumSet.of(NodeStateField.MEMORY);
@@ -132,7 +132,6 @@ public class LoopNode extends BaseNode {
         }
 
 
-        subResult.put("__schedule_next_node_disabled", true);
         chain.updateNodeStateSafely(parentChainState.getInstanceId(), this.getId(), state -> {
             // 保存当前索引和结果
             state.addMemory("currentIndex", currentIndex + 1);
@@ -140,7 +139,8 @@ public class LoopNode extends BaseNode {
             return EnumSet.of(NodeStateField.MEMORY);
         });
 
-        return subResult;
+        // 禁用调度下个节点
+        return ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_RESULT;
     }
 
     private void executeLoopChain(Chain chain, String parentStateId, String currentStateId, int index, Object loopItem, Map<String, Object> parentMap) {
@@ -177,10 +177,10 @@ public class LoopNode extends BaseNode {
     /**
      * 把子流程执行的结果填充到主流程的输出参数中
      *
-     * @param toResult   主流程的输出参数
-     * @param childState 子流程的
+     * @param toResult 主流程的输出参数
+     * @param subState 子流程的
      */
-    private void mergeResult(Map<String, Object> toResult, ChainState childState) {
+    private void mergeResult(Map<String, Object> toResult, ChainState subState) {
         List<Parameter> outputDefs = getOutputDefs();
         if (outputDefs != null) {
             for (Parameter outputDef : outputDefs) {
@@ -188,7 +188,7 @@ public class LoopNode extends BaseNode {
 
                 //引用
                 if (outputDef.getRefType() == RefType.REF) {
-                    value = childState.resolveValue(outputDef.getRef());
+                    value = subState.resolveValue(outputDef.getRef());
                 }
                 //固定值
                 else if (outputDef.getRefType() == RefType.FIXED) {

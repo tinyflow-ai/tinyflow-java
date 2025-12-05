@@ -1,5 +1,8 @@
 package dev.tinyflow.core.chain.runtime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class TriggerScheduler {
 
+    private static final Logger log = LoggerFactory.getLogger(TriggerScheduler.class);
     private final TriggerStore store;
     private final ScheduledExecutorService scheduler;
     private final ExecutorService worker;
@@ -113,6 +117,8 @@ public class TriggerScheduler {
         worker.submit(() -> {
             try {
                 consumer.accept(t, worker);
+            } catch (Exception e) {
+                log.error(e.toString(), e);
             } finally {
                 // 默认语义：触发后移除
                 store.remove(triggerId);
@@ -146,7 +152,7 @@ public class TriggerScheduler {
             if (consumer != null) {
                 worker.submit(() -> {
                     try {
-                        TriggerContext.setCurrentTrigger( existing);
+                        TriggerContext.setCurrentTrigger(existing);
                         consumer.accept(existing, worker);
                     } finally {
                         TriggerContext.clearCurrentTrigger();
@@ -194,7 +200,7 @@ public class TriggerScheduler {
                     if (consumer != null) {
                         worker.submit(() -> {
                             try {
-                                consumer.accept(t,worker);
+                                consumer.accept(t, worker);
                             } finally {
                                 store.remove(t.getId());
                                 ScheduledFuture<?> f2 = scheduledFutures.remove(t.getId());
