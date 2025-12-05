@@ -16,7 +16,6 @@
 package dev.tinyflow.core.parser.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.chain.Parameter;
 import dev.tinyflow.core.node.HttpNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
@@ -26,7 +25,7 @@ import java.util.List;
 public class HttpNodeParser extends BaseNodeParser<HttpNode> {
 
     @Override
-    public HttpNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public HttpNode doParse(JSONObject root, JSONObject data, JSONObject chainJSONObject) {
         HttpNode httpNode = new HttpNode();
         httpNode.setUrl(data.getString("url"));
         httpNode.setMethod(data.getString("method"));

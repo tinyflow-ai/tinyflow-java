@@ -16,14 +16,13 @@
 package dev.tinyflow.core.parser.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.SearchEngineNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
 public class SearchEngineNodeParser extends BaseNodeParser<SearchEngineNode> {
 
     @Override
-    public SearchEngineNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public SearchEngineNode doParse(JSONObject root, JSONObject data, JSONObject chainJSONObject) {
         SearchEngineNode searchEngineNode = new SearchEngineNode();
         searchEngineNode.setKeyword(data.getString("keyword"));
         searchEngineNode.setLimit(data.getString("limit"));

@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core;
+package dev.tinyflow.core.parser;
 
-import dev.tinyflow.core.parser.NodeParser;
 import dev.tinyflow.core.parser.impl.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class TinyflowConfig {
+public class DefaultNodeParsers {
 
     private static final Map<String, NodeParser<?>> defaultNodeParsers = new HashMap<>();
 

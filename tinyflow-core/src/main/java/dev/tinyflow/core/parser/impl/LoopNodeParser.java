@@ -15,10 +15,8 @@
  */
 package dev.tinyflow.core.parser.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.chain.ChainDefinition;
 import dev.tinyflow.core.chain.Parameter;
 import dev.tinyflow.core.node.LoopNode;
@@ -29,19 +27,17 @@ import java.util.List;
 public class LoopNodeParser extends BaseNodeParser<LoopNode> {
 
     @Override
-    public LoopNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public LoopNode doParse(JSONObject root, JSONObject data, JSONObject chainJSONObject) {
         LoopNode loopNode = new LoopNode();
         List<Parameter> loopVars = getParameters(data, "loopVars");
         if (!loopVars.isEmpty()) {
             loopNode.setLoopVar(loopVars.get(0));
         }
 
-        String jsonString = tinyflow.getData();
-        JSONObject flowRoot = JSON.parseObject(jsonString);
-        JSONArray nodes = flowRoot.getJSONArray("nodes");
-        JSONArray edges = flowRoot.getJSONArray("edges");
+        JSONArray nodes = chainJSONObject.getJSONArray("nodes");
+        JSONArray edges = chainJSONObject.getJSONArray("edges");
 
-        ChainDefinition chain = tinyflow.getChainParser().parse(tinyflow, nodes, edges, root);
+        ChainDefinition chain = getChainParser().parse(chainJSONObject, nodes, edges, root);
         loopNode.setLoopChain(chain);
 
         return loopNode;

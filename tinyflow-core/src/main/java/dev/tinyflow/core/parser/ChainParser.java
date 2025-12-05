@@ -18,7 +18,6 @@ package dev.tinyflow.core.parser;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.chain.ChainDefinition;
 import dev.tinyflow.core.chain.Edge;
 import dev.tinyflow.core.chain.JsCodeCondition;
@@ -31,33 +30,14 @@ import java.util.Map;
 
 public class ChainParser {
 
-    private Map<String, NodeParser<?>> nodeParserMap = new HashMap<>();
+    private final Map<String, NodeParser<?>> nodeParserMap;
 
-    public ChainParser() {
-//        initDefaultParsers();
+    public ChainParser(Map<String, NodeParser<?>> nodeParserMap) {
+        this.nodeParserMap = nodeParserMap;
     }
-
-//    private void initDefaultParsers() {
-//        nodeParserMap.put("startNode", new StartNodeParser());
-//        nodeParserMap.put("codeNode", new CodeNodeParser());
-//        nodeParserMap.put("confirmNode", new ConfirmNodeParser());
-//
-//        nodeParserMap.put("httpNode", new HttpNodeParser());
-//        nodeParserMap.put("knowledgeNode", new KnowledgeNodeParser());
-//        nodeParserMap.put("loopNode", new LoopNodeParser());
-//        nodeParserMap.put("searchEngineNode", new SearchEngineNodeParser());
-//        nodeParserMap.put("templateNode", new TemplateNodeParser());
-//
-//        nodeParserMap.put("endNode", new EndNodeParser());
-//        nodeParserMap.put("llmNode", new LlmNodeParser());
-//    }
 
     public Map<String, NodeParser<?>> getNodeParserMap() {
         return nodeParserMap;
-    }
-
-    public void setNodeParserMap(Map<String, NodeParser<?>> nodeParserMap) {
-        this.nodeParserMap = nodeParserMap;
     }
 
     public void addNodeParser(String type, NodeParser<?> nodeParser) {
@@ -68,20 +48,21 @@ public class ChainParser {
         this.nodeParserMap.remove(type);
     }
 
-    public ChainDefinition parse(Tinyflow tinyflow) {
-        String jsonString = tinyflow.getData();
+
+    public ChainDefinition parse(String jsonString) {
         if (StringUtil.noText(jsonString)) {
-            return null;
+            throw new IllegalStateException("jsonString is empty");
         }
 
         JSONObject root = JSON.parseObject(jsonString);
         JSONArray nodes = root.getJSONArray("nodes");
         JSONArray edges = root.getJSONArray("edges");
 
-        return parse(tinyflow, nodes, edges, null);
+        return parse(root, nodes, edges, null);
     }
 
-    public ChainDefinition parse(Tinyflow tinyflow, JSONArray nodes, JSONArray edges, JSONObject parentNode) {
+
+    public ChainDefinition parse(JSONObject chainJSONObject, JSONArray nodes, JSONArray edges, JSONObject parentNode) {
         if (CollectionUtil.noItems(nodes) || CollectionUtil.noItems(edges)) {
             return null;
         }
@@ -91,7 +72,7 @@ public class ChainParser {
             JSONObject nodeObject = nodes.getJSONObject(i);
             if ((parentNode == null && StringUtil.noText(nodeObject.getString("parentId")))
                     || (parentNode != null && parentNode.getString("id").equals(nodeObject.getString("parentId")))) {
-                Node node = parseNode(tinyflow, nodeObject);
+                Node node = parseNode(chainJSONObject, nodeObject);
                 if (node != null) {
                     chain.addNode(node);
                 }
@@ -127,14 +108,14 @@ public class ChainParser {
         return chain;
     }
 
-    private Node parseNode(Tinyflow tinyflow, JSONObject nodeObject) {
+    private Node parseNode(JSONObject chainJSONObject, JSONObject nodeObject) {
         String type = nodeObject.getString("type");
         if (StringUtil.noText(type)) {
             return null;
         }
 
         NodeParser<?> nodeParser = nodeParserMap.get(type);
-        return nodeParser == null ? null : nodeParser.parse(nodeObject, tinyflow);
+        return nodeParser == null ? null : nodeParser.parse(nodeObject, chainJSONObject, this);
     }
 
 
@@ -159,5 +140,62 @@ public class ChainParser {
 
     public void addAllParsers(Map<String, NodeParser<?>> defaultNodeParsers) {
         this.nodeParserMap.putAll(defaultNodeParsers);
+    }
+    
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+
+    public static final class Builder {
+
+        private final Map<String, NodeParser<?>> customParsers = new HashMap<>();
+        private boolean includeDefaults = true;
+
+        private Builder() {
+        }
+
+        /**
+         * 是否包含默认节点解析器（默认为 true）。
+         */
+        public Builder withDefaultParsers(boolean include) {
+            this.includeDefaults = include;
+            return this;
+        }
+
+        /**
+         * 添加自定义节点解析器（会覆盖同名的默认解析器）。
+         */
+        public Builder addParser(String type, NodeParser<?> parser) {
+            if (type == null || parser == null) {
+                throw new IllegalArgumentException("type and parser must not be null");
+            }
+            this.customParsers.put(type, parser);
+            return this;
+        }
+
+        /**
+         * 批量添加自定义解析器。
+         */
+        public Builder addParsers(Map<String, NodeParser<?>> parsers) {
+            if (parsers != null) {
+                this.customParsers.putAll(parsers);
+            }
+            return this;
+        }
+
+        public ChainParser build() {
+            Map<String, NodeParser<?>> finalMap = new HashMap<>();
+
+            if (includeDefaults) {
+                finalMap.putAll(DefaultNodeParsers.getDefaultNodeParsers());
+            }
+
+            // 自定义解析器覆盖默认
+            finalMap.putAll(customParsers);
+
+            return new ChainParser(finalMap);
+        }
     }
 }

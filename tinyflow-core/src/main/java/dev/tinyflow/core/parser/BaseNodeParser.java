@@ -18,8 +18,10 @@ package dev.tinyflow.core.parser;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import dev.tinyflow.core.Tinyflow;
-import dev.tinyflow.core.chain.*;
+import dev.tinyflow.core.chain.DataType;
+import dev.tinyflow.core.chain.JsCodeCondition;
+import dev.tinyflow.core.chain.Parameter;
+import dev.tinyflow.core.chain.RefType;
 import dev.tinyflow.core.node.BaseNode;
 import dev.tinyflow.core.util.StringUtil;
 
@@ -31,6 +33,13 @@ import java.util.List;
 public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T> {
 
     private static final JSONObject EMPTY_JSON_OBJECT = new JSONObject(Collections.emptyMap());
+
+    private ChainParser chainParser;
+
+    @Override
+    public ChainParser getChainParser() {
+        return chainParser;
+    }
 
     public JSONObject getData(JSONObject nodeObject) {
         JSONObject jsonObject = nodeObject.getJSONObject("data");
@@ -97,9 +106,10 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
 
 
     @Override
-    public T parse(JSONObject nodeJSONObject, Tinyflow tinyflow) {
+    public T parse(JSONObject nodeJSONObject, JSONObject chainJSONObject, ChainParser chainParser) {
+        this.chainParser = chainParser;
         JSONObject data = getData(nodeJSONObject);
-        T node = doParse(nodeJSONObject, data, tinyflow);
+        T node = doParse(nodeJSONObject, data, chainJSONObject);
         if (node != null) {
 
             node.setId(nodeJSONObject.getString("id"));
@@ -182,5 +192,5 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
         return node;
     }
 
-    protected abstract T doParse(JSONObject root, JSONObject data, Tinyflow tinyflow);
+    protected abstract T doParse(JSONObject nodeJSONObject, JSONObject data, JSONObject chainJSONObject);
 }

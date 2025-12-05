@@ -16,14 +16,13 @@
 package dev.tinyflow.core.parser.impl;
 
 import com.alibaba.fastjson.JSONObject;
-import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.node.KnowledgeNode;
 import dev.tinyflow.core.parser.BaseNodeParser;
 
 public class KnowledgeNodeParser extends BaseNodeParser<KnowledgeNode> {
 
     @Override
-    public KnowledgeNode doParse(JSONObject root, JSONObject data, Tinyflow tinyflow) {
+    public KnowledgeNode doParse(JSONObject root, JSONObject data, JSONObject chainJSONObject) {
         KnowledgeNode knowledgeNode = new KnowledgeNode();
         knowledgeNode.setKnowledgeId(data.get("knowledgeId"));
         knowledgeNode.setLimit(data.getString("limit"));
