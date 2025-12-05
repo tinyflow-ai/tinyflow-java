@@ -1,6 +1,5 @@
 package dev.tinyflow.core.test;
 
-import dev.tinyflow.core.Tinyflow;
 import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.chain.ChainDefinition;
 import dev.tinyflow.core.chain.Event;
@@ -9,6 +8,7 @@ import dev.tinyflow.core.chain.repository.ChainDefinitionRepository;
 import dev.tinyflow.core.chain.repository.InMemoryChainStateRepository;
 import dev.tinyflow.core.chain.repository.InMemoryNodeStateRepository;
 import dev.tinyflow.core.chain.runtime.ChainExecutor;
+import dev.tinyflow.core.parser.ChainParser;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,12 +23,16 @@ public class TinyflowTest {
         Map<String, Object> variables = new HashMap<>();
         variables.put("name", "michael");
 
+        ChainParser chainParser = ChainParser.builder()
+                .withDefaultParsers(true)
+                .build();
+
 
         ChainExecutor executor = new ChainExecutor(
                 new ChainDefinitionRepository() {
                     @Override
                     public ChainDefinition getChainDefinitionById(String id) {
-                        return new Tinyflow(data1).toChain();
+                        return chainParser.parse(data1);
                     }
                 }
                 , new InMemoryChainStateRepository()
