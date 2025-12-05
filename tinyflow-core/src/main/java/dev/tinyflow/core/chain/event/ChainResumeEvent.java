@@ -20,7 +20,7 @@ import dev.tinyflow.core.chain.Chain;
 
 import java.util.Map;
 
-public class ChainResumeEvent extends BaseChainEvent {
+public class ChainResumeEvent extends BaseEvent {
 
     private final Map<String, Object> variables;
 

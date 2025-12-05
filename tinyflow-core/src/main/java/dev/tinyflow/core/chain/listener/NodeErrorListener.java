@@ -17,10 +17,10 @@ package dev.tinyflow.core.chain.listener;
 
 
 import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.Node;
 
 import java.util.Map;
 
 public interface NodeErrorListener {
-    void onError(Throwable error, ChainNode node, Map<String, Object> nodeResult, Chain chain);
+    void onError(Throwable error, Node node, Map<String, Object> nodeResult, Chain chain);
 }

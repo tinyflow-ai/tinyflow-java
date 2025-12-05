@@ -48,7 +48,7 @@ public class TemplateNode extends BaseNode {
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
-        Map<String, Object> parameters = chain.getParameterValues(this);
+        Map<String, Object> parameters = chain.getState().resolveParameters(this);
 
         ByteArrayOutputStream result = new ByteArrayOutputStream();
 
@@ -70,17 +70,24 @@ public class TemplateNode extends BaseNode {
     public String toString() {
         return "TemplateNode{" +
                 "template='" + template + '\'' +
-                ", description='" + description + '\'' +
                 ", parameters=" + parameters +
                 ", outputDefs=" + outputDefs +
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", async=" + async +
+                ", description='" + description + '\'' +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
-                ", memory=" + memory +
-                ", nodeStatus=" + nodeStatus +
+                ", validator=" + validator +
+                ", loopEnable=" + loopEnable +
+                ", loopIntervalMs=" + loopIntervalMs +
+                ", loopBreakCondition=" + loopBreakCondition +
+                ", maxLoopCount=" + maxLoopCount +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
                 '}';
     }
 }

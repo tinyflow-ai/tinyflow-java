@@ -13,21 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.chain.event;
+package dev.tinyflow.core.chain;
 
+public enum NodeStatus {
+    READY(0), // 未开始执行
+    RUNNING(1), // 已开始执行，执行中...
+    SUSPEND(6),
+    ERROR(10), //发生错误
+    SUCCEEDED(20), //正常结束
+    FAILED(21); //错误结束
 
-import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainEvent;
+    final int value;
 
-public class BaseChainEvent implements ChainEvent {
-
-    protected final Chain chain;
-
-    public BaseChainEvent(Chain chain) {
-        this.chain = chain;
+    NodeStatus(int value) {
+        this.value = value;
     }
 
-    public Chain getChain() {
-        return chain;
+    public int getValue() {
+        return value;
+    }
+
+    public boolean isFinished() {
+        return this.value >= SUCCEEDED.value;
     }
 }

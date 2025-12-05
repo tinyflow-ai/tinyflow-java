@@ -13,37 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.chain;
+package dev.tinyflow.core.chain.repository;
 
+import dev.tinyflow.core.chain.NodeState;
 
-public class ChainContext {
+import java.util.EnumSet;
 
-    private static final ThreadLocal<Chain> TL_CHAIN = new ThreadLocal<>();
+public interface NodeStateRepository {
 
-    private static final ThreadLocal<ChainNode> TL_NODE = new ThreadLocal<>();
+    NodeState load(String instanceId, String nodeId);
 
-    public static Chain getCurrentChain() {
-        return TL_CHAIN.get();
-    }
-
-    public static ChainNode getCurrentNode() {
-        return TL_NODE.get();
-    }
-
-    static void setChain(Chain chain) {
-        TL_CHAIN.set(chain);
-    }
-
-    static void clearChain() {
-        TL_CHAIN.remove();
-    }
-
-    static void setNode(ChainNode node) {
-        TL_NODE.set(node);
-    }
-
-    static void clearNode() {
-        TL_NODE.remove();
-    }
-
+    boolean tryUpdate(NodeState newState, EnumSet<NodeStateField> fields, long chainStateVersion);
 }

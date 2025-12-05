@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.chain.listener;
+package dev.tinyflow.core.chain;
 
 
-import dev.tinyflow.core.chain.Chain;
-
-public interface ChainSuspendListener {
-    void onSuspend(Chain chain);
+public interface NodeValidator {
+    NodeValidResult validate(Node node);
 }

@@ -17,8 +17,8 @@ package dev.tinyflow.core.chain.listener;
 
 
 import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.Node;
 
 public interface ChainOutputListener {
-    void onOutput(Chain chain, ChainNode node, Object outputMessage);
+    void onOutput(Chain chain, Node node, Object outputMessage);
 }

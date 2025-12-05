@@ -20,6 +20,6 @@ import java.util.Map;
 
 public interface EdgeCondition {
 
-    boolean check(Chain chain, ChainEdge edge, Map<String, Object> executeResult);
+    boolean check(Chain chain, Edge edge, Map<String, Object> executeResult);
 
 }

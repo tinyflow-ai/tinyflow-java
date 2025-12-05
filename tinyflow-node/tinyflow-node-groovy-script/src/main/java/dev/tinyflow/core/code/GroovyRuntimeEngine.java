@@ -28,7 +28,7 @@ public class GroovyRuntimeEngine implements CodeRuntimeEngine {
     public Map<String, Object> execute(String code, CodeNode node, Chain chain) {
         Binding binding = new Binding();
 
-        Map<String, Object> parameterValues = chain.getParameterValues(node);
+        Map<String, Object> parameterValues = chain.getState().resolveParameters(node);
         if (parameterValues != null) {
             parameterValues.forEach(binding::setVariable);
         }
@@ -36,7 +36,7 @@ public class GroovyRuntimeEngine implements CodeRuntimeEngine {
         Map<String, Object> result = new HashMap<>();
         binding.setVariable("_result", result);
         binding.setVariable("_chain", chain);
-        binding.setVariable("_context", chain.getNodeContext(node.getId()));
+        binding.setVariable("_context", chain.getNodeState(node.getId()));
 
         GroovyShell shell = new GroovyShell(binding);
         shell.evaluate(code);

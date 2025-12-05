@@ -50,19 +50,17 @@ public class EndNode extends BaseNode {
 
     @Override
     public Map<String, Object> execute(Chain chain) {
-        if (StringUtil.hasText(message)) {
-            if (normal) {
-                chain.stopNormal(message);
-            } else {
-                chain.stopError(message);
-            }
+        if (normal) {
+            chain.success(message);
+        } else {
+            chain.failed(message);
         }
 
         if (this.outputDefs != null) {
             Map<String, Object> output = new HashMap<>();
             for (Parameter outputDef : this.outputDefs) {
                 if (outputDef.getRefType() == RefType.REF) {
-                    output.put(outputDef.getName(), chain.get(outputDef.getRef()));
+                    output.put(outputDef.getName(), chain.getState().resolveValue(outputDef.getRef()));
                 } else if (outputDef.getRefType() == RefType.INPUT) {
                     output.put(outputDef.getName(), outputDef.getRef());
                 } else if (outputDef.getRefType() == RefType.FIXED) {
@@ -70,7 +68,7 @@ public class EndNode extends BaseNode {
                 }
                 // default is ref type
                 else if (StringUtil.hasText(outputDef.getRef())) {
-                    output.put(outputDef.getName(), chain.get(outputDef.getRef()));
+                    output.put(outputDef.getName(), chain.getState().resolveValue(outputDef.getRef()));
                 }
             }
             return output;
@@ -83,19 +81,26 @@ public class EndNode extends BaseNode {
     @Override
     public String toString() {
         return "EndNode{" +
-            "normal=" + normal +
-            ", message='" + message + '\'' +
-            ", description='" + description + '\'' +
-            ", parameters=" + parameters +
-            ", outputDefs=" + outputDefs +
-            ", id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", async=" + async +
-            ", inwardEdges=" + inwardEdges +
-            ", outwardEdges=" + outwardEdges +
-            ", condition=" + condition +
-            ", memory=" + memory +
-            ", nodeStatus=" + nodeStatus +
-            '}';
+                "normal=" + normal +
+                ", message='" + message + '\'' +
+                ", parameters=" + parameters +
+                ", outputDefs=" + outputDefs +
+                ", id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", inwardEdges=" + inwardEdges +
+                ", outwardEdges=" + outwardEdges +
+                ", condition=" + condition +
+                ", validator=" + validator +
+                ", loopEnable=" + loopEnable +
+                ", loopIntervalMs=" + loopIntervalMs +
+                ", loopBreakCondition=" + loopBreakCondition +
+                ", maxLoopCount=" + maxLoopCount +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
+                '}';
     }
 }

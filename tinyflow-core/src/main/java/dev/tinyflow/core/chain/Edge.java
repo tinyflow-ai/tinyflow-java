@@ -16,16 +16,16 @@
 package dev.tinyflow.core.chain;
 
 
-public class ChainEdge {
+public class Edge {
     private String id;
     private String source;
     private String target;
     private EdgeCondition condition;
 
-    public ChainEdge() {
+    public Edge() {
     }
 
-    public ChainEdge(String id) {
+    public Edge(String id) {
         this.id = id;
     }
 

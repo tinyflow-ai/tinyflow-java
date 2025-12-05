@@ -24,126 +24,63 @@ import com.alibaba.fastjson.serializer.JSONSerializer;
 import com.alibaba.fastjson.serializer.ObjectSerializer;
 import com.alibaba.fastjson.serializer.SerializeConfig;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import dev.tinyflow.core.util.MapUtil;
+import dev.tinyflow.core.util.StringUtil;
+import dev.tinyflow.core.util.TextTemplate;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class ChainState implements Serializable {
 
-    private String id;
-    private String name;
-    private String description;
-
-    private List<ChainNode> nodes;
-    private List<ChainEdge> edges;
+    private String instanceId;
+    private String chainDefinitionId;
+    private ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<>();
 
     private Map<String, Object> executeResult;
     private Map<String, Object> environment;
 
-    private ConcurrentHashMap<String, NodeContext> nodeContexts;
-
-    protected ConcurrentHashMap<String, ChainNode> suspendNodes = new ConcurrentHashMap<>();
+    // 算力消耗定义，积分消耗
+    private long computeCost;
+    private Set<String> suspendNodeIds;
     private List<Parameter> suspendForParameters;
     private ChainStatus status;
     private String message;
+    private ExceptionSummary error;
+    private long version;
 
     public ChainState() {
+        this.instanceId = UUID.randomUUID().toString();
+        this.status = ChainStatus.READY;
+        this.computeCost = 0;
     }
 
-    public ChainState(Chain chain) {
-        this.id = chain.getId();
-        this.name = chain.getName();
-        this.description = chain.getDescription();
-
-        this.nodes = chain.getNodes();
-        this.edges = chain.getEdges();
-
-        this.executeResult = chain.getExecuteResult();
-        this.environment = chain.getEnvironment();
-        this.nodeContexts = chain.getNodeContexts();
-
-        this.suspendNodes = chain.getSuspendNodes();
-        this.suspendForParameters = chain.getSuspendForParameters();
-        this.status = chain.getStatus();
-        this.message = chain.getMessage();
+    public String getInstanceId() {
+        return instanceId;
     }
 
-
-    public static ChainState fromJSON(String jsonString) {
-        ParserConfig config = new ParserConfig();
-        config.putDeserializer(Chain.class, new ChainDeserializer());
-        return JSON.parseObject(jsonString, ChainState.class, config, Feature.SupportAutoType);
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
     }
 
-    public String toJSON() {
-        SerializeConfig config = new SerializeConfig();
-        config.put(Chain.class, new ChainSerializer());
-        return JSON.toJSONString(this, config, SerializerFeature.WriteClassName);
+    public String getChainDefinitionId() {
+        return chainDefinitionId;
     }
 
-    public Chain toChain() {
-        return new Chain(this);
+    public void setChainDefinitionId(String chainDefinitionId) {
+        this.chainDefinitionId = chainDefinitionId;
     }
 
-
-    public String getId() {
-        return id;
+    public ConcurrentHashMap<String, Object> getMemory() {
+        return memory;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-//    public ChainHolder getParent() {
-//        return parent;
-//    }
-//
-//    public void setParent(ChainHolder parent) {
-//        this.parent = parent;
-//    }
-//
-//    public List<ChainHolder> getChildren() {
-//        return children;
-//    }
-//
-//    public void setChildren(List<ChainHolder> children) {
-//        this.children = children;
-//    }
-
-    public List<ChainNode> getNodes() {
-        return nodes;
-    }
-
-    public void setNodes(List<ChainNode> nodes) {
-        this.nodes = nodes;
-    }
-
-    public List<ChainEdge> getEdges() {
-        return edges;
-    }
-
-    public void setEdges(List<ChainEdge> edges) {
-        this.edges = edges;
+    public void setMemory(ConcurrentHashMap<String, Object> memory) {
+        this.memory = memory;
     }
 
     public Map<String, Object> getExecuteResult() {
@@ -162,20 +99,38 @@ public class ChainState implements Serializable {
         this.environment = environment;
     }
 
-    public ConcurrentHashMap<String, NodeContext> getNodeContexts() {
-        return nodeContexts;
+    public Long getComputeCost() {
+        return computeCost;
     }
 
-    public void setNodeContexts(ConcurrentHashMap<String, NodeContext> nodeContexts) {
-        this.nodeContexts = nodeContexts;
+    public void setComputeCost(Long computeCost) {
+        this.computeCost = computeCost;
     }
 
-    public ConcurrentHashMap<String, ChainNode> getSuspendNodes() {
-        return suspendNodes;
+    public void setComputeCost(long computeCost) {
+        this.computeCost = computeCost;
     }
 
-    public void setSuspendNodes(ConcurrentHashMap<String, ChainNode> suspendNodes) {
-        this.suspendNodes = suspendNodes;
+    public Set<String> getSuspendNodeIds() {
+        return suspendNodeIds;
+    }
+
+    public void setSuspendNodeIds(Set<String> suspendNodeIds) {
+        this.suspendNodeIds = suspendNodeIds;
+    }
+
+    public void addSuspendNodeId(String nodeId) {
+        if (suspendNodeIds == null) {
+            suspendNodeIds = new HashSet<>();
+        }
+        suspendNodeIds.add(nodeId);
+    }
+
+    public void removeSuspendNodeId(String nodeId) {
+        if (suspendNodeIds == null) {
+            return;
+        }
+        suspendNodeIds.remove(nodeId);
     }
 
     public List<Parameter> getSuspendForParameters() {
@@ -202,6 +157,178 @@ public class ChainState implements Serializable {
         this.message = message;
     }
 
+    public ExceptionSummary getError() {
+        return error;
+    }
+
+    public void setError(ExceptionSummary error) {
+        this.error = error;
+    }
+
+
+    public long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
+    public static ChainState fromJSON(String jsonString) {
+        ParserConfig config = new ParserConfig();
+        config.putDeserializer(ChainState.class, new ChainDeserializer());
+        return JSON.parseObject(jsonString, ChainState.class, config, Feature.SupportAutoType);
+    }
+
+    public String toJSON() {
+        SerializeConfig config = new SerializeConfig();
+        config.put(ChainState.class, new ChainSerializer());
+        return JSON.toJSONString(this, config, SerializerFeature.WriteClassName);
+    }
+
+    public void reset() {
+        this.instanceId = null;
+        this.chainDefinitionId = null;
+        this.memory.clear();
+        this.executeResult = null;
+        this.environment = null;
+        this.computeCost = 0;
+        this.suspendNodeIds = null;
+        this.suspendForParameters = null;
+        this.status = ChainStatus.READY;
+        this.message = null;
+        this.error = null;
+    }
+
+
+    public void addComputeCost(Long value) {
+        if (value == null) {
+            value = 0L;
+        }
+        this.computeCost += value;
+    }
+
+
+    public Map<String, Object> getNodeExecuteResult(String nodeId) {
+        if (memory == null || memory.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> result = new HashMap<>();
+        memory.forEach((k, v) -> {
+            if (k.startsWith(nodeId + ".")) {
+                String newKey = k.substring(nodeId.length() + 1);
+                result.put(newKey, v);
+            }
+        });
+        return result;
+    }
+
+
+    public Object resolveValue(String path) {
+        Object result = MapUtil.getByPath(getMemory(), path);
+        return result != null ? result : MapUtil.getByPath(getEnvironment(), path);
+    }
+
+    public Map<String, Object> resolveParameters(Node node) {
+        return resolveParameters(node, node.getParameters());
+    }
+
+    public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters) {
+        return resolveParameters(node, parameters, null);
+    }
+
+    public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters, Map<String, Object> formatArgs) {
+        return resolveParameters(node, parameters, formatArgs, false);
+    }
+
+    private boolean isNullOrBlank(Object value) {
+        return value == null || value instanceof String && StringUtil.noText((String) value);
+    }
+
+    public Map<String, Object> getEnvMap() {
+        Map<String, Object> formatArgsMap = new HashMap<>();
+        formatArgsMap.put("env", getEnvironment());
+        formatArgsMap.put("env.sys", System.getenv());
+        return formatArgsMap;
+    }
+
+    public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters, Map<String, Object> formatArgs, boolean ignoreRequired) {
+        if (parameters == null || parameters.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> variables = new LinkedHashMap<>();
+        List<Parameter> suspendParameters = null;
+        for (Parameter parameter : parameters) {
+            RefType refType = parameter.getRefType();
+            Object value;
+            if (refType == RefType.FIXED) {
+                value = TextTemplate.of(parameter.getValue())
+                        .formatToString(Arrays.asList(formatArgs, getEnvMap()));
+            } else if (refType == RefType.REF) {
+                value = this.resolveValue(parameter.getRef());
+            }
+            // 默认为 INPUT
+            else {
+                value = this.resolveValue(parameter.getName());
+            }
+
+            if (value == null && parameter.getDefaultValue() != null) {
+                value = parameter.getDefaultValue();
+            }
+
+            if (refType == RefType.INPUT && isNullOrBlank(value)) {
+                if (!ignoreRequired && parameter.isRequired()) {
+                    if (suspendParameters == null) {
+                        suspendParameters = new ArrayList<>();
+                    }
+                    suspendParameters.add(parameter);
+                    continue;
+                }
+            }
+
+            if (parameter.isRequired() && isNullOrBlank(value)) {
+                if (!ignoreRequired) {
+                    throw new ChainException(node.getName() + " Missing required parameter:" + parameter.getName());
+                }
+            }
+
+            if (value instanceof String) {
+                value = ((String) value).trim();
+                if (parameter.getDataType() == DataType.Boolean) {
+                    value = "true".equalsIgnoreCase((String) value) || "1".equalsIgnoreCase((String) value);
+                } else if (parameter.getDataType() == DataType.Number) {
+                    value = Long.parseLong((String) value);
+                } else if (parameter.getDataType() == DataType.Array) {
+                    value = JSON.parseArray((String) value);
+                }
+            }
+
+            variables.put(parameter.getName(), value);
+        }
+
+        if (suspendParameters != null && !suspendParameters.isEmpty()) {
+            this.setSuspendForParameters(suspendParameters);
+//            this.suspend(node);
+
+            // 构建参数名称列表
+            String missingParams = suspendParameters.stream()
+                    .map(Parameter::getName)
+                    .collect(Collectors.joining("', '", "'", "'"));
+
+            String errorMessage = String.format(
+                    "Node '%s' (type: %s) is suspended. Waiting for input parameters: %s.",
+                    StringUtil.getFirstWithText(node.getName(), node.getId()),
+                    node.getClass().getSimpleName(),
+                    missingParams
+            );
+
+            throw new ChainSuspendException(errorMessage);
+        }
+
+        return variables;
+    }
+
+
     public static class ChainSerializer implements ObjectSerializer {
         @Override
         public void write(JSONSerializer serializer, Object object, Object fieldName, Type fieldType, int features) throws IOException {
@@ -209,7 +336,7 @@ public class ChainState implements Serializable {
                 serializer.writeNull();
                 return;
             }
-            Chain chain = (Chain) object;
+            ChainState chain = (ChainState) object;
             serializer.write(chain.toJSON());
         }
     }
@@ -219,26 +346,25 @@ public class ChainState implements Serializable {
         public <T> T deserialze(DefaultJSONParser parser, Type type, Object fieldName) {
             String value = parser.parseObject(String.class);
             //noinspection unchecked
-            return (T) Chain.fromJSON(value);
+            return (T) ChainState.fromJSON(value);
         }
     }
 
+
     @Override
     public String toString() {
-        return "ChainHolder{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-//            ", parent=" + parent +
-//            ", children=" + children +
-                ", nodes=" + nodes +
-                ", edges=" + edges +
+        return "ChainState{" +
+                "instanceId='" + instanceId + '\'' +
+                ", chainDefinitionId='" + chainDefinitionId + '\'' +
+                ", memory=" + memory +
                 ", executeResult=" + executeResult +
-                ", nodeContexts=" + nodeContexts +
-                ", suspendNodes=" + suspendNodes +
+                ", environment=" + environment +
+                ", computeCost=" + computeCost +
+                ", suspendNodeIds=" + suspendNodeIds +
                 ", suspendForParameters=" + suspendForParameters +
                 ", status=" + status +
                 ", message='" + message + '\'' +
+                ", error=" + error +
                 '}';
     }
 }

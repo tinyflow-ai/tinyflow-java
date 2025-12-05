@@ -1,995 +1,508 @@
-/**
- * Copyright (c) 2025-2026, Michael Yang 杨福海 (fuhai999@gmail.com).
- * <p>
- * Licensed under the GNU Lesser General Public License (LGPL) ,Version 3.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p>
- * http://www.gnu.org/licenses/lgpl-3.0.txt
- * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package dev.tinyflow.core.chain;
 
-import com.alibaba.fastjson.JSON;
 import dev.tinyflow.core.chain.event.*;
-import dev.tinyflow.core.chain.listener.*;
-import dev.tinyflow.core.util.*;
+import dev.tinyflow.core.chain.repository.*;
+import dev.tinyflow.core.chain.runtime.*;
+import dev.tinyflow.core.util.CollectionUtil;
+import dev.tinyflow.core.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Phaser;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 
-public class Chain extends ChainNode {
+public class Chain {
+
     private static final Logger log = LoggerFactory.getLogger(Chain.class);
-
-    protected List<ChainNode> nodes;
-    protected List<ChainEdge> edges;
-
-    protected Map<String, Object> executeResult;
-    protected Map<String, Object> environment;
-
-    protected Map<Class<?>, List<ChainEventListener>> eventListeners = new HashMap<>(0);
-    protected List<ChainOutputListener> outputListeners = new ArrayList<>();
-    protected List<ChainErrorListener> chainErrorListeners = new ArrayList<>();
-    protected List<NodeErrorListener> nodeErrorListeners = new ArrayList<>();
-    protected List<ChainSuspendListener> suspendListeners = new ArrayList<>();
+    private static final ThreadLocal<Chain> EXECUTION_THREAD_LOCAL = new ThreadLocal<>();
 
 
-    protected ExecutorService asyncNodeExecutors = NamedThreadPools.newFixedThreadPool("chain-executor");
-    protected Phaser phaser = new Phaser(1);
-    protected ConcurrentHashMap<String, NodeContext> nodeContexts = new ConcurrentHashMap<>();
+    protected final ChainDefinition definition;
+    protected final String stateInstanceId;
 
-    protected ConcurrentHashMap<String, ChainNode> suspendNodes = new ConcurrentHashMap<>();
-    protected List<Parameter> suspendForParameters;
-    protected ChainStatus status = ChainStatus.READY;
-    protected Exception exception;
-    protected String message;
+    //    protected final ChainState state;
+    protected ChainStateRepository chainStateRepository;
+    protected NodeStateRepository nodeStateRepository;
+    protected EventManager eventManager;
+    protected TriggerScheduler triggerScheduler;
 
-
-    public Chain() {
-        this.id = UUID.randomUUID().toString();
+    public static Chain currentChain() {
+        return EXECUTION_THREAD_LOCAL.get();
     }
 
-    public Chain(ChainState state) {
-        this.id = state.getId();
-        this.name = state.getName();
-        this.description = state.getDescription();
-
-        this.nodes = state.getNodes();
-        this.edges = state.getEdges();
-
-        this.executeResult = state.getExecuteResult();
-        this.environment = state.getEnvironment();
-        this.nodeContexts = state.getNodeContexts();
-        this.suspendNodes = state.getSuspendNodes();
-        this.suspendForParameters = state.getSuspendForParameters();
-        this.status = state.getStatus();
-        this.message = state.getMessage();
+    public Chain(ChainDefinition definition, String stateInstanceId) {
+        this.definition = definition;
+        this.stateInstanceId = stateInstanceId;
     }
 
-
-    public Map<Class<?>, List<ChainEventListener>> getEventListeners() {
-        return eventListeners;
-    }
-
-    public void setEventListeners(Map<Class<?>, List<ChainEventListener>> eventListeners) {
-        this.eventListeners = eventListeners;
-    }
-
-    public synchronized void addEventListener(Class<? extends ChainEvent> eventClass, ChainEventListener listener) {
-        List<ChainEventListener> chainEventListeners = eventListeners.computeIfAbsent(eventClass, k -> new ArrayList<>());
-        chainEventListeners.add(listener);
-    }
-
-    public synchronized void addEventListener(ChainEventListener listener) {
-        List<ChainEventListener> chainEventListeners = eventListeners.computeIfAbsent(ChainEvent.class, k -> new ArrayList<>());
-        chainEventListeners.add(listener);
-    }
-
-
-    public synchronized void removeEventListener(ChainEventListener listener) {
-        for (List<ChainEventListener> list : eventListeners.values()) {
-            list.removeIf(item -> item == listener);
-        }
-    }
-
-    public synchronized void removeEventListener(Class<? extends ChainEvent> eventClass, ChainEventListener listener) {
-        List<ChainEventListener> list = eventListeners.get(eventClass);
-        if (list != null && !list.isEmpty()) {
-            list.removeIf(item -> item == listener);
-        }
-    }
-
-    public synchronized void addErrorListener(ChainErrorListener listener) {
-        this.chainErrorListeners.add(listener);
-    }
-
-    public synchronized void removeErrorListener(ChainErrorListener listener) {
-        this.chainErrorListeners.remove(listener);
-    }
-
-    public synchronized void addNodeErrorListener(NodeErrorListener listener) {
-        this.nodeErrorListeners.add(listener);
-    }
-
-    public synchronized void removeNodeErrorListener(NodeErrorListener listener) {
-        this.nodeErrorListeners.remove(listener);
-    }
-
-    public synchronized void addSuspendListener(ChainSuspendListener listener) {
-        this.suspendListeners.add(listener);
-    }
-
-    public synchronized void removeSuspendListener(ChainSuspendListener listener) {
-        this.suspendListeners.remove(listener);
-    }
-
-    public List<ChainOutputListener> getOutputListeners() {
-        return outputListeners;
-    }
-
-    public void setOutputListeners(List<ChainOutputListener> outputListeners) {
-        this.outputListeners = outputListeners;
-    }
-
-    public void addOutputListener(ChainOutputListener outputListener) {
-        if (this.outputListeners == null) {
-            this.outputListeners = new ArrayList<>();
-        }
-        this.outputListeners.add(outputListener);
-    }
-
-    public List<ChainNode> getNodes() {
-        return nodes;
-    }
-
-    public void setNodes(List<ChainNode> chainNodes) {
-        this.nodes = chainNodes;
-    }
-
-    public void addNode(ChainNode node) {
-        if (nodes == null) {
-            this.nodes = new ArrayList<>();
-        }
-
-        if (node instanceof ChainEventListener) {
-            addEventListener((ChainEventListener) node);
-        }
-
-        if (StringUtil.noText(node.getId())) {
-            node.setId(UUID.randomUUID().toString());
-        }
-
-        nodes.add(node);
-
-        if (this.edges != null) {
-            for (ChainEdge edge : edges) {
-                if (node.getId().equals(edge.getSource())) {
-                    node.addOutwardEdge(edge);
-                } else if (node.getId().equals(edge.getTarget())) {
-                    node.addInwardEdge(edge);
-                }
-            }
-        }
-    }
-
-
-    public ChainStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ChainStatus status) {
-        this.status = status;
+    public void notifyEvent(Event event) {
+        eventManager.notifyEvent(event, this);
     }
 
     public void setStatusAndNotifyEvent(ChainStatus status) {
-        ChainStatus before = this.status;
-        this.status = status;
-
-        if (before != status) {
-            notifyEvent(new ChainStatusChangeEvent(this, this.status, before));
-        }
+        AtomicReference<ChainStatus> before = new AtomicReference<>();
+        updateStateSafely(state -> {
+            before.set(state.getStatus());
+            state.setStatus(status);
+            return EnumSet.of(ChainStateField.STATUS);
+        });
+        notifyEvent(new ChainStatusChangeEvent(this, status, before.get()));
     }
 
-    public void notifyEvent(ChainEvent event) {
-        for (Map.Entry<Class<?>, List<ChainEventListener>> entry : eventListeners.entrySet()) {
-            if (entry.getKey().isInstance(event)) {
-                for (ChainEventListener chainEventListener : entry.getValue()) {
-                    try {
-                        chainEventListener.onEvent(event, this);
-                    } catch (Exception e) {
-                        log.error(e.toString(), e);
-                    }
-                }
-            }
-        }
+    /**
+     * Safely updates the chain state with optimistic locking and retry-on-conflict.
+     *
+     * @param modifier the modifier that applies changes and declares updated fields
+     * @throws ChainUpdateTimeoutException if update cannot succeed within timeout
+     */
+    public ChainState updateStateSafely(ChainStateModifier modifier) {
+        return updateStateSafely(this.stateInstanceId, modifier);
     }
 
 
-    public Map<String, Object> getExecuteResult() {
-        return executeResult;
-    }
+    public ChainState updateStateSafely(String stateInstanceId, ChainStateModifier modifier) {
+        final long timeoutMs = 30_000; // 30 seconds total timeout
+        final long maxRetryDelayMs = 100; // Maximum delay between retries
 
-    public void setExecuteResult(Map<String, Object> executeResult) {
-        this.executeResult = executeResult;
-    }
-
-    public Map<String, Object> getEnvironment() {
-        return environment;
-    }
-
-    public void setEnvironment(Map<String, Object> environment) {
-        this.environment = environment;
-    }
-
-    public List<ChainErrorListener> getChainErrorListeners() {
-        return chainErrorListeners;
-    }
-
-    public void setChainErrorListeners(List<ChainErrorListener> chainErrorListeners) {
-        this.chainErrorListeners = chainErrorListeners;
-    }
-
-    public List<NodeErrorListener> getNodeErrorListeners() {
-        return nodeErrorListeners;
-    }
-
-    public void setNodeErrorListeners(List<NodeErrorListener> nodeErrorListeners) {
-        this.nodeErrorListeners = nodeErrorListeners;
-    }
-
-    public List<ChainSuspendListener> getSuspendListeners() {
-        return suspendListeners;
-    }
-
-    public void setSuspendListeners(List<ChainSuspendListener> suspendListeners) {
-        this.suspendListeners = suspendListeners;
-    }
-
-    public ConcurrentHashMap<String, NodeContext> getNodeContexts() {
-        return nodeContexts;
-    }
-
-    public void setNodeContexts(ConcurrentHashMap<String, NodeContext> nodeContexts) {
-        this.nodeContexts = nodeContexts;
-    }
-
-    public ConcurrentHashMap<String, ChainNode> getSuspendNodes() {
-        return suspendNodes;
-    }
-
-    public void setSuspendNodes(ConcurrentHashMap<String, ChainNode> suspendNodes) {
-        this.suspendNodes = suspendNodes;
-    }
-
-    public Exception getException() {
-        return exception;
-    }
-
-    public void setException(Exception exception) {
-        this.exception = exception;
-    }
-
-    public Phaser getPhaser() {
-        return phaser;
-    }
-
-    public void setPhaser(Phaser phaser) {
-        this.phaser = phaser;
-    }
-
-    public void set(String key, Object value) {
-        this.memory.put(key, value);
-    }
-
-
-    public Object get(String key) {
-        Object result = MapUtil.getByPath(this.memory, key);
-        return result != null ? result : MapUtil.getByPath(this.environment, key);
-    }
-
-    @Override
-    protected Map<String, Object> execute(Chain parent) {
-        return executeForResult(parent.getMemory());
-    }
-
-    public void execute(Map<String, Object> variables) {
-        runInLifeCycle(variables,
-                new ChainStartEvent(this, variables),
-                this::executeInternal);
-    }
-
-
-    public Map<String, Object> executeForResult(Map<String, Object> variables) {
-        return executeForResult(variables, false);
-    }
-
-    public Map<String, Object> executeForResult(Map<String, Object> variables, boolean ignoreError) {
-        if (this.status == ChainStatus.SUSPEND) {
-            this.resume(variables);
-        } else {
-            runInLifeCycle(variables, new ChainStartEvent(this, variables), this::executeInternal);
-        }
-
-        if (!ignoreError) {
-            if (this.status == ChainStatus.FINISHED_ABNORMAL) {
-                if (this.exception != null) {
-                    if (this.exception instanceof RuntimeException) {
-                        throw (RuntimeException) this.exception;
-                    } else {
-                        throw new ChainException(this.exception);
-                    }
-                } else {
-                    if (this.message == null) this.message = "Chain execute error";
-                    throw new ChainException(this.message);
-                }
-            } else if (this.status == ChainStatus.SUSPEND && this.exception != null) {
-                throw (ChainSuspendException) this.exception;
-            }
-        }
-
-        return this.executeResult;
-    }
-
-
-    @Override
-    public List<Parameter> getParameters() {
-        List<ChainNode> startNodes = this.getStartNodes();
-        if (startNodes == null || startNodes.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<Parameter> parameters = new ArrayList<>();
-        for (ChainNode node : startNodes) {
-            List<Parameter> nodeParameters = node.getParameters();
-            if (nodeParameters != null) parameters.addAll(nodeParameters);
-        }
-        return parameters;
-    }
-
-    public Map<String, Object> getParameterValues(ChainNode node) {
-        return getParameterValues(node, node.getParameters());
-    }
-
-    public Map<String, Object> getParameterValues(ChainNode node, List<? extends Parameter> parameters) {
-        return getParameterValues(node, parameters, null);
-    }
-
-    public Map<String, Object> getParameterValues(ChainNode node, List<? extends Parameter> parameters, Map<String, Object> formatArgs) {
-        return getParameterValues(node, parameters, formatArgs, false);
-    }
-
-    private boolean isNullOrBlank(Object value) {
-        return value == null || value instanceof String && StringUtil.noText((String) value);
-    }
-
-    public Map<String, Object> getParameterValuesOnly(ChainNode node, List<? extends Parameter> parameters, Map<String, Object> formatArg) {
-        return getParameterValues(node, parameters, formatArg, true);
-    }
-
-    public Map<String, Object> getEnvMap() {
-        Map<String, Object> formatArgsMap = new HashMap<>();
-        formatArgsMap.put("env", this.environment);
-        formatArgsMap.put("env.sys", System.getenv());
-        return formatArgsMap;
-    }
-
-    public Map<String, Object> getParameterValues(ChainNode node, List<? extends Parameter> parameters, Map<String, Object> formatArgs, boolean getValueOnly) {
-        if (parameters == null || parameters.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        Map<String, Object> variables = new LinkedHashMap<>();
-        List<Parameter> suspendParameters = null;
-        for (Parameter parameter : parameters) {
-            RefType refType = parameter.getRefType();
-            Object value;
-            if (refType == RefType.FIXED) {
-                value = TextTemplate.of(parameter.getValue())
-                        .formatToString(Arrays.asList(formatArgs, getEnvMap()));
-            } else if (refType == RefType.REF) {
-                value = this.get(parameter.getRef());
-            } else {
-                value = this.get(parameter.getName());
+        long startTime = System.currentTimeMillis();
+        int attempt = 0;
+        ChainState current = null;
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            current = chainStateRepository.load(stateInstanceId);
+            if (current == null) {
+                throw new IllegalStateException("Chain state not found: " + stateInstanceId);
             }
 
-            if (value == null && parameter.getDefaultValue() != null) {
-                value = parameter.getDefaultValue();
+            EnumSet<ChainStateField> updatedFields = modifier.modify(current);
+            if (updatedFields.isEmpty()) {
+                return current; // No actual changes, exit early
             }
 
-            if (refType == RefType.INPUT && isNullOrBlank(value)) {
-                if (!getValueOnly && parameter.isRequired()) {
-                    if (suspendParameters == null) {
-                        suspendParameters = new ArrayList<>();
-                    }
-                    suspendParameters.add(parameter);
-                    continue;
-                }
+            if (chainStateRepository.tryUpdate(current, updatedFields)) {
+                return current;
             }
 
-            if (parameter.isRequired() && isNullOrBlank(value)) {
-                if (!getValueOnly) {
-                    throw new ChainException(node.getName() + " Missing required parameter:" + parameter.getName());
-                }
-            }
-
-            if (value instanceof String) {
-                value = ((String) value).trim();
-                if (parameter.getDataType() == DataType.Boolean) {
-                    value = "true".equalsIgnoreCase((String) value) || "1".equalsIgnoreCase((String) value);
-                } else if (parameter.getDataType() == DataType.Number) {
-                    value = Long.parseLong((String) value);
-                } else if (parameter.getDataType() == DataType.Array) {
-                    value = JSON.parseArray((String) value);
-                }
-            }
-
-            variables.put(parameter.getName(), value);
+            // Prepare next retry
+            attempt++;
+            long nextDelay = calculateNextRetryDelay(attempt, maxRetryDelayMs);
+            sleepUninterruptibly(nextDelay);
         }
 
-        if (suspendParameters != null && !suspendParameters.isEmpty()) {
-            this.setSuspendForParameters(suspendParameters);
-            this.suspend(node);
-
-            // 构建参数名称列表
-            String missingParams = suspendParameters.stream()
-                    .map(Parameter::getName)
-                    .collect(Collectors.joining("', '", "'", "'"));
-
-            String errorMessage = String.format(
-                    "Node '%s' (type: %s) is suspended. Waiting for input parameters: %s.",
-                    StringUtil.getFirstWithText(node.getName(), node.getId()),
-                    node.getClass().getSimpleName(),
-                    missingParams
-            );
-
-            throw new ChainSuspendException(errorMessage);
-        }
-
-        return variables;
-    }
-
-    public NodeContext getNodeContext(String nodeId) {
-        return MapUtil.computeIfAbsent(nodeContexts, nodeId, k -> new NodeContext());
-    }
-
-    protected void executeInternal() {
-        List<ChainNode> currentNodes = getStartNodes();
-        if (currentNodes == null || currentNodes.isEmpty()) {
-            return;
-        }
-
-        List<ExecuteNode> executeNodes = new ArrayList<>();
-        for (ChainNode currentNode : currentNodes) {
-            executeNodes.add(new ExecuteNode(currentNode, null, ""));
-        }
-
-        doExecuteNodes(executeNodes);
+        // Timeout reached
+        assert current != null;
+        String msg = String.format(
+                "Chain state update timeout after %d ms (instanceId: %s)",
+                timeoutMs, current.getInstanceId()
+        );
+        log.warn(msg);
+        throw new ChainUpdateTimeoutException(msg);
     }
 
 
-    protected void doExecuteNodes(List<ExecuteNode> executeNodes) {
-        for (ExecuteNode executeNode : executeNodes) {
-            ChainNode currentNode = executeNode.currentNode;
-            if (currentNode.isAsync()) {
-                phaser.register();
-                asyncNodeExecutors.execute(() -> {
-                    try {
-                        doExecuteNode(executeNode);
-                    } finally {
-                        phaser.arriveAndDeregister();
-                    }
-                });
-            } else {
-                doExecuteNode(executeNode);
+    public NodeState updateNodeStateSafely(String nodeId, NodeStateModifier modifier) {
+        return this.updateNodeStateSafely(this.stateInstanceId, nodeId, modifier);
+    }
+
+    public NodeState updateNodeStateSafely(String stateInstanceId, String nodeId, NodeStateModifier modifier) {
+        final long timeoutMs = 30_000;
+        final long maxRetryDelayMs = 100;
+        long startTime = System.currentTimeMillis();
+        int attempt = 0;
+
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            // 1. 加载最新 ChainState（获取 chainVersion）
+            ChainState chainState = chainStateRepository.load(stateInstanceId);
+            if (chainState == null) {
+                throw new IllegalStateException("Chain state not found");
             }
+
+            // 2. 加载 NodeState
+            NodeState nodeState = nodeStateRepository.load(stateInstanceId, nodeId);
+            if (nodeState == null) {
+                nodeState = new NodeState();
+                nodeState.setChainInstanceId(chainState.getInstanceId());
+                nodeState.setNodeId(nodeId);
+            }
+
+            // 3. 应用修改
+            EnumSet<NodeStateField> updatedFields = modifier.modify(nodeState);
+
+            if (updatedFields.isEmpty()) {
+                return nodeState;
+            }
+
+            // 4. 尝试更新（传入 chainVersion 保证一致性）
+            if (nodeStateRepository.tryUpdate(nodeState, updatedFields, chainState.getVersion())) {
+                return nodeState;
+            }
+
+            // 5. 退避重试
+            attempt++;
+            sleepUninterruptibly(calculateNextRetryDelay(attempt, maxRetryDelayMs));
         }
+
+        throw new ChainUpdateTimeoutException("Node state update timeout");
     }
 
 
     /**
-     * 获取节点执行结果
+     * Calculates the next retry delay using exponential backoff with jitter.
      *
-     * @param nodeId 节点ID
-     * @return 执行结果
+     * @param attempt    the current retry attempt (1-based)
+     * @param maxDelayMs the maximum delay in milliseconds
+     * @return the delay in milliseconds to wait before next retry
      */
-    public Map<String, Object> getNodeExecuteResult(String nodeId) {
-        Map<String, Object> all = getMemory();
-        Map<String, Object> result = new HashMap<>();
-        all.forEach((k, v) -> {
-            if (k.startsWith(nodeId)) {
-                String newKey = k.substring(nodeId.length() + 1);
-                result.put(newKey, v);
-            }
-        });
-        return result;
+    private long calculateNextRetryDelay(int attempt, long maxDelayMs) {
+        // Base delay: 10ms * (2^(attempt-1))
+        long baseDelay = 10L * (1L << (attempt - 1));
+
+        // Add jitter: ±25% randomness to avoid thundering herd
+        double jitterFactor = 0.75 + (Math.random() * 0.5); // [0.75, 1.25)
+        long delayWithJitter = (long) (baseDelay * jitterFactor);
+
+        // Clamp between 1ms and maxDelayMs
+        return Math.max(1L, Math.min(delayWithJitter, maxDelayMs));
     }
 
-    protected void doExecuteNode(ExecuteNode executeNode) {
-        ChainNode currentNode = executeNode.currentNode;
-
-        if (this.getStatus() == ChainStatus.SUSPEND) {
-            this.suspendNodes.put(currentNode.getId(), currentNode);
-            return;
-        }
-
-        if (this.getStatus() != ChainStatus.RUNNING) {
-            return;
-        }
-
-        NodeContext nodeContext = getNodeContext(currentNode.id);
-
-        Map<String, Object> executeResult = null;
-
+    /**
+     * Sleeps for the specified duration, silently ignoring interrupts
+     * but preserving the interrupt status.
+     *
+     * @param millis the length of time to sleep in milliseconds
+     */
+    private void sleepUninterruptibly(long millis) {
         try {
-            onNodeExecuteBefore(nodeContext);
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Preserve interrupt status
+            // Do NOT throw here — we want to continue retrying
+        }
+    }
 
-            if (shouldSkipCurrentNode(executeNode, nodeContext, currentNode)) {
+
+    public void start(Map<String, Object> variables) {
+        updateStateSafely(state -> {
+            EnumSet<ChainStateField> fields = EnumSet.of(ChainStateField.STATUS);
+            state.setStatus(ChainStatus.RUNNING);
+
+
+            if (variables != null && !variables.isEmpty()) {
+                state.getMemory().putAll(variables);
+                fields.add(ChainStateField.MEMORY);
+            }
+
+            if (StringUtil.noText(state.getChainDefinitionId())) {
+                state.setChainDefinitionId(definition.getId());
+                fields.add(ChainStateField.CHAIN_DEFINITION_ID);
+            }
+
+            return fields;
+        });
+
+
+        notifyEvent(new ChainStartEvent(this, variables));
+        setStatusAndNotifyEvent(ChainStatus.RUNNING);
+
+        // 调度入口节点
+        List<Node> startNodes = definition.getStartNodes();
+        for (Node startNode : startNodes) {
+            scheduleNode(startNode, null, TriggerType.NEXT, 0);
+        }
+    }
+
+    public void executeNode(Node node, String byEdgeId) {
+        NodeState nodeState = getNodeState(node.getId());
+
+        if (shouldSkipNode(node, nodeState, byEdgeId)) {
+            return;
+        }
+
+        Map<String, Object> nodeResult = null;
+        Throwable error = null;
+        try {
+            EXECUTION_THREAD_LOCAL.set(this);
+            notifyEvent(new NodeStartEvent(this, node));
+            nodeResult = node.execute(this);
+        } catch (Throwable throwable) {
+            log.error("Node execute error", throwable);
+            error = throwable;
+        } finally {
+            EXECUTION_THREAD_LOCAL.remove();
+        }
+
+        handleNodeResult(node, nodeState, nodeResult, byEdgeId, error);
+    }
+
+    public NodeState getNodeState(String nodeId) {
+        return nodeStateRepository.load(this.stateInstanceId, nodeId);
+    }
+
+
+    private boolean shouldSkipNode(Node node, NodeState nodeState, String edgeId) {
+        synchronized (this) {
+            nodeState.recordTrigger(edgeId);
+            NodeCondition condition = node.getCondition();
+            if (condition == null) return false;
+            Map<String, Object> prevResult = Collections.emptyMap();
+            return !condition.check(this, nodeState, prevResult);
+        }
+    }
+
+
+    private void handleNodeResult(Node node, NodeState nodeState, Map<String, Object> result, String byEdigeId, Throwable error) {
+        try {
+            nodeState.recordExecute(byEdigeId);
+
+            if (error == null) {
+                // 成功
+                nodeState.setStatus(NodeStatus.SUCCEEDED);
+
+                // 更新 state 数据
+                updateStateSafely(state -> {
+                    EnumSet<ChainStateField> fields = EnumSet.of(ChainStateField.EXECUTE_RESULT);
+                    state.setExecuteResult(result);
+
+                    if (result != null && !result.isEmpty()) {
+                        result.forEach((k, v) -> {
+                            if (v != null) {
+                                state.getMemory().put(node.getId() + "." + k, v);
+                            }
+                        });
+                        fields.add(ChainStateField.MEMORY);
+                    }
+
+                    return fields;
+                });
+
+                if (node.isRetryEnable() && node.isResetRetryCountAfterNormal()) {
+                    nodeState.setRetryCount(0);
+                }
+
+                // 不调度下一个节点，由 node 自行调度，比如 Loop 循环
+                Boolean scheduleNextNodeDisabled = result == null ? null : (Boolean) result.get(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY);
+                if (scheduleNextNodeDisabled != null && scheduleNextNodeDisabled) {
+                    return;
+                }
+
+                scheduleNextForNode(node, result, byEdigeId);
+            } else {
+                // 挂起
+                if (error instanceof ChainSuspendException) {
+                    setStatusAndNotifyEvent(ChainStatus.SUSPEND);
+                    nodeState.setStatus(NodeStatus.SUSPEND);
+                } else {
+                    // 失败
+                    nodeState.setStatus(NodeStatus.ERROR);
+                    nodeState.setError(new ExceptionSummary(error));
+                    eventManager.notifyNodeError(error, node, result, this);
+
+                    if (node.isRetryEnable()
+                            && node.getMaxRetryCount() > 0
+                            && nodeState.getRetryCount() < node.getMaxRetryCount()) {
+
+                        nodeState.setRetryCount(nodeState.getRetryCount() + 1);
+
+                        scheduleNode(node, byEdigeId, TriggerType.RETRY, node.getRetryIntervalMs());
+                    } else {
+                        handleError(error);
+                    }
+                }
+            }
+        } finally {
+            notifyEvent(new NodeEndEvent(this, node, result));
+        }
+    }
+
+    private void scheduleNextForNode(Node node, Map<String, Object> result, String byEdigeId) {
+        if (node.isLoopEnable()) {
+            NodeState nodeState = getNodeState(node.getId());
+            if (node.getMaxLoopCount() > 0 && nodeState.getLoopCount() >= node.getMaxLoopCount()) {
+                scheduleOutwardNodes(node, result);
                 return;
             }
 
-            try {
-                ChainContext.setNode(currentNode);
-                notifyEvent(new NodeStartEvent(this, currentNode));
-                if (this.getStatus() != ChainStatus.RUNNING) {
-                    return;
-                }
-                currentNode.setNodeStatus(ChainNodeStatus.RUNNING);
-                onNodeExecuteStart(nodeContext);
-                try {
-                    suspendNodes.remove(currentNode.getId());
-                    executeResult = currentNode.execute(this);
-                    addComputeCost(currentNode.calculateComputeCost(this, executeResult));
-                } finally {
-                    nodeContext.recordExecute(executeNode);
-                    this.executeResult = executeResult;
-                }
-            } catch (Throwable error) {
-                // 错误重试
-                if (currentNode.isRetryEnable()
-                        && currentNode.getMaxRetryCount() > 0
-                        && nodeContext.getRetryCount() <= currentNode.getMaxRetryCount()) {
-
-                    nodeContext.setRetryCount(nodeContext.getRetryCount() + 1);
-                    safeSleep(currentNode.getRetryIntervalMs());
-                    doExecuteNode(executeNode);
-                }
-                // 异常处理
-                else {
-                    currentNode.setNodeStatus(ChainNodeStatus.ERROR);
-                    notifyNodeError(error, currentNode, executeResult);
-                    throw error;
-                }
-            } finally {
-                currentNode.setNodeStatusFinished();
-                onNodeExecuteEnd(nodeContext);
-                ChainContext.clearNode();
-                notifyEvent(new NodeEndEvent(this, currentNode, executeResult));
+            NodeCondition breakCondition = node.getLoopBreakCondition();
+            if (breakCondition != null && breakCondition.check(this, nodeState, result)) {
+                scheduleOutwardNodes(node, result);
+                return;
             }
 
-            if (executeResult != null && !executeResult.isEmpty()) {
-                executeResult.forEach((s, o) -> {
-                    Chain.this.memory.put(currentNode.id + "." + s, o);
-                });
-            }
-        } finally {
-            onNodeExecuteAfter(nodeContext);
-        }
-
-        // 重置重试次数
-        if (currentNode.isRetryEnable() && currentNode.isResetRetryCountAfterNormal()) {
-            nodeContext.setRetryCount(0);
-        }
-
-//        if (this.getStatus() != ChainStatus.RUNNING) {
-//            return;
-//        }
-
-        // 继续执行下一个节点
-        if (!currentNode.isLoopEnable()) {
-            doExecuteNextNodes(currentNode, executeResult);
+            nodeState.setLoopCount(nodeState.getLoopCount() + 1);
+            scheduleNode(node, byEdigeId, TriggerType.LOOP, node.getLoopIntervalMs());
             return;
         }
 
+        scheduleOutwardNodes(node, result);
+    }
 
-        // 检查是否达到最大循环次数
-        if (currentNode.getMaxLoopCount() > 0 && nodeContext.getExecuteCount() >= currentNode.getMaxLoopCount()) {
-            doExecuteNextNodes(currentNode, executeResult);
+    private void scheduleOutwardNodes(Node node, Map<String, Object> result) {
+        List<Edge> edges = node.getOutwardEdges();
+        if (!CollectionUtil.hasItems(edges)) {
             return;
         }
 
-        // 检查跳出条件
-        NodeCondition breakCondition = currentNode.getLoopBreakCondition();
-        if (breakCondition != null && breakCondition.check(this, nodeContext, executeResult)) {
-            doExecuteNextNodes(currentNode, executeResult);
-            return;
-        }
-
-        // 等待间隔
-        safeSleep(currentNode.getLoopIntervalMs());
-        // 继续执行当前节点
-        doExecuteNode(executeNode);
-    }
-
-    private void safeSleep(long retryIntervalMs) {
-        if (retryIntervalMs <= 0) {
-            return;
-        }
-        try {
-            Thread.sleep(retryIntervalMs);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); // 恢复中断状态
-        }
-    }
-
-
-    /**
-     * 记录节点触发，并检查当前节点的执行条件是否未通过。
-     * 若条件未通过，则返回 true，表示应跳过该节点的执行。
-     *
-     * @param executeNode 当前正在执行的节点
-     * @param nodeContext 节点上下文，用于记录触发信息
-     * @param currentNode 当前链路节点配置
-     * @return 如果条件不满足（需要跳过），返回 true；否则返回 false
-     */
-    private synchronized boolean shouldSkipCurrentNode(ExecuteNode executeNode, NodeContext nodeContext, ChainNode currentNode) {
-
-        // record trigger 和 check 必须在同步块内执行，
-        // 否则会导致并发问题：全部节点触发了 trigger，但是 check 还未开始执行
-        nodeContext.recordTrigger(executeNode);
-
-        NodeCondition condition = currentNode.getCondition();
-        if (condition == null) {
-            return false; // 无条件则不应跳过
-        }
-
-        ChainNode prevNode = executeNode.prevNode;
-        Map<String, Object> prevNodeExecuteResult = prevNode != null ? getNodeExecuteResult(prevNode.id) : Collections.emptyMap();
-
-        // 返回 true 表示条件不满足，应跳过当前节点
-        return !condition.check(this, nodeContext, prevNodeExecuteResult);
-    }
-
-
-    /**
-     * 执行后续节点（可能有多个）
-     *
-     * @param currentNode   当前节点
-     * @param executeResult 执行结果
-     */
-    private void doExecuteNextNodes(ChainNode currentNode, Map<String, Object> executeResult) {
-        List<ChainEdge> outwardEdges = currentNode.getOutwardEdges();
-        if (CollectionUtil.hasItems(outwardEdges)) {
-            List<ExecuteNode> nextExecuteNodes = new ArrayList<>(outwardEdges.size());
-            for (ChainEdge chainEdge : outwardEdges) {
-                ChainNode nextNode = getNodeById(chainEdge.getTarget());
-                if (nextNode == null) {
-                    continue;
-                }
-                EdgeCondition condition = chainEdge.getCondition();
-                if (condition == null || condition.check(this, chainEdge, executeResult)) {
-                    nextExecuteNodes.add(new ExecuteNode(nextNode, currentNode, chainEdge.getId()));
+        for (Edge edge : edges) {
+            EdgeCondition cond = edge.getCondition();
+            if (cond == null || cond.check(this, edge, result)) {
+                Node next = definition.getNodeById(edge.getTarget());
+                if (next != null) {
+                    scheduleNode(next, edge.getId(), TriggerType.NEXT, 0L);
                 }
             }
-            doExecuteNodes(nextExecuteNodes);
-        }
-    }
-
-    protected void onNodeExecuteAfter(NodeContext nodeContext) {
-
-    }
-
-    protected void onNodeExecuteEnd(NodeContext nodeContext) {
-
-    }
-
-    protected void onNodeExecuteStart(NodeContext nodeContext) {
-
-    }
-
-    protected void onNodeExecuteBefore(NodeContext nodeContext) {
-
-    }
-
-    private List<ChainNode> getStartNodes() {
-        if (this.nodes == null || this.nodes.isEmpty()) {
-            return null;
-        }
-
-        if (!this.suspendNodes.isEmpty()) {
-            return new ArrayList<>(suspendNodes.values());
-        }
-
-        List<ChainNode> nodes = new ArrayList<>();
-
-        for (ChainNode node : this.nodes) {
-            if (CollectionUtil.noItems(node.getInwardEdges())) {
-                nodes.add(node);
-            }
-        }
-        return nodes;
-    }
-
-
-    private ChainNode getNodeById(String id) {
-        if (id == null || StringUtil.noText(id)) {
-            return null;
-        }
-
-        for (ChainNode node : this.nodes) {
-            if (id.equals(node.getId())) {
-                return node;
-            }
-        }
-
-        return null;
-    }
-
-
-    protected void runInLifeCycle(Map<String, Object> variables, ChainEvent startEvent, Runnable runnable) {
-        if (variables != null) {
-            this.memory.putAll(variables);
-        }
-        try {
-            ChainContext.setChain(this);
-            notifyEvent(startEvent);
-            try {
-                setStatusAndNotifyEvent(ChainStatus.RUNNING);
-                runnable.run();
-            } catch (ChainSuspendException cse) {
-                notifySuspend();
-                this.exception = cse;
-            } catch (Exception e) {
-                this.exception = e;
-                setStatusAndNotifyEvent(ChainStatus.ERROR);
-                notifyError(e);
-            }
-
-            this.phaser.arriveAndAwaitAdvance();
-
-            if (status == ChainStatus.RUNNING) {
-                setStatusAndNotifyEvent(ChainStatus.FINISHED_NORMAL);
-            } else if (status == ChainStatus.ERROR) {
-                setStatusAndNotifyEvent(ChainStatus.FINISHED_ABNORMAL);
-            }
-
-        } finally {
-            ChainContext.clearChain();
-            notifyEvent(new ChainEndEvent(this));
         }
     }
 
 
-    private void notifyOutput(ChainNode node, Object response) {
-        for (ChainOutputListener inputListener : outputListeners) {
-            inputListener.onOutput(this, node, response);
+    public void scheduleNode(Node node, String edgeId, TriggerType type, long delayMs) {
+        scheduleNode(node, this.stateInstanceId, null, edgeId, type, null, delayMs);
+    }
+
+    public void scheduleNode(Node node, String stateInstanceId, String parentInstanceId, String edgeId, TriggerType type, Map<String, Object> payload, long delayMs) {
+        Trigger prevTrigger = TriggerContext.getCurrentTrigger();
+        if (parentInstanceId == null && prevTrigger != null) {
+            parentInstanceId = prevTrigger.getStateInstanceId();
+        }
+
+        Trigger trigger = new Trigger();
+        trigger.setStateInstanceId(stateInstanceId);
+        trigger.setParentInstanceId(parentInstanceId);
+        trigger.setEdgeId(edgeId);
+        trigger.setNodeId(node.getId());
+        trigger.setType(type);
+        trigger.setPayload(payload);
+        trigger.setTriggerAt(System.currentTimeMillis() + delayMs);
+        getTriggerScheduler().schedule(trigger);
+    }
+
+
+    private void handleError(Throwable throwable) {
+        updateStateSafely(state -> {
+            state.setError(new ExceptionSummary(throwable));
+            return EnumSet.of(ChainStateField.ERROR);
+        });
+
+        if (throwable instanceof ChainSuspendException) {
+            setStatusAndNotifyEvent(ChainStatus.SUSPEND);
+        } else {
+            setStatusAndNotifyEvent(ChainStatus.FAILED);
+            eventManager.notifyChainError(throwable, this);
         }
     }
 
-
-    private void notifySuspend() {
-        for (ChainSuspendListener suspendListener : suspendListeners) {
-            suspendListener.onSuspend(this);
-        }
+    public void suspend() {
+        setStatusAndNotifyEvent(ChainStatus.SUSPEND);
     }
 
-
-    private void notifyError(Throwable error) {
-        if (chainErrorListeners == null || chainErrorListeners.isEmpty()) {
-            throw new ChainException(error);
-        }
-        for (ChainErrorListener errorListener : chainErrorListeners) {
-            errorListener.onError(error, this);
-        }
-    }
-
-
-    private void notifyNodeError(Throwable error, ChainNode node, Map<String, Object> executeResult) {
-        for (NodeErrorListener errorListener : nodeErrorListeners) {
-            errorListener.onError(error, node, executeResult, this);
-        }
-    }
-
-
-    public void stopNormal(String message) {
-        this.message = message;
-        setStatusAndNotifyEvent(ChainStatus.FINISHED_NORMAL);
-    }
-
-
-    public void stopError(String message) {
-        this.message = message;
-        setStatusAndNotifyEvent(ChainStatus.FINISHED_ABNORMAL);
-    }
-
-
-    public void output(ChainNode node, Object response) {
-        notifyOutput(node, response);
-    }
-
-
-    public String getMessage() {
-        return message;
-    }
-
-
-    public List<ChainEdge> getEdges() {
-        return edges;
-    }
-
-    public void setEdges(List<ChainEdge> edges) {
-        this.edges = edges;
-    }
-
-    public void addEdge(ChainEdge edge) {
-        if (this.edges == null) {
-            this.edges = new ArrayList<>();
-        }
-        this.edges.add(edge);
-
-        boolean findSource = false, findTarget = false;
-
-        for (ChainNode node : this.nodes) {
-            if (node.getId().equals(edge.getSource())) {
-                node.addOutwardEdge(edge);
-                findSource = true;
-            } else if (node.getId().equals(edge.getTarget())) {
-                node.addInwardEdge(edge);
-                findTarget = true;
-            }
-            if (findSource && findTarget) {
-                break;
-            }
-        }
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public ExecutorService getAsyncNodeExecutors() {
-        return asyncNodeExecutors;
-    }
-
-    public void setAsyncNodeExecutors(ExecutorService asyncNodeExecutors) {
-        this.asyncNodeExecutors = asyncNodeExecutors;
-    }
-
-    public List<Parameter> getSuspendForParameters() {
-        return suspendForParameters;
-    }
-
-    public void setSuspendForParameters(List<Parameter> suspendForParameters) {
-        this.suspendForParameters = suspendForParameters;
-    }
-
-    public synchronized void addSuspendForParameter(Parameter suspendForParameter) {
-        if (this.suspendForParameters == null) {
-            this.suspendForParameters = new ArrayList<>();
-        }
-        this.suspendForParameters.add(suspendForParameter);
-    }
-
-    public synchronized void suspend() {
+    public void suspend(Node node) {
+        updateStateSafely(state -> {
+            state.addSuspendNodeId(node.getId());
+            return EnumSet.of(ChainStateField.SUSPEND_NODE_IDS);
+        });
         setStatusAndNotifyEvent(ChainStatus.SUSPEND);
     }
 
 
-    public synchronized void suspend(ChainNode node) {
-        try {
-            suspendNodes.putIfAbsent(node.getId(), node);
-        } finally {
-            setStatusAndNotifyEvent(ChainStatus.SUSPEND);
-        }
-    }
-
     public void resume(Map<String, Object> variables) {
-        runInLifeCycle(variables,
-                new ChainResumeEvent(this, variables),
-                this::executeInternal);
-    }
+        ChainState newState = updateStateSafely(state -> {
+            if (variables != null) {
+                state.getMemory().putAll(variables);
+                return EnumSet.of(ChainStateField.MEMORY);
+            } else {
+                return EnumSet.noneOf(ChainStateField.class);
+            }
+        });
 
 
-    public static class ExecuteNode {
+        notifyEvent(new ChainResumeEvent(this, variables));
+        setStatusAndNotifyEvent(ChainStatus.RUNNING);
 
-        final ChainNode currentNode;
-        final ChainNode prevNode;
-        final String fromEdgeId;
-
-        public ExecuteNode(ChainNode currentNode, ChainNode prevNode, String fromEdgeId) {
-            this.currentNode = currentNode;
-            this.prevNode = prevNode;
-            this.fromEdgeId = fromEdgeId;
-        }
-    }
-
-    public void reset() {
-        //node
-        this.memory.clear();
-        this.nodeStatus = ChainNodeStatus.READY;
-
-
-        //chain
-        this.status = ChainStatus.READY;
-        this.executeResult = null;
-        this.environment = null;
-        this.message = null;
-        this.exception = null;
-        this.nodeContexts.clear();
-
-        //算力消耗
-        this.computeCost = 0L;
-
-        if (this.suspendNodes != null) {
-            this.suspendNodes.clear();
-        }
-
-        if (this.suspendForParameters != null) {
-            this.suspendForParameters.clear();
-        }
-
-        this.asyncNodeExecutors = NamedThreadPools.newFixedThreadPool("chain-executor");
-        this.phaser = new Phaser(1);
-    }
-
-    public String toJSON() {
-        return new ChainState(this).toJSON();
-    }
-
-    public static Chain fromJSON(String jsonString) {
-        return ChainState.fromJSON(jsonString).toChain();
-    }
-
-    @Override
-    public ChainNodeValidResult validate() throws Exception {
-        if (this.validator != null) {
-            return this.validator.validate(this);
-        }
-
-        if (this.nodes == null || this.nodes.isEmpty()) {
-            return ChainNodeValidResult.fail("Chain nodes can not be empty.");
-        }
-
-        Map<String, Object> details = new HashMap<>();
-        for (ChainNode node : this.nodes) {
-            ChainNodeValidResult nodeResult = node.validate();
-            if (nodeResult != null && !nodeResult.isSuccess()) {
-                details.put(node.getId(), nodeResult);
+        Set<String> suspendNodeIds = newState.getSuspendNodeIds();
+        if (suspendNodeIds != null && !suspendNodeIds.isEmpty()) {
+            for (String id : suspendNodeIds) {
+                Node node = definition.getNodeById(id);
+                if (node != null) {
+                    NodeState nodeState = getNodeState(node.getId());
+                    String edgeId = nodeState.getLastExecuteEdgeId();
+                    scheduleNode(node, edgeId, TriggerType.MANUAL, 0L);
+                }
             }
         }
+    }
 
-        return details.isEmpty() ? ChainNodeValidResult.ok() : ChainNodeValidResult.fail("", details);
+    public void resume() {
+        resume(Collections.emptyMap());
+    }
+
+    public void output(Node node, Object response) {
+        eventManager.notifyOutput(this, node, response);
     }
 
 
-    @Override
-    public String toString() {
-        return "Chain{" +
-                "nodes=" + nodes +
-                ", edges=" + edges +
-                ", executeResult=" + executeResult +
-                ", eventListeners=" + eventListeners +
-                ", outputListeners=" + outputListeners +
-                ", chainErrorListeners=" + chainErrorListeners +
-                ", nodeErrorListeners=" + nodeErrorListeners +
-                ", suspendListeners=" + suspendListeners +
-                ", asyncNodeExecutors=" + asyncNodeExecutors +
-                ", phaser=" + phaser +
-                ", nodeContexts=" + nodeContexts +
-                ", suspendNodes=" + suspendNodes +
-                ", suspendForParameters=" + suspendForParameters +
-                ", status=" + status +
-                ", exception=" + exception +
-                ", message='" + message + '\'' +
-                '}';
+    public EventManager getEventManager() {
+        return eventManager;
+    }
+
+    public void setEventManager(EventManager eventManager) {
+        this.eventManager = eventManager;
+    }
+
+    public ChainStateRepository getChainStateRepository() {
+        return chainStateRepository;
+    }
+
+    public void setChainStateRepository(ChainStateRepository chainStateRepository) {
+        this.chainStateRepository = chainStateRepository;
+    }
+
+    public ChainDefinition getDefinition() {
+        return definition;
+    }
+
+    public void success(String message) {
+        updateStateSafely(state -> {
+            state.setMessage(message);
+            return EnumSet.of(ChainStateField.MESSAGE);
+        });
+        setStatusAndNotifyEvent(ChainStatus.SUCCEEDED);
+    }
+
+    public void failed(String message) {
+        updateStateSafely(state -> {
+            state.setMessage(message);
+            return EnumSet.of(ChainStateField.MESSAGE);
+        });
+        setStatusAndNotifyEvent(ChainStatus.FAILED);
+    }
+
+    public TriggerScheduler getTriggerScheduler() {
+        if (this.triggerScheduler == null) {
+            this.triggerScheduler = ChainRuntime.triggerScheduler();
+        }
+        return triggerScheduler;
+    }
+
+    public void setTriggerScheduler(TriggerScheduler triggerScheduler) {
+        this.triggerScheduler = triggerScheduler;
+    }
+
+    public NodeStateRepository getNodeStateRepository() {
+        return nodeStateRepository;
+    }
+
+    public void setNodeStateRepository(NodeStateRepository nodeStateRepository) {
+        this.nodeStateRepository = nodeStateRepository;
+    }
+
+    public String getStateInstanceId() {
+        return stateInstanceId;
+    }
+
+    public ChainState getState() {
+        return chainStateRepository.load(stateInstanceId);
+    }
+
+    public ChainState getState(String stateInstanceId) {
+        return chainStateRepository.load(stateInstanceId);
     }
 }

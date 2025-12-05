@@ -16,9 +16,9 @@
 package dev.tinyflow.core.chain.listener;
 
 
+import dev.tinyflow.core.chain.Event;
 import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainEvent;
 
 public interface ChainEventListener {
-    void onEvent(ChainEvent event, Chain chain);
+    void onEvent(Event event, Chain chain);
 }

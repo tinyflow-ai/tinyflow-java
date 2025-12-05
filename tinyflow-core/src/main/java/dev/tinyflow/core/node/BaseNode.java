@@ -16,13 +16,13 @@
 package dev.tinyflow.core.node;
 
 
-import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.Node;
 import dev.tinyflow.core.chain.Parameter;
 
 import java.util.Collection;
 import java.util.List;
 
-public abstract class BaseNode extends ChainNode {
+public abstract class BaseNode extends Node {
 
     protected List<Parameter> parameters;
     protected List<Parameter> outputDefs;

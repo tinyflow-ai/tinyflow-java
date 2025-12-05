@@ -88,29 +88,29 @@ public class LlmNode extends BaseNode {
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
-        Map<String, Object> parameterValues = chain.getParameterValues(this);
+        Map<String, Object> parameterValues = chain.getState().resolveParameters(this);
 
         if (StringUtil.noText(userPrompt)) {
             return Collections.emptyMap();
         }
 
-        String userPromptString = TextTemplate.of(userPrompt).formatToString(Arrays.asList(parameterValues, chain.getEnvMap()));
+        String userPromptString = TextTemplate.of(userPrompt).formatToString(Arrays.asList(parameterValues, chain.getState().getEnvMap()));
 
 
         Llm llm = LlmManager.getInstance().getChatModel(this.llmId);
         if (llm == null) {
-            chain.stopError("Can not find llm: " + this.llmId);
+            chain.failed("Can not find llm: " + this.llmId);
             return Collections.emptyMap();
         }
 
-        String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(Arrays.asList(parameterValues, chain.getEnvMap()));
+        String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(Arrays.asList(parameterValues, chain.getState().getEnvMap()));
 
         Llm.MessageInfo messageInfo = new Llm.MessageInfo();
         messageInfo.setMessage(userPromptString);
         messageInfo.setSystemMessage(systemPromptString);
 
         if (images != null && !images.isEmpty()) {
-            Map<String, Object> filesMap = chain.getParameterValues(this, images);
+            Map<String, Object> filesMap = chain.getState().resolveParameters(this, images);
             List<String> imagesUrls = new ArrayList<>();
             filesMap.forEach((s, o) -> {
                 if (o instanceof String) {
@@ -139,7 +139,7 @@ public class LlmNode extends BaseNode {
             try {
                 jsonObjectOrArray = JSON.parse(unWrapMarkdown(responseContent));
             } catch (Exception e) {
-                chain.stopError("Can not parse json: " + responseContent + " " + e.getMessage());
+                chain.failed("Can not parse json: " + responseContent + " " + e.getMessage());
                 return Collections.emptyMap();
             }
 
@@ -200,18 +200,19 @@ public class LlmNode extends BaseNode {
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
-                ", async=" + async +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
-                ", memory=" + memory +
-                ", nodeStatus=" + nodeStatus +
                 ", validator=" + validator +
                 ", loopEnable=" + loopEnable +
                 ", loopIntervalMs=" + loopIntervalMs +
                 ", loopBreakCondition=" + loopBreakCondition +
                 ", maxLoopCount=" + maxLoopCount +
-                ", computeCost=" + computeCost +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
                 '}';
     }
 }

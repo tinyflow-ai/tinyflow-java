@@ -13,9 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dev.tinyflow.core.chain;
+package dev.tinyflow.core.chain.repository;
 
+import dev.tinyflow.core.chain.ChainState;
 
-public interface ChainNodeValidator {
-    ChainNodeValidResult validate(ChainNode node);
+import java.util.EnumSet;
+
+public interface ChainStateRepository {
+
+    ChainState load(String instanceId);
+
+    boolean tryUpdate(ChainState newState, EnumSet<ChainStateField> fields);
 }

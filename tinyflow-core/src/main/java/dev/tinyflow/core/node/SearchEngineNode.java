@@ -62,9 +62,9 @@ public class SearchEngineNode extends BaseNode {
 
     @Override
     protected Map<String, Object> execute(Chain chain) {
-        Map<String, Object> argsMap = chain.getParameterValues(this);
-        String realKeyword = TextTemplate.of(keyword).formatToString(Arrays.asList(argsMap, chain.getEnvMap()));
-        String realLimitString = TextTemplate.of(limit).formatToString(Arrays.asList(argsMap, chain.getEnvMap()));
+        Map<String, Object> argsMap = chain.getState().resolveParameters(this);
+        String realKeyword = TextTemplate.of(keyword).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));
+        String realLimitString = TextTemplate.of(limit).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));
         int realLimit = 10;
         if (StringUtil.hasText(realLimitString)) {
             try {
@@ -91,17 +91,24 @@ public class SearchEngineNode extends BaseNode {
                 "engine='" + engine + '\'' +
                 ", limit='" + limit + '\'' +
                 ", keyword='" + keyword + '\'' +
-                ", description='" + description + '\'' +
                 ", parameters=" + parameters +
                 ", outputDefs=" + outputDefs +
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", async=" + async +
+                ", description='" + description + '\'' +
                 ", inwardEdges=" + inwardEdges +
                 ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
-                ", memory=" + memory +
-                ", nodeStatus=" + nodeStatus +
+                ", validator=" + validator +
+                ", loopEnable=" + loopEnable +
+                ", loopIntervalMs=" + loopIntervalMs +
+                ", loopBreakCondition=" + loopBreakCondition +
+                ", maxLoopCount=" + maxLoopCount +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
                 '}';
     }
 }

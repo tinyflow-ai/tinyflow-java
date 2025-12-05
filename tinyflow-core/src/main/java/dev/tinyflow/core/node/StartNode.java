@@ -23,23 +23,11 @@ import java.util.Map;
 public class StartNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
-        return chain.getParameterValues(this);
+        return chain.getState().resolveParameters(this);
     }
 
     @Override
     public String toString() {
-        return "StartNode{" +
-            "description='" + description + '\'' +
-            ", parameters=" + parameters +
-            ", outputDefs=" + outputDefs +
-            ", id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", async=" + async +
-            ", inwardEdges=" + inwardEdges +
-            ", outwardEdges=" + outwardEdges +
-            ", condition=" + condition +
-            ", memory=" + memory +
-            ", nodeStatus=" + nodeStatus +
-            '}';
+        return super.toString();
     }
 }

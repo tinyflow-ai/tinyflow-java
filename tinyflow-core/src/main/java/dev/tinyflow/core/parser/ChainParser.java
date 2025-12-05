@@ -19,11 +19,10 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import dev.tinyflow.core.Tinyflow;
-import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.ChainEdge;
-import dev.tinyflow.core.chain.ChainNode;
+import dev.tinyflow.core.chain.ChainDefinition;
+import dev.tinyflow.core.chain.Edge;
 import dev.tinyflow.core.chain.JsCodeCondition;
-import dev.tinyflow.core.parser.impl.*;
+import dev.tinyflow.core.chain.Node;
 import dev.tinyflow.core.util.CollectionUtil;
 import dev.tinyflow.core.util.StringUtil;
 
@@ -69,7 +68,7 @@ public class ChainParser {
         this.nodeParserMap.remove(type);
     }
 
-    public Chain parse(Tinyflow tinyflow) {
+    public ChainDefinition parse(Tinyflow tinyflow) {
         String jsonString = tinyflow.getData();
         if (StringUtil.noText(jsonString)) {
             return null;
@@ -82,17 +81,17 @@ public class ChainParser {
         return parse(tinyflow, nodes, edges, null);
     }
 
-    public Chain parse(Tinyflow tinyflow, JSONArray nodes, JSONArray edges, JSONObject parentNode) {
+    public ChainDefinition parse(Tinyflow tinyflow, JSONArray nodes, JSONArray edges, JSONObject parentNode) {
         if (CollectionUtil.noItems(nodes) || CollectionUtil.noItems(edges)) {
             return null;
         }
 
-        Chain chain = new Chain();
+        ChainDefinition chain = new ChainDefinition();
         for (int i = 0; i < nodes.size(); i++) {
             JSONObject nodeObject = nodes.getJSONObject(i);
             if ((parentNode == null && StringUtil.noText(nodeObject.getString("parentId")))
                     || (parentNode != null && parentNode.getString("id").equals(nodeObject.getString("parentId")))) {
-                ChainNode node = parseNode(tinyflow, nodeObject);
+                Node node = parseNode(tinyflow, nodeObject);
                 if (node != null) {
                     chain.addNode(node);
                 }
@@ -113,7 +112,7 @@ public class ChainParser {
 //            }
 
             JSONObject edgeObject = edges.getJSONObject(i);
-            ChainEdge edge = parseEdge(edgeObject);
+            Edge edge = parseEdge(edgeObject);
             if (edge == null) {
                 continue;
             }
@@ -128,20 +127,20 @@ public class ChainParser {
         return chain;
     }
 
-    private ChainNode parseNode(Tinyflow tinyflow, JSONObject nodeObject) {
+    private Node parseNode(Tinyflow tinyflow, JSONObject nodeObject) {
         String type = nodeObject.getString("type");
         if (StringUtil.noText(type)) {
             return null;
         }
 
-        NodeParser nodeParser = nodeParserMap.get(type);
+        NodeParser<?> nodeParser = nodeParserMap.get(type);
         return nodeParser == null ? null : nodeParser.parse(nodeObject, tinyflow);
     }
 
 
-    private ChainEdge parseEdge(JSONObject edgeObject) {
+    private Edge parseEdge(JSONObject edgeObject) {
         if (edgeObject == null) return null;
-        ChainEdge edge = new ChainEdge();
+        Edge edge = new Edge();
         edge.setId(edgeObject.getString("id"));
         edge.setSource(edgeObject.getString("source"));
         edge.setTarget(edgeObject.getString("target"));
