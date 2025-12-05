@@ -251,12 +251,19 @@ public class Chain {
 
 
     private void handleNodeResult(Node node, NodeState nodeState, Map<String, Object> result, String byEdigeId, Throwable error) {
+        ChainStatus finalStatus = null;
         try {
-            nodeState.recordExecute(byEdigeId);
+            updateNodeStateSafely(node.id, state -> {
+                state.recordExecute(byEdigeId);
+                return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS);
+            });
 
             if (error == null) {
                 // 成功
-                nodeState.setStatus(NodeStatus.SUCCEEDED);
+                updateNodeStateSafely(node.id, state -> {
+                    state.setStatus(NodeStatus.SUCCEEDED);
+                    return EnumSet.of(NodeStateField.STATUS);
+                });
 
                 // 更新 state 数据
                 updateStateSafely(state -> {
@@ -276,7 +283,10 @@ public class Chain {
                 });
 
                 if (node.isRetryEnable() && node.isResetRetryCountAfterNormal()) {
-                    nodeState.setRetryCount(0);
+                    updateNodeStateSafely(node.id, state -> {
+                        state.setRetryCount(0);
+                        return EnumSet.of(NodeStateField.RETRY_COUNT);
+                    });
                 }
 
                 // 不调度下一个节点，由 node 自行调度，比如 Loop 循环
@@ -285,32 +295,54 @@ public class Chain {
                     return;
                 }
 
+                // 结束节点
+                finalStatus = result != null ? (ChainStatus) result.get(ChainConsts.CHAIN_STATE_STATUS_KEY) : null;
+                if (finalStatus != null && finalStatus.isTerminal()) {
+                    return;
+                }
+
                 scheduleNextForNode(node, result, byEdigeId);
             } else {
                 // 挂起
                 if (error instanceof ChainSuspendException) {
+                    updateNodeStateSafely(node.id, s -> {
+                        s.setStatus(NodeStatus.SUSPEND);
+                        return EnumSet.of(NodeStateField.STATUS);
+                    });
                     setStatusAndNotifyEvent(ChainStatus.SUSPEND);
-                    nodeState.setStatus(NodeStatus.SUSPEND);
                 } else {
                     // 失败
-                    nodeState.setStatus(NodeStatus.ERROR);
-                    nodeState.setError(new ExceptionSummary(error));
+                    updateNodeStateSafely(node.getId(), s -> {
+                        s.setStatus(NodeStatus.ERROR);
+                        s.setError(new ExceptionSummary(error));
+                        return EnumSet.of(NodeStateField.ERROR, NodeStateField.STATUS);
+                    });
+
                     eventManager.notifyNodeError(error, node, result, this);
 
                     if (node.isRetryEnable()
                             && node.getMaxRetryCount() > 0
                             && nodeState.getRetryCount() < node.getMaxRetryCount()) {
 
-                        nodeState.setRetryCount(nodeState.getRetryCount() + 1);
+                        updateNodeStateSafely(node.getId(), s -> {
+                            s.setRetryCount(s.getRetryCount() + 1);
+                            return EnumSet.of(NodeStateField.RETRY_COUNT);
+                        });
 
                         scheduleNode(node, byEdigeId, TriggerType.RETRY, node.getRetryIntervalMs());
                     } else {
-                        handleError(error);
+                        finalStatus = handleError(error);
                     }
                 }
             }
         } finally {
             notifyEvent(new NodeEndEvent(this, node, result));
+
+            // chain 执行结束
+            if (finalStatus != null && finalStatus.isTerminal()) {
+                setStatusAndNotifyEvent(finalStatus);
+                eventManager.notifyEvent(new ChainEndEvent(this), this);
+            }
         }
     }
 
@@ -376,7 +408,7 @@ public class Chain {
     }
 
 
-    private void handleError(Throwable throwable) {
+    private ChainStatus handleError(Throwable throwable) {
         updateStateSafely(state -> {
             state.setError(new ExceptionSummary(throwable));
             return EnumSet.of(ChainStateField.ERROR);
@@ -384,9 +416,11 @@ public class Chain {
 
         if (throwable instanceof ChainSuspendException) {
             setStatusAndNotifyEvent(ChainStatus.SUSPEND);
+            return ChainStatus.SUSPEND;
         } else {
             setStatusAndNotifyEvent(ChainStatus.FAILED);
             eventManager.notifyChainError(throwable, this);
+            return ChainStatus.FAILED;
         }
     }
 
@@ -457,22 +491,6 @@ public class Chain {
 
     public ChainDefinition getDefinition() {
         return definition;
-    }
-
-    public void success(String message) {
-        updateStateSafely(state -> {
-            state.setMessage(message);
-            return EnumSet.of(ChainStateField.MESSAGE);
-        });
-        setStatusAndNotifyEvent(ChainStatus.SUCCEEDED);
-    }
-
-    public void failed(String message) {
-        updateStateSafely(state -> {
-            state.setMessage(message);
-            return EnumSet.of(ChainStateField.MESSAGE);
-        });
-        setStatusAndNotifyEvent(ChainStatus.FAILED);
     }
 
     public TriggerScheduler getTriggerScheduler() {

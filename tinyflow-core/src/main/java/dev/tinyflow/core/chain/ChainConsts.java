@@ -26,4 +26,7 @@ public class ChainConsts {
             throw new UnsupportedOperationException();
         }
     };
+
+    public static final String CHAIN_STATE_STATUS_KEY = "__chain_state_status";
+    public static final String CHAIN_STATE_MESSAGE_KEY = "__chain_state_message";
 }

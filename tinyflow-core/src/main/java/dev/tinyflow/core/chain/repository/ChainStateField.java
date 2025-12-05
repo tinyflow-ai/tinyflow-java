@@ -13,5 +13,5 @@ public enum ChainStateField {
     SUSPEND_FOR_PARAMETERS,
     EXECUTE_RESULT,
     CHAIN_DEFINITION_ID,
-    ENVIRONMENT
+    ENVIRONMENT;
 }

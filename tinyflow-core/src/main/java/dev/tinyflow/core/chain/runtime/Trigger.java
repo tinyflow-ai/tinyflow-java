@@ -80,5 +80,19 @@ public class Trigger implements Serializable {
     public void setPayload(Map<String, Object> payload) {
         this.payload = payload;
     }
+
+    @Override
+    public String toString() {
+        return "Trigger{" +
+                "id='" + id + '\'' +
+                ", stateInstanceId='" + stateInstanceId + '\'' +
+                ", parentInstanceId='" + parentInstanceId + '\'' +
+                ", edgeId='" + edgeId + '\'' +
+                ", nodeId='" + nodeId + '\'' +
+                ", type=" + type +
+                ", triggerAt=" + triggerAt +
+                ", payload=" + payload +
+                '}';
+    }
 }
 
