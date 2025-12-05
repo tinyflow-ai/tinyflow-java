@@ -46,7 +46,7 @@
         <module>tinyflow-core</module>
         <module>tinyflow-node</module>
         <module>tinyflow-support-springai</module>
-<!--        <module>tinyflow-support-langchain4j</module>-->
+        <module>tinyflow-support-langchain4j</module>
         <module>tinyflow-support-agentsflex</module>
         <module>tinyflow-support-solonai</module>
     </modules>
