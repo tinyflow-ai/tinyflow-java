@@ -32,7 +32,9 @@ public class TinyflowTest {
                 new ChainDefinitionRepository() {
                     @Override
                     public ChainDefinition getChainDefinitionById(String id) {
-                        return chainParser.parse(data1);
+                        ChainDefinition definition = chainParser.parse(data1);
+                        definition.setId(id);
+                        return definition;
                     }
                 }
                 , new InMemoryChainStateRepository()
