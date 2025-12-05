@@ -22,7 +22,7 @@ Tinyflow-java 是一个使用 Java 开发的智能体编排解决方案，她不
 <dependency>
     <groupId>dev.tinyflow</groupId>
     <artifactId>tinyflow-java-core</artifactId>
-    <version>2.0.0-beta.1</version>
+    <version>2.0.0-beta.2</version>
 </dependency>
 ```
 
