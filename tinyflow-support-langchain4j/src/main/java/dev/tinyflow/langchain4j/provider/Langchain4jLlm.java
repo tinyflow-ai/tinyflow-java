@@ -11,7 +11,7 @@ import dev.tinyflow.core.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Langchain4jLLm implements Llm {
+public class Langchain4jLlm implements Llm {
     private ChatModel chatModel;
 
     public ChatModel getChatModel() {
@@ -27,14 +27,9 @@ public class Langchain4jLLm implements Llm {
         // 构建消息列表
         List<ChatMessage> chatMessages = new ArrayList<>();
         //系统提示词
-        if (StringUtil.hasText(llmNode.getSystemPrompt())) {
-            chatMessages.add(SystemMessage.from(llmNode.getSystemPrompt()));
-        }
-        // 系统消息
-        if (StringUtil.hasText(llmNode.getSystemPrompt())) {
+        if (StringUtil.hasText(messageInfo.getSystemMessage())) {
             chatMessages.add(SystemMessage.from(messageInfo.getSystemMessage()));
         }
-
         // 构建用户消息内容（文本+图片）
         List<Content> userContents = new ArrayList<>();
         // 用户消息

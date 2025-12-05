@@ -33,8 +33,8 @@ public class SolonAiLlm implements Llm {
         Prompt prompt = new Prompt();
 
         // 系统提示词
-        if (StringUtil.hasText(llmNode.getSystemPrompt())) {
-            prompt.addMessage(ChatMessage.ofSystem(llmNode.getSystemPrompt()));
+        if (StringUtil.hasText(messageInfo.getSystemMessage())) {
+            prompt.addMessage(ChatMessage.ofSystem(messageInfo.getSystemMessage()));
         }
 
         // 用户提示词

@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class SpringAiLLm implements Llm {
+public class SpringAiLlm implements Llm {
 
     private ChatModel chatModel;
 
@@ -32,10 +32,6 @@ public class SpringAiLLm implements Llm {
     public String chat(MessageInfo messageInfo, ChatOptions options, LlmNode llmNode, Chain chain) {
 
         List<Message> messages = new ArrayList<>();
-
-        if (StringUtil.hasText(llmNode.getSystemPrompt())) {
-            messages.add(new SystemMessage(llmNode.getSystemPrompt()));
-        }
 
         if (StringUtil.hasText(messageInfo.getSystemMessage())) {
             messages.add(new SystemMessage(messageInfo.getSystemMessage()));

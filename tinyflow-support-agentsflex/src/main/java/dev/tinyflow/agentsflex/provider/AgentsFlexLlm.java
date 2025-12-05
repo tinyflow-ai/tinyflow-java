@@ -30,8 +30,8 @@ public class AgentsFlexLlm implements Llm {
         SimplePrompt prompt = new SimplePrompt(messageInfo.getMessage());
 
         // 系统提示词
-        if (StringUtil.hasText(llmNode.getSystemPrompt())) {
-            prompt.setSystemMessage(SystemMessage.of(llmNode.getSystemPrompt()));
+        if (StringUtil.hasText(messageInfo.getSystemMessage())) {
+            prompt.setSystemMessage(SystemMessage.of(messageInfo.getSystemMessage()));
         }
 
         //  图片
