@@ -8,9 +8,18 @@
         <artifactId>tinyflow-java</artifactId>
         <version>2.0.0-beta.1</version>
     </parent>
-
-    <name>tinyflow-support-springai</name>
     <artifactId>tinyflow-support-springai</artifactId>
+    <name>tinyflow-support-springai</name>
+    <dependencies>
+        <dependency>
+            <groupId>dev.tinyflow</groupId>
+            <artifactId>tinyflow-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-core</artifactId>
+        </dependency>
+    </dependencies>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
