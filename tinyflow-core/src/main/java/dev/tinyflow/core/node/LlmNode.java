@@ -91,7 +91,7 @@ public class LlmNode extends BaseNode {
         Map<String, Object> parameterValues = chain.getState().resolveParameters(this);
 
         if (StringUtil.noText(userPrompt)) {
-            return Collections.emptyMap();
+            throw new RuntimeException("Can not find user prompt");
         }
 
         String userPromptString = TextTemplate.of(userPrompt).formatToString(Arrays.asList(parameterValues, chain.getState().getEnvMap()));
@@ -99,8 +99,7 @@ public class LlmNode extends BaseNode {
 
         Llm llm = LlmManager.getInstance().getChatModel(this.llmId);
         if (llm == null) {
-            chain.failed("Can not find llm: " + this.llmId);
-            return Collections.emptyMap();
+            throw new RuntimeException("Can not find llm: " + this.llmId);
         }
 
         String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(Arrays.asList(parameterValues, chain.getState().getEnvMap()));
@@ -139,8 +138,7 @@ public class LlmNode extends BaseNode {
             try {
                 jsonObjectOrArray = JSON.parse(unWrapMarkdown(responseContent));
             } catch (Exception e) {
-                chain.failed("Can not parse json: " + responseContent + " " + e.getMessage());
-                return Collections.emptyMap();
+                throw new RuntimeException("Can not parse json: " + responseContent + " " + e.getMessage());
             }
 
             if (CollectionUtil.noItems(this.outputDefs)) {

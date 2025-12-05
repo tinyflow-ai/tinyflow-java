@@ -15,12 +15,9 @@
  */
 package dev.tinyflow.core.node;
 
-import dev.tinyflow.core.chain.Chain;
-import dev.tinyflow.core.chain.Parameter;
-import dev.tinyflow.core.chain.RefType;
+import dev.tinyflow.core.chain.*;
 import dev.tinyflow.core.util.StringUtil;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,14 +47,19 @@ public class EndNode extends BaseNode {
 
     @Override
     public Map<String, Object> execute(Chain chain) {
+
+        Map<String, Object> output = new HashMap<>();
         if (normal) {
-            chain.success(message);
+            output.put(ChainConsts.CHAIN_STATE_STATUS_KEY, ChainStatus.SUCCEEDED);
         } else {
-            chain.failed(message);
+            output.put(ChainConsts.CHAIN_STATE_STATUS_KEY, ChainStatus.FAILED);
+        }
+
+        if (StringUtil.hasText(message)) {
+            output.put(ChainConsts.CHAIN_STATE_MESSAGE_KEY, message);
         }
 
         if (this.outputDefs != null) {
-            Map<String, Object> output = new HashMap<>();
             for (Parameter outputDef : this.outputDefs) {
                 if (outputDef.getRefType() == RefType.REF) {
                     output.put(outputDef.getName(), chain.getState().resolveValue(outputDef.getRef()));
@@ -71,12 +73,11 @@ public class EndNode extends BaseNode {
                     output.put(outputDef.getName(), chain.getState().resolveValue(outputDef.getRef()));
                 }
             }
-            return output;
         }
 
-
-        return Collections.emptyMap();
+        return output;
     }
+
 
     @Override
     public String toString() {
