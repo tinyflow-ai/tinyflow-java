@@ -24,12 +24,16 @@ public class TinyflowTest {
         variables.put("name", "michael");
 
 
-        ChainExecutor executor = new ChainExecutor(new ChainDefinitionRepository() {
-            @Override
-            public ChainDefinition getChainDefinitionById(String id) {
-                return new Tinyflow(data1).toChain();
-            }
-        }, new InMemoryChainStateRepository(),new InMemoryNodeStateRepository());
+        ChainExecutor executor = new ChainExecutor(
+                new ChainDefinitionRepository() {
+                    @Override
+                    public ChainDefinition getChainDefinitionById(String id) {
+                        return new Tinyflow(data1).toChain();
+                    }
+                }
+                , new InMemoryChainStateRepository()
+                , new InMemoryNodeStateRepository()
+        );
 
 
         executor.addEventListener(new ChainEventListener() {
