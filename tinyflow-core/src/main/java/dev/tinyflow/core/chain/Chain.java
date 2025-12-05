@@ -309,6 +309,12 @@ public class Chain {
                         s.setStatus(NodeStatus.SUSPEND);
                         return EnumSet.of(NodeStateField.STATUS);
                     });
+
+                    updateStateSafely(s -> {
+                        s.setSuspendForParameters(((ChainSuspendException) error).getSuspendParameters());
+                        return EnumSet.of(ChainStateField.SUSPEND_FOR_PARAMETERS);
+                    });
+
                     setStatusAndNotifyEvent(ChainStatus.SUSPEND);
                 } else {
                     // 失败
@@ -414,14 +420,9 @@ public class Chain {
             return EnumSet.of(ChainStateField.ERROR);
         });
 
-        if (throwable instanceof ChainSuspendException) {
-            setStatusAndNotifyEvent(ChainStatus.SUSPEND);
-            return ChainStatus.SUSPEND;
-        } else {
-            setStatusAndNotifyEvent(ChainStatus.FAILED);
-            eventManager.notifyChainError(throwable, this);
-            return ChainStatus.FAILED;
-        }
+        setStatusAndNotifyEvent(ChainStatus.FAILED);
+        eventManager.notifyChainError(throwable, this);
+        return ChainStatus.FAILED;
     }
 
     public void suspend() {

@@ -307,7 +307,7 @@ public class ChainState implements Serializable {
         }
 
         if (suspendParameters != null && !suspendParameters.isEmpty()) {
-            this.setSuspendForParameters(suspendParameters);
+//            this.setSuspendForParameters(suspendParameters);
 //            this.suspend(node);
 
             // 构建参数名称列表
@@ -322,7 +322,7 @@ public class ChainState implements Serializable {
                     missingParams
             );
 
-            throw new ChainSuspendException(errorMessage);
+            throw new ChainSuspendException(errorMessage, suspendParameters);
         }
 
         return variables;
