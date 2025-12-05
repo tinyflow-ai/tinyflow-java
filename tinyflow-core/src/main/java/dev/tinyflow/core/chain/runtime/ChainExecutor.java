@@ -146,7 +146,6 @@ public class ChainExecutor {
 
 
     private void accept(Trigger trigger, ExecutorService worker) {
-        System.out.println("Trigger accepted: " + trigger);
         ChainState state = chainStateRepository.load(trigger.getStateInstanceId());
         if (state == null) {
             return;

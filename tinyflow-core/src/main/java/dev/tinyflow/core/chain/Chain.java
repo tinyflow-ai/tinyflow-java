@@ -4,6 +4,7 @@ import dev.tinyflow.core.chain.event.*;
 import dev.tinyflow.core.chain.repository.*;
 import dev.tinyflow.core.chain.runtime.*;
 import dev.tinyflow.core.util.CollectionUtil;
+import dev.tinyflow.core.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -202,6 +203,12 @@ public class Chain {
                 state.getMemory().putAll(variables);
                 fields.add(ChainStateField.MEMORY);
             }
+
+            if (StringUtil.noText(state.getChainDefinitionId())){
+                state.setChainDefinitionId(definition.getId());
+                fields.add(ChainStateField.CHAIN_DEFINITION_ID);
+            }
+
             return fields;
         });
 
@@ -230,6 +237,7 @@ public class Chain {
             notifyEvent(new NodeStartEvent(this, node));
             nodeResult = node.execute(this);
         } catch (Throwable throwable) {
+            log.error("Node execute error", throwable);
             error = throwable;
         } finally {
             EXECUTION_THREAD_LOCAL.remove();
