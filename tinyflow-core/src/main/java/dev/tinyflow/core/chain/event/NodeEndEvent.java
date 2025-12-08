@@ -25,11 +25,13 @@ public class NodeEndEvent extends BaseEvent {
 
     private final Node node;
     private final Map<String, Object> result;
+    private final Throwable error;
 
-    public NodeEndEvent(Chain chain, Node node, Map<String, Object> result) {
+    public NodeEndEvent(Chain chain, Node node, Map<String, Object> result, Throwable error) {
         super(chain);
         this.node = node;
         this.result = result;
+        this.error = error;
     }
 
     public Node getNode() {
@@ -40,12 +42,17 @@ public class NodeEndEvent extends BaseEvent {
         return result;
     }
 
+    public Throwable getError() {
+        return error;
+    }
+
     @Override
     public String toString() {
         return "NodeEndEvent{" +
-            "node=" + node +
-            ", result=" + result +
-            ", chain=" + chain +
-            '}';
+                "node=" + node +
+                ", result=" + result +
+                ", error=" + error +
+                ", chain=" + chain +
+                '}';
     }
 }

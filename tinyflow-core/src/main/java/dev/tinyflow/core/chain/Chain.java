@@ -228,7 +228,6 @@ public class Chain {
             log.error("Node execute error", throwable);
             error = throwable;
         } finally {
-            notifyEvent(new NodeEndEvent(this, node, nodeResult));
             EXECUTION_THREAD_LOCAL.remove();
         }
 
@@ -316,7 +315,7 @@ public class Chain {
                         return EnumSet.of(ChainStateField.SUSPEND_FOR_PARAMETERS);
                     });
 
-                    setStatusAndNotifyEvent(ChainStatus.SUSPEND);
+                    finalStatus = ChainStatus.SUSPEND;
                 }
                 // 失败
                 else {
@@ -344,10 +343,14 @@ public class Chain {
                 }
             }
         } finally {
+            notifyEvent(new NodeEndEvent(this, node, result, error));
+
             // chain 执行结束
-            if (finalStatus != null && finalStatus.isTerminal()) {
+            if (finalStatus != null) {
                 setStatusAndNotifyEvent(finalStatus);
-                eventManager.notifyEvent(new ChainEndEvent(this), this);
+                if (finalStatus.isTerminal()) {
+                    eventManager.notifyEvent(new ChainEndEvent(this), this);
+                }
             }
         }
     }
