@@ -453,7 +453,7 @@ public class Chain {
     public void scheduleNode(Node node, String stateInstanceId, String parentInstanceId, String edgeId, TriggerType type, Map<String, Object> payload, long delayMs) {
         Trigger prevTrigger = TriggerContext.getCurrentTrigger();
         if (parentInstanceId == null && prevTrigger != null) {
-            parentInstanceId = prevTrigger.getStateInstanceId();
+            parentInstanceId = prevTrigger.getParentInstanceId();
         }
 
         Trigger trigger = new Trigger();
