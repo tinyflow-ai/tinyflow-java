@@ -228,6 +228,7 @@ public class Chain {
             log.error("Node execute error", throwable);
             error = throwable;
         } finally {
+            notifyEvent(new NodeEndEvent(this, node, nodeResult));
             EXECUTION_THREAD_LOCAL.remove();
         }
 
@@ -316,8 +317,9 @@ public class Chain {
                     });
 
                     setStatusAndNotifyEvent(ChainStatus.SUSPEND);
-                } else {
-                    // 失败
+                }
+                // 失败
+                else {
                     updateNodeStateSafely(node.getId(), s -> {
                         s.setStatus(NodeStatus.ERROR);
                         s.setError(new ExceptionSummary(error));
@@ -342,8 +344,6 @@ public class Chain {
                 }
             }
         } finally {
-            notifyEvent(new NodeEndEvent(this, node, result));
-
             // chain 执行结束
             if (finalStatus != null && finalStatus.isTerminal()) {
                 setStatusAndNotifyEvent(finalStatus);
