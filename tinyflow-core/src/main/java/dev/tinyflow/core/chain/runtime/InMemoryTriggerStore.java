@@ -31,10 +31,6 @@ public class InMemoryTriggerStore implements TriggerStore {
 
     @Override
     public List<Trigger> findDue(long uptoTimestamp) {
-//        long now = uptoTimestamp;
-//        return store.values().stream()
-//                .filter(t -> t.getTriggerAt() <= now)
-//                .collect(Collectors.toList());
         return null;
     }
 

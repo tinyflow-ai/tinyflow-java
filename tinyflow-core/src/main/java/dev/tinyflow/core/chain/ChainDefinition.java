@@ -176,11 +176,6 @@ public class ChainDefinition implements Serializable {
     }
 
 
-//    public Chain createChain() {
-//        return new Chain(this);
-//    }
-
-
     @Override
     public String toString() {
         return "ChainDefinition{" +

@@ -16,7 +16,6 @@ public class EventManager {
     protected final List<ChainOutputListener> outputListeners = Collections.synchronizedList(new ArrayList<>());
     protected final List<ChainErrorListener> chainErrorListeners = Collections.synchronizedList(new ArrayList<>());
     protected final List<NodeErrorListener> nodeErrorListeners = Collections.synchronizedList(new ArrayList<>());
-//    protected final List<ChainSuspendListener> suspendListeners = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * ---------- 通用事件监听器 ----------

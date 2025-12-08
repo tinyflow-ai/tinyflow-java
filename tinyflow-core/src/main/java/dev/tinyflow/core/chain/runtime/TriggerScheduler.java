@@ -49,16 +49,6 @@ public class TriggerScheduler {
         this.store = Objects.requireNonNull(store, "TriggerStore required");
         this.scheduler = Objects.requireNonNull(scheduler, "ScheduledExecutorService required");
         this.worker = Objects.requireNonNull(worker, "ExecutorService required");
-//        this.scheduler = Executors.newScheduledThreadPool(Math.max(1, schedulerThreads), r -> {
-//            Thread t = new Thread(r, "tinyflow-trigger-scheduler");
-//            t.setDaemon(true);
-//            return t;
-//        });
-//        this.worker = Executors.newCachedThreadPool(r -> {
-//            Thread t = new Thread(r, "tinyflow-trigger-worker");
-//            t.setDaemon(true);
-//            return t;
-//        });
         this.scanIntervalMs = Math.max(1000, scanIntervalMs);
 
         // 恢复并 schedule
@@ -68,9 +58,6 @@ public class TriggerScheduler {
         startPeriodicScan();
     }
 
-//    public TriggerScheduler(TriggerStore store) {
-//        this(store, Math.max(1, Runtime.getRuntime().availableProcessors() / 2), 5000L);
-//    }
 
     public void registerConsumer(TriggerConsumer consumer) {
         this.consumer = consumer;
