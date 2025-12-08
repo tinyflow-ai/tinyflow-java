@@ -251,6 +251,10 @@ public class Chain {
         Map<String, Object> nodeResult = null;
         Throwable error = null;
         try {
+            updateNodeStateSafely(node.id, s -> {
+                s.setStatus(NodeStatus.RUNNING);
+                return EnumSet.of(NodeStateField.STATUS);
+            });
             EXECUTION_THREAD_LOCAL.set(this);
             notifyEvent(new NodeStartEvent(this, node));
             nodeResult = node.execute(this);
@@ -369,7 +373,7 @@ public class Chain {
 
                         scheduleNode(node, byEdigeId, TriggerType.RETRY, node.getRetryIntervalMs());
                     } else {
-                        finalStatus = handleError(error);
+                        finalStatus = handleNodeError(node.id, error);
                     }
                 }
             }
@@ -464,7 +468,13 @@ public class Chain {
     }
 
 
-    private ChainStatus handleError(Throwable throwable) {
+    private ChainStatus handleNodeError(String nodeId, Throwable throwable) {
+        updateNodeStateSafely(nodeId, s -> {
+            s.setStatus(NodeStatus.FAILED);
+            s.setError(new ExceptionSummary(throwable));
+            return EnumSet.of(NodeStateField.ERROR, NodeStateField.STATUS);
+        });
+
         updateStateSafely(state -> {
             state.setError(new ExceptionSummary(throwable));
             return EnumSet.of(ChainStateField.ERROR);

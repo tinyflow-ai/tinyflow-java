@@ -177,13 +177,13 @@ public class NodeState implements Serializable {
         this.status = status;
     }
 
-    public void setNodeStatusFinished() {
-        if (this.status == NodeStatus.ERROR) {
-            this.setStatus(NodeStatus.FAILED);
-        } else {
-            this.setStatus(NodeStatus.SUCCEEDED);
-        }
-    }
+//    public void setNodeStatusFinished() {
+//        if (this.status == NodeStatus.ERROR) {
+//            this.setStatus(NodeStatus.FAILED);
+//        } else {
+//            this.setStatus(NodeStatus.SUCCEEDED);
+//        }
+//    }
 
     public String getLastExecuteEdgeId() {
         if (!executeEdgeIds.isEmpty()) {

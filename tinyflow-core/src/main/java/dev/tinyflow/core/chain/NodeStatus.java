@@ -33,7 +33,4 @@ public enum NodeStatus {
         return value;
     }
 
-    public boolean isFinished() {
-        return this.value >= SUCCEEDED.value;
-    }
 }
