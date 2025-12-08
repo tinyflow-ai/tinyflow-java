@@ -25,21 +25,8 @@ import java.util.*;
 
 public class ConfirmNode extends BaseNode {
 
-    private String randomUUID;
     private String message;
     private List<Parameter> confirms;
-
-    public ConfirmNode() {
-        this.randomUUID = UUID.randomUUID().toString();
-    }
-
-    public String getRandomUUID() {
-        return randomUUID;
-    }
-
-    public void setRandomUUID(String randomUUID) {
-        this.randomUUID = randomUUID;
-    }
 
     public String getMessage() {
         return message;
@@ -74,7 +61,7 @@ public class ConfirmNode extends BaseNode {
         if (confirms != null) {
             for (Parameter confirm : confirms) {
                 Parameter clone = confirm.clone();
-                clone.setName(confirm.getName() + "__" + randomUUID);
+                clone.setName(confirm.getName() + "__" + getId());
                 clone.setRefType(RefType.INPUT);
                 confirmParameters.add(clone);
             }
@@ -90,7 +77,7 @@ public class ConfirmNode extends BaseNode {
                 List<Parameter> newParameters = new ArrayList<>();
                 for (Parameter confirm : confirms) {
                     Parameter clone = confirm.clone();
-                    clone.setName(confirm.getName() + "__" + randomUUID);
+                    clone.setName(confirm.getName() + "__" + getId());
                     clone.setRefType(RefType.REF); // 固定为 REF
                     newParameters.add(clone);
                 }
@@ -130,7 +117,7 @@ public class ConfirmNode extends BaseNode {
         Parameter parameter = new Parameter();
         parameter.setRefType(RefType.INPUT);
         parameter.setId("confirm");
-        parameter.setName("confirm__" + randomUUID);
+        parameter.setName("confirm__" + getId());
         parameter.setRequired(true);
 
         List<Object> selectionData = new ArrayList<>();
