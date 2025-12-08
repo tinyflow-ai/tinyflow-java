@@ -12,7 +12,11 @@ public class InMemoryChainStateRepository implements ChainStateRepository {
 
     @Override
     public ChainState load(String instanceId) {
-        return MapUtil.computeIfAbsent(chainStateMap, instanceId, k -> new ChainState());
+        return MapUtil.computeIfAbsent(chainStateMap, instanceId, k -> {
+            ChainState state = new ChainState();
+            state.setInstanceId(instanceId);
+            return state;
+        });
     }
 
     @Override
