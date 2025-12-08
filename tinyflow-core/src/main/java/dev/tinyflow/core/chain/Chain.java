@@ -355,27 +355,43 @@ public class Chain {
         }
     }
 
+    /**
+     * 为指定节点调度下一次执行
+     *
+     * @param node      要调度的节点
+     * @param result    节点执行结果
+     * @param byEdigeId 触发边的ID
+     */
     private void scheduleNextForNode(Node node, Map<String, Object> result, String byEdigeId) {
-        if (node.isLoopEnable()) {
-            NodeState nodeState = getNodeState(node.getId());
-            if (node.getMaxLoopCount() > 0 && nodeState.getLoopCount() >= node.getMaxLoopCount()) {
-                scheduleOutwardNodes(node, result);
-                return;
-            }
-
-            NodeCondition breakCondition = node.getLoopBreakCondition();
-            if (breakCondition != null && breakCondition.check(this, nodeState, result)) {
-                scheduleOutwardNodes(node, result);
-                return;
-            }
-
-            nodeState.setLoopCount(nodeState.getLoopCount() + 1);
-            scheduleNode(node, byEdigeId, TriggerType.LOOP, node.getLoopIntervalMs());
+        // 如果节点不支持循环，则直接调度向外的节点
+        if (!node.isLoopEnable()) {
+            scheduleOutwardNodes(node, result);
             return;
         }
 
-        scheduleOutwardNodes(node, result);
+        NodeState nodeState = getNodeState(node.getId());
+        // 如果达到最大循环次数限制，则调度向外的节点
+        if (node.getMaxLoopCount() > 0 && nodeState.getLoopCount() >= node.getMaxLoopCount()) {
+            scheduleOutwardNodes(node, result);
+            return;
+        }
+
+        // 检查循环中断条件，如果满足则调度向外的节点
+        NodeCondition breakCondition = node.getLoopBreakCondition();
+        if (breakCondition != null && breakCondition.check(this, nodeState, result)) {
+            scheduleOutwardNodes(node, result);
+            return;
+        }
+
+        // 增加循环计数并重新调度当前节点
+        updateNodeStateSafely(node.getId(), s -> {
+            s.setLoopCount(s.getLoopCount() + 1);
+            return EnumSet.of(NodeStateField.LOOP_COUNT);
+        });
+
+        scheduleNode(node, byEdigeId, TriggerType.LOOP, node.getLoopIntervalMs());
     }
+
 
     private void scheduleOutwardNodes(Node node, Map<String, Object> result) {
         List<Edge> edges = node.getOutwardEdges();
