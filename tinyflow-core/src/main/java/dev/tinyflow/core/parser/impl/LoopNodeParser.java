@@ -29,6 +29,10 @@ public class LoopNodeParser extends BaseNodeParser<LoopNode> {
     @Override
     public LoopNode doParse(JSONObject root, JSONObject data, JSONObject chainJSONObject) {
         LoopNode loopNode = new LoopNode();
+
+        // 这里需要设置 id，先设置 id 后， loopNode.setLoopChain(chain); 才能取获取当前节点的 id
+        loopNode.setId(root.getString("id"));
+
         List<Parameter> loopVars = getParameters(data, "loopVars");
         if (!loopVars.isEmpty()) {
             loopNode.setLoopVar(loopVars.get(0));
