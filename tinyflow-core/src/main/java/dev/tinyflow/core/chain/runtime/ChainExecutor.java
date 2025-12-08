@@ -119,6 +119,11 @@ public class ChainExecutor {
 
 
     public void resumeAsync(String stateInstanceId) {
+        this.resumeAsync(stateInstanceId, Collections.emptyMap());
+    }
+
+
+    public void resumeAsync(String stateInstanceId, Map<String, Object> variables) {
         ChainState state = chainStateRepository.load(stateInstanceId);
         if (state == null) {
             return;
@@ -135,7 +140,7 @@ public class ChainExecutor {
         chain.setNodeStateRepository(nodeStateRepository);
         chain.setEventManager(eventManager);
 
-        chain.resume();
+        chain.resume(variables);
     }
 
 
