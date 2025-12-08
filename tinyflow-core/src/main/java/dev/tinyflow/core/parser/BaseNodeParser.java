@@ -148,19 +148,22 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
                     node.setLoopEnable(loopEnable);
                 }
 
-                Long loopIntervalMs = data.getLong("loopIntervalMs");
-                if (loopIntervalMs != null) {
+                if (loopEnable != null && loopEnable) {
+                    Long loopIntervalMs = data.getLong("loopIntervalMs");
+                    if (loopIntervalMs == null) {
+                        loopIntervalMs = 3000L;
+                    }
                     node.setLoopIntervalMs(loopIntervalMs);
-                }
 
-                Integer maxLoopCount = data.getInteger("maxLoopCount");
-                if (maxLoopCount != null) {
-                    node.setMaxLoopCount(maxLoopCount);
-                }
+                    Integer maxLoopCount = data.getInteger("maxLoopCount");
+                    if (maxLoopCount != null) {
+                        node.setMaxLoopCount(maxLoopCount);
+                    }
 
-                String loopBreakCondition = data.getString("loopBreakCondition");
-                if (StringUtil.hasText(loopBreakCondition)) {
-                    node.setLoopBreakCondition(new JsCodeCondition(loopBreakCondition.trim()));
+                    String loopBreakCondition = data.getString("loopBreakCondition");
+                    if (StringUtil.hasText(loopBreakCondition)) {
+                        node.setLoopBreakCondition(new JsCodeCondition(loopBreakCondition.trim()));
+                    }
                 }
                 // 循环执行 end =======
 
@@ -171,18 +174,23 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
                     node.setRetryEnable(retryEnable);
                 }
 
-                Boolean resetRetryCountAfterNormal = data.getBoolean("resetRetryCountAfterNormal");
-                if (resetRetryCountAfterNormal != null) {
+                if (retryEnable != null && retryEnable) {
+                    Boolean resetRetryCountAfterNormal = data.getBoolean("resetRetryCountAfterNormal");
+                    if (resetRetryCountAfterNormal == null) {
+                        resetRetryCountAfterNormal = true;
+                    }
                     node.setResetRetryCountAfterNormal(resetRetryCountAfterNormal);
-                }
 
-                Long retryIntervalMs = data.getLong("retryIntervalMs");
-                if (retryIntervalMs != null) {
+                    Long retryIntervalMs = data.getLong("retryIntervalMs");
+                    if (retryIntervalMs == null) {
+                        retryIntervalMs = 1000L;
+                    }
                     node.setRetryIntervalMs(retryIntervalMs);
-                }
 
-                Integer maxRetryCount = data.getInteger("maxRetryCount");
-                if (maxRetryCount != null) {
+                    Integer maxRetryCount = data.getInteger("maxRetryCount");
+                    if (maxRetryCount == null) {
+                        maxRetryCount = 3;
+                    }
                     node.setMaxRetryCount(maxRetryCount);
                 }
                 // 错误重试 end =======
