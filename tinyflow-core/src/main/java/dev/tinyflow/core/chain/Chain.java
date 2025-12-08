@@ -212,8 +212,23 @@ public class Chain {
     }
 
     public void executeNode(Node node, String byEdgeId) {
-        NodeState nodeState = getNodeState(node.getId());
+        ChainState chainState = getState();
 
+        // 当前处于挂起状态
+        if (chainState.getStatus() == ChainStatus.SUSPEND) {
+            updateStateSafely(state -> {
+                chainState.addSuspendNodeId(node.getId());
+                return EnumSet.of(ChainStateField.SUSPEND_NODE_IDS);
+            });
+            return;
+        }
+        // 处于非运行状态，比如错误状态
+        else if (chainState.getStatus() != ChainStatus.RUNNING) {
+            return;
+        }
+
+
+        NodeState nodeState = getNodeState(node.getId());
         if (shouldSkipNode(node, nodeState, byEdgeId)) {
             return;
         }
@@ -311,6 +326,7 @@ public class Chain {
                     });
 
                     updateStateSafely(s -> {
+                        s.addSuspendNodeId(node.getId());
                         s.setSuspendForParameters(((ChainSuspendException) error).getSuspendParameters());
                         return EnumSet.of(ChainStateField.SUSPEND_FOR_PARAMETERS);
                     });
