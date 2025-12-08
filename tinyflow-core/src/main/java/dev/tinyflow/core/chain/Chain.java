@@ -327,8 +327,8 @@ public class Chain {
 
                     updateStateSafely(s -> {
                         s.addSuspendNodeId(node.getId());
-                        s.setSuspendForParameters(((ChainSuspendException) error).getSuspendParameters());
-                        return EnumSet.of(ChainStateField.SUSPEND_FOR_PARAMETERS);
+                        s.addSuspendForParameters(((ChainSuspendException) error).getSuspendParameters());
+                        return EnumSet.of(ChainStateField.SUSPEND_NODE_IDS, ChainStateField.SUSPEND_FOR_PARAMETERS);
                     });
 
                     finalStatus = ChainStatus.SUSPEND;

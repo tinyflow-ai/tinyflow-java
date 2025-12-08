@@ -141,6 +141,23 @@ public class ChainState implements Serializable {
         this.suspendForParameters = suspendForParameters;
     }
 
+    public void addSuspendForParameter(Parameter parameter) {
+        if (suspendForParameters == null) {
+            suspendForParameters = new ArrayList<>();
+        }
+        suspendForParameters.add(parameter);
+    }
+
+    public void addSuspendForParameters(List<Parameter> parameters) {
+        if (parameters == null) {
+            return;
+        }
+        if (suspendForParameters == null) {
+            suspendForParameters = new ArrayList<>();
+        }
+        suspendForParameters.addAll(parameters);
+    }
+
     public ChainStatus getStatus() {
         return status;
     }
@@ -307,9 +324,6 @@ public class ChainState implements Serializable {
         }
 
         if (suspendParameters != null && !suspendParameters.isEmpty()) {
-//            this.setSuspendForParameters(suspendParameters);
-//            this.suspend(node);
-
             // 构建参数名称列表
             String missingParams = suspendParameters.stream()
                     .map(Parameter::getName)
@@ -365,6 +379,7 @@ public class ChainState implements Serializable {
                 ", status=" + status +
                 ", message='" + message + '\'' +
                 ", error=" + error +
+                ", version=" + version +
                 '}';
     }
 }
