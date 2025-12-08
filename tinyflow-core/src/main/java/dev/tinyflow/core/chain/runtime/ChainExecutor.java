@@ -233,4 +233,23 @@ public class ChainExecutor {
         eventManager.addOutputListener(outputListener);
     }
 
+    public ChainDefinitionRepository getDefinitionRepository() {
+        return definitionRepository;
+    }
+
+    public ChainStateRepository getChainStateRepository() {
+        return chainStateRepository;
+    }
+
+    public NodeStateRepository getNodeStateRepository() {
+        return nodeStateRepository;
+    }
+
+    public TriggerScheduler getTriggerScheduler() {
+        return triggerScheduler;
+    }
+
+    public EventManager getEventManager() {
+        return eventManager;
+    }
 }
