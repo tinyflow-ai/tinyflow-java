@@ -36,7 +36,7 @@ public class GroovyRuntimeEngine implements CodeRuntimeEngine {
         Map<String, Object> result = new HashMap<>();
         binding.setVariable("_result", result);
         binding.setVariable("_chain", chain);
-        binding.setVariable("_context", chain.getNodeState(node.getId()));
+        binding.setVariable("_state", chain.getNodeState(node.getId()));
 
         GroovyShell shell = new GroovyShell(binding);
         shell.evaluate(code);
