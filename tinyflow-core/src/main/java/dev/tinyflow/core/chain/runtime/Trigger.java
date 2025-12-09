@@ -20,9 +20,7 @@ import java.util.Map;
 
 public class Trigger implements Serializable {
     private String id;
-//    private String chainDefinitionId;
     private String stateInstanceId;
-//    private String parentInstanceId;
     private String edgeId;
     private String nodeId; // 可以为 null，代表触发整个 chain
     private TriggerType type;
@@ -35,7 +33,6 @@ public class Trigger implements Serializable {
     public Trigger() {
     }
 
-    // getters / setters
     public String getId() {
         return id;
     }
@@ -44,13 +41,6 @@ public class Trigger implements Serializable {
         this.id = id;
     }
 
-//    public String getChainDefinitionId() {
-//        return chainDefinitionId;
-//    }
-//
-//    public void setChainDefinitionId(String chainDefinitionId) {
-//        this.chainDefinitionId = chainDefinitionId;
-//    }
 
     public String getStateInstanceId() {
         return stateInstanceId;
@@ -59,14 +49,6 @@ public class Trigger implements Serializable {
     public void setStateInstanceId(String stateInstanceId) {
         this.stateInstanceId = stateInstanceId;
     }
-
-//    public String getParentInstanceId() {
-//        return parentInstanceId;
-//    }
-//
-//    public void setParentInstanceId(String parentInstanceId) {
-//        this.parentInstanceId = parentInstanceId;
-//    }
 
     public String getEdgeId() {
         return edgeId;
