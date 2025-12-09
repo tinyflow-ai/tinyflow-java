@@ -40,6 +40,7 @@ public class ChainState implements Serializable {
     private String instanceId;
     private String chainDefinitionId;
     private ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<>();
+    private Set<String> childStateIds;
 
     private Map<String, Object> executeResult;
     private Map<String, Object> environment;
@@ -81,6 +82,21 @@ public class ChainState implements Serializable {
 
     public void setMemory(ConcurrentHashMap<String, Object> memory) {
         this.memory = memory;
+    }
+
+    public Set<String> getChildStateIds() {
+        return childStateIds;
+    }
+
+    public void setChildStateIds(Set<String> childStateIds) {
+        this.childStateIds = childStateIds;
+    }
+
+    public void addChildStateId(String childStateId) {
+        if (childStateIds == null) {
+            childStateIds = new HashSet<>();
+        }
+        childStateIds.add(childStateId);
     }
 
     public Map<String, Object> getExecuteResult() {

@@ -73,7 +73,8 @@ public class LoopNode extends BaseNode {
             chain.updateStateSafely(loopContext.subStateId, state -> {
                 state.setChainDefinitionId(chain.getDefinition().getId());
                 state.setStatus(ChainStatus.RUNNING);
-                return EnumSet.of(ChainStateField.CHAIN_DEFINITION_ID, ChainStateField.STATUS);
+                state.addChildStateId(loopContext.subStateId);
+                return EnumSet.of(ChainStateField.CHAIN_DEFINITION_ID, ChainStateField.STATUS, ChainStateField.CHILD_STATE_IDS);
             });
         }
 

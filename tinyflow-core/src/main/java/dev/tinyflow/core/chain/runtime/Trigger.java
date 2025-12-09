@@ -25,7 +25,7 @@ public class Trigger implements Serializable {
     private String nodeId; // 可以为 null，代表触发整个 chain
     private TriggerType type;
     private long triggerAt; // epoch ms
-    private Map<String, Object> payload;
+    private Map<String, Object> payload; // 自动传递上一个 trigger 的 payload
     private Map<String, Object> variables;
 
     private Trigger parent;
