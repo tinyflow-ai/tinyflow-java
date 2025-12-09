@@ -34,7 +34,7 @@ public class Chain {
 
 
     protected final ChainDefinition definition;
-    protected final String stateInstanceId;
+    protected String stateInstanceId;
 
     //    protected final ChainState state;
     protected ChainStateRepository chainStateRepository;
@@ -480,7 +480,8 @@ public class Chain {
         Trigger prevTrigger = TriggerContext.getCurrentTrigger();
         Map<String, Object> payload = prevTrigger == null ? null : prevTrigger.getPayload();
         Trigger parent = prevTrigger == null ? null : prevTrigger.getParent();
-        scheduleNode(node, this.stateInstanceId, edgeId, type, null, payload, parent, delayMs);
+        String stateInstanceId = prevTrigger == null ? this.stateInstanceId : prevTrigger.getStateInstanceId();
+        scheduleNode(node,  stateInstanceId, edgeId, type, null, payload, parent, delayMs);
     }
 
     public void scheduleNode(Node node, String stateInstanceId, String edgeId,
@@ -615,5 +616,9 @@ public class Chain {
 
     public ChainState getState(String stateInstanceId) {
         return chainStateRepository.load(stateInstanceId);
+    }
+
+    public void setStateInstanceId(String stateInstanceId) {
+        this.stateInstanceId = stateInstanceId;
     }
 }

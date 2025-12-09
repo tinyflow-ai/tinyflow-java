@@ -24,6 +24,7 @@ import dev.tinyflow.core.chain.runtime.TriggerContext;
 import dev.tinyflow.core.chain.runtime.TriggerType;
 import dev.tinyflow.core.util.IterableUtil;
 import dev.tinyflow.core.util.Maps;
+import dev.tinyflow.core.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -62,7 +63,7 @@ public class LoopNode extends BaseNode {
         int shouldLoopCount = 0;
         if (loopValue instanceof Iterable) {
             shouldLoopCount = IterableUtil.size((Iterable<?>) loopValue);
-        } else if (loopValue instanceof Number || (loopValue instanceof String && isNumeric(loopValue.toString()))) {
+        } else if (loopValue instanceof Number || (loopValue instanceof String && StringUtil.isNumeric(loopValue.toString()))) {
             shouldLoopCount = loopValue instanceof Number ? ((Number) loopValue).intValue() : Integer.parseInt(loopValue.toString().trim());
         }
 
@@ -87,6 +88,8 @@ public class LoopNode extends BaseNode {
         if (loopContext.currentIndex >= shouldLoopCount) {
             prevTrigger.setPayload(loopContext.trigger.getPayload());
             prevTrigger.setParent(loopContext.trigger.getParent());
+            prevTrigger.setStateInstanceId(loopContext.trigger.getStateInstanceId());
+            chain.setStateInstanceId(prevTrigger.getStateInstanceId());
             return loopContext.subResult;
         }
 
@@ -101,7 +104,7 @@ public class LoopNode extends BaseNode {
         if (loopValue instanceof Iterable) {
             Object loopItem = IterableUtil.get((Iterable<?>) loopValue, loopContext.currentIndex);
             executeLoopChain(chain, loopContext, loopItem, parentStateMemory);
-        } else if (loopValue instanceof Number || (loopValue instanceof String && isNumeric(loopValue.toString()))) {
+        } else if (loopValue instanceof Number || (loopValue instanceof String && StringUtil.isNumeric(loopValue.toString()))) {
             executeLoopChain(chain, loopContext, loopContext.currentIndex, parentStateMemory);
         }
 
@@ -141,24 +144,6 @@ public class LoopNode extends BaseNode {
         return payload;
     }
 
-    /**
-     * 判断字符串是否是数字
-     *
-     * @param string 需要判断的字符串
-     * @return boolean 是数字返回 true，否则返回 false
-     */
-    private boolean isNumeric(String string) {
-        if (string == null || string.isEmpty()) {
-            return false;
-        }
-        char[] chars = string.trim().toCharArray();
-        for (char c : chars) {
-            if (!Character.isDigit(c)) {
-                return false;
-            }
-        }
-        return true;
-    }
 
     /**
      * 把子流程执行的结果填充到主流程的输出参数中
@@ -191,6 +176,7 @@ public class LoopNode extends BaseNode {
         }
     }
 
+
     private LoopContext getLoopContext(Trigger prevTrigger, Chain chain) {
         Map<String, Object> payload = prevTrigger.getPayload();
 
@@ -210,10 +196,6 @@ public class LoopNode extends BaseNode {
             loopContext.subStateId = UUID.randomUUID().toString();
             loopContext.trigger = prevTrigger;
 
-            chain.updateNodeStateSafely(this.id, nodeState -> {
-                nodeState.getMemory().put(loopContext.loopExecutionId, loopContext);
-                return EnumSet.of(NodeStateField.MEMORY);
-            });
         }
         // 不是第一次执行
         else {

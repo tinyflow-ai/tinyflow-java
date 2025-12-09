@@ -55,5 +55,24 @@ public class StringUtil {
         return null;
     }
 
+    /**
+     * 判断字符串是否是数字
+     *
+     * @param string 需要判断的字符串
+     * @return boolean 是数字返回 true，否则返回 false
+     */
+    public static boolean isNumeric(String string) {
+        if (string == null || string.isEmpty()) {
+            return false;
+        }
+        char[] chars = string.trim().toCharArray();
+        for (char c : chars) {
+            if (!Character.isDigit(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
 }
