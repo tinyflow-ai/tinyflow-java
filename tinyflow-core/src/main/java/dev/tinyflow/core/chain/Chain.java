@@ -253,7 +253,8 @@ public class Chain {
         try {
             updateNodeStateSafely(node.id, s -> {
                 s.setStatus(NodeStatus.RUNNING);
-                return EnumSet.of(NodeStateField.STATUS);
+                s.recordExecute(byEdgeId);
+                return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS, NodeStateField.STATUS);
             });
             EXECUTION_THREAD_LOCAL.set(this);
             notifyEvent(new NodeStartEvent(this, node));
@@ -269,7 +270,11 @@ public class Chain {
     }
 
     public NodeState getNodeState(String nodeId) {
-        return nodeStateRepository.load(this.stateInstanceId, nodeId);
+        return getNodeState(this.stateInstanceId, nodeId);
+    }
+
+    public NodeState getNodeState(String stateInstanceId, String nodeId) {
+        return nodeStateRepository.load(stateInstanceId, nodeId);
     }
 
 
@@ -284,21 +289,11 @@ public class Chain {
     }
 
 
-    private void handleNodeResult(Node node, NodeState nodeState, Map<String, Object> result, String byEdigeId, Throwable error) {
+    private void handleNodeResult(Node node, NodeState nodeState, Map<String, Object> result, String byEdgeId, Throwable error) {
         ChainStatus finalStatus = null;
+        NodeStatus finalNodeStatus = null;
         try {
-            updateNodeStateSafely(node.id, state -> {
-                state.recordExecute(byEdigeId);
-                return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS);
-            });
-
             if (error == null) {
-                // 成功
-                updateNodeStateSafely(node.id, state -> {
-                    state.setStatus(NodeStatus.SUCCEEDED);
-                    return EnumSet.of(NodeStateField.STATUS);
-                });
-
                 // 更新 state 数据
                 updateStateSafely(state -> {
                     EnumSet<ChainStateField> fields = EnumSet.of(ChainStateField.EXECUTE_RESULT);
@@ -323,6 +318,8 @@ public class Chain {
                     });
                 }
 
+                finalNodeStatus = result == null ? null : (NodeStatus) result.get(ChainConsts.NODE_STATE_STATUS_KEY);
+
                 // 不调度下一个节点，由 node 自行调度，比如 Loop 循环
                 Boolean scheduleNextNodeDisabled = result == null ? null : (Boolean) result.get(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY);
                 if (scheduleNextNodeDisabled != null && scheduleNextNodeDisabled) {
@@ -335,7 +332,7 @@ public class Chain {
                     return;
                 }
 
-                scheduleNextForNode(node, result, byEdigeId);
+                scheduleNextForNode(node, result, byEdgeId);
             } else {
                 // 挂起
                 if (error instanceof ChainSuspendException) {
@@ -371,18 +368,29 @@ public class Chain {
                             return EnumSet.of(NodeStateField.RETRY_COUNT);
                         });
 
-                        scheduleNode(node, byEdigeId, TriggerType.RETRY, node.getRetryIntervalMs());
+                        scheduleNode(node, byEdgeId, TriggerType.RETRY, node.getRetryIntervalMs());
                     } else {
                         finalStatus = handleNodeError(node.id, error);
                     }
                 }
             }
         } finally {
-            notifyEvent(new NodeEndEvent(this, node, result, error));
 
-            // chain 执行结束
+
+            // 如果不是还在执行中的状态，则通知事件
+            if (finalNodeStatus != NodeStatus.RUNNING) {
+                NodeStatus nodeStatus = finalNodeStatus == null ? NodeStatus.SUCCEEDED : finalNodeStatus;
+                updateNodeStateSafely(node.id, state -> {
+                    state.setStatus(nodeStatus);
+                    return EnumSet.of(NodeStateField.STATUS);
+                });
+                notifyEvent(new NodeEndEvent(this, node, result, error));
+            }
+
             if (finalStatus != null) {
                 setStatusAndNotifyEvent(finalStatus);
+
+                // chain 执行结束
                 if (finalStatus.isTerminal()) {
                     eventManager.notifyEvent(new ChainEndEvent(this), this);
                 }
@@ -429,8 +437,13 @@ public class Chain {
 
 
     private void scheduleOutwardNodes(Node node, Map<String, Object> result) {
-        List<Edge> edges = node.getOutwardEdges();
+        List<Edge> edges = definition.getOutwardEdge(node.getId());
         if (!CollectionUtil.hasItems(edges)) {
+            // 当前节点没有向外的边，则调度父节点（自动回归父节点） 用在 Loop 循环等场景
+            if (StringUtil.hasText(node.getParentId())) {
+                Node parent = definition.getNodeById(node.getParentId());
+                scheduleNode(parent, null, TriggerType.NEXT, 0L);
+            }
             return;
         }
 
@@ -438,32 +451,51 @@ public class Chain {
             EdgeCondition cond = edge.getCondition();
             if (cond == null || cond.check(this, edge, result)) {
                 Node next = definition.getNodeById(edge.getTarget());
-                if (next != null) {
+                if (next != null && isSameParent(node, next)) {
                     scheduleNode(next, edge.getId(), TriggerType.NEXT, 0L);
                 }
             }
         }
     }
 
+    /**
+     * 判断两个节点是否具有相同的父节点
+     *
+     * @param node 第一个节点
+     * @param next 第二个节点
+     * @return 如果两个节点的父节点ID相同则返回true，否则返回false
+     */
+    private boolean isSameParent(Node node, Node next) {
+        // 如果两个节点的父节点ID都为空或空白，则认为是相同父节点
+        if (StringUtil.noText(node.getParentId()) && StringUtil.noText(next.getParentId())) {
+            return true;
+        }
 
-    public void scheduleNode(Node node, String edgeId, TriggerType type, long delayMs) {
-        scheduleNode(node, this.stateInstanceId, null, edgeId, type, null, delayMs);
+        // 比较两个节点的父节点ID是否相等
+        return node.getParentId() != null && node.getParentId().equals(next.getParentId());
     }
 
-    public void scheduleNode(Node node, String stateInstanceId, String parentInstanceId, String edgeId, TriggerType type, Map<String, Object> payload, long delayMs) {
+
+    public void scheduleNode(Node node, String edgeId, TriggerType type, long delayMs) {
         Trigger prevTrigger = TriggerContext.getCurrentTrigger();
-        if (parentInstanceId == null && prevTrigger != null) {
-            parentInstanceId = prevTrigger.getParentInstanceId();
-        }
+        Map<String, Object> payload = prevTrigger == null ? null : prevTrigger.getPayload();
+        Trigger parent = prevTrigger == null ? null : prevTrigger.getParent();
+        scheduleNode(node, this.stateInstanceId, edgeId, type, null, payload, parent, delayMs);
+    }
+
+    public void scheduleNode(Node node, String stateInstanceId, String edgeId,
+                             TriggerType type, Map<String, Object> variables, Map<String, Object> payload, Trigger parent, long delayMs) {
 
         Trigger trigger = new Trigger();
         trigger.setStateInstanceId(stateInstanceId);
-        trigger.setParentInstanceId(parentInstanceId);
         trigger.setEdgeId(edgeId);
         trigger.setNodeId(node.getId());
         trigger.setType(type);
-        trigger.setPayload(payload);
+        trigger.setVariables(variables);
         trigger.setTriggerAt(System.currentTimeMillis() + delayMs);
+        trigger.setPayload(payload);
+        trigger.setParent(parent);
+
         getTriggerScheduler().schedule(trigger);
     }
 

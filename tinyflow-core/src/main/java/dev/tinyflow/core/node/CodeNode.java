@@ -16,12 +16,14 @@
 package dev.tinyflow.core.node;
 
 import dev.tinyflow.core.chain.Chain;
+import dev.tinyflow.core.chain.ChainState;
 import dev.tinyflow.core.code.CodeRuntimeEngine;
 import dev.tinyflow.core.code.CodeRuntimeEngineManager;
 import dev.tinyflow.core.util.StringUtil;
 import dev.tinyflow.core.util.TextTemplate;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class CodeNode extends BaseNode {
@@ -47,10 +49,12 @@ public class CodeNode extends BaseNode {
     @Override
     protected Map<String, Object> execute(Chain chain) {
         if (StringUtil.noText(code)) {
-            throw new IllegalStateException("Code is null or blank.");
+            throw new IllegalArgumentException("code is empty");
         }
 
-        String newCode = TextTemplate.of(code).formatToString(Arrays.asList(chain.getState().resolveParameters(this), chain.getState().getEnvMap()));
+        ChainState chainState = chain.getState();
+        List<Map<String, Object>> variables = Arrays.asList(chainState.resolveParameters(this), chainState.getEnvMap());
+        String newCode = TextTemplate.of(code).formatToString(variables);
 
         CodeRuntimeEngine codeRuntimeEngine = CodeRuntimeEngineManager.getInstance().getCodeRuntimeEngine(this.engine);
         return codeRuntimeEngine.execute(newCode, this, chain);

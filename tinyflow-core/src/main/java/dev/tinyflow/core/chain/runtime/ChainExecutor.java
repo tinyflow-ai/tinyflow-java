@@ -182,6 +182,7 @@ public class ChainExecutor {
             return;
         }
 
+
         ChainDefinition definition = definitionRepository.getChainDefinitionById(state.getChainDefinitionId());
         if (definition == null) {
             return;
@@ -194,10 +195,10 @@ public class ChainExecutor {
         chain.setEventManager(eventManager);
 
 
-        Map<String, Object> payload = trigger.getPayload();
-        if (payload != null && !payload.isEmpty()) {
+        Map<String, Object> variables = trigger.getVariables();
+        if (variables != null && !variables.isEmpty()) {
             chain.updateStateSafely(s -> {
-                s.getMemory().putAll(payload);
+                s.getMemory().putAll(variables);
                 return EnumSet.of(ChainStateField.MEMORY);
             });
         }

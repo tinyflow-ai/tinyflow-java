@@ -156,6 +156,8 @@ public class TriggerScheduler {
                     try {
                         TriggerContext.setCurrentTrigger(existing);
                         consumer.accept(existing, worker);
+                    } catch (Throwable e) {
+                        log.error(e.toString(), e);
                     } finally {
                         TriggerContext.clearCurrentTrigger();
                         store.remove(existing.getId());

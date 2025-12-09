@@ -15,7 +15,6 @@
  */
 package dev.tinyflow.core.chain;
 
-import dev.tinyflow.core.util.CollectionUtil;
 import dev.tinyflow.core.util.StringUtil;
 
 import java.io.Serializable;
@@ -75,6 +74,27 @@ public class ChainDefinition implements Serializable {
         this.edges = edges;
     }
 
+    public List<Edge> getOutwardEdge(String nodeId) {
+        List<Edge> result = new ArrayList<>();
+        for (Edge edge : edges) {
+            if (nodeId.equals(edge.getSource())) {
+                result.add(edge);
+            }
+        }
+        return result;
+    }
+
+
+    public List<Edge> getInwardEdge(String nodeId) {
+        List<Edge> result = new ArrayList<>();
+        for (Edge edge : edges) {
+            if (nodeId.equals(edge.getTarget())) {
+                result.add(edge);
+            }
+        }
+        return result;
+    }
+
     public void addNode(Node node) {
         if (nodes == null) {
             this.nodes = new ArrayList<>();
@@ -86,15 +106,15 @@ public class ChainDefinition implements Serializable {
 
         nodes.add(node);
 
-        if (this.edges != null) {
-            for (Edge edge : edges) {
-                if (node.getId().equals(edge.getSource())) {
-                    node.addOutwardEdge(edge);
-                } else if (node.getId().equals(edge.getTarget())) {
-                    node.addInwardEdge(edge);
-                }
-            }
-        }
+//        if (this.edges != null) {
+//            for (Edge edge : edges) {
+//                if (node.getId().equals(edge.getSource())) {
+//                    node.addOutwardEdge(edge);
+//                } else if (node.getId().equals(edge.getTarget())) {
+//                    node.addInwardEdge(edge);
+//                }
+//            }
+//        }
     }
 
 
@@ -119,20 +139,19 @@ public class ChainDefinition implements Serializable {
         }
         this.edges.add(edge);
 
-        boolean findSource = false, findTarget = false;
-
-        for (Node node : this.nodes) {
-            if (node.getId().equals(edge.getSource())) {
-                node.addOutwardEdge(edge);
-                findSource = true;
-            } else if (node.getId().equals(edge.getTarget())) {
-                node.addInwardEdge(edge);
-                findTarget = true;
-            }
-            if (findSource && findTarget) {
-                break;
-            }
-        }
+//        boolean findSource = false, findTarget = false;
+//        for (Node node : this.nodes) {
+//            if (node.getId().equals(edge.getSource())) {
+//                node.addOutwardEdge(edge);
+//                findSource = true;
+//            } else if (node.getId().equals(edge.getTarget())) {
+//                node.addInwardEdge(edge);
+//                findTarget = true;
+//            }
+//            if (findSource && findTarget) {
+//                break;
+//            }
+//        }
     }
 
 
@@ -153,7 +172,11 @@ public class ChainDefinition implements Serializable {
         List<Node> result = new ArrayList<>();
 
         for (Node node : nodes) {
-            if (CollectionUtil.noItems(node.getInwardEdges())) {
+//            if (CollectionUtil.noItems(node.getInwardEdges())) {
+//                result.add(node);
+//            }
+            List<Edge> inwardEdge = getInwardEdge(node.getId());
+            if (inwardEdge == null || inwardEdge.isEmpty()) {
                 result.add(node);
             }
         }

@@ -20,13 +20,17 @@ import java.util.Map;
 
 public class Trigger implements Serializable {
     private String id;
+//    private String chainDefinitionId;
     private String stateInstanceId;
-    private String parentInstanceId;
+//    private String parentInstanceId;
     private String edgeId;
     private String nodeId; // 可以为 null，代表触发整个 chain
     private TriggerType type;
     private long triggerAt; // epoch ms
     private Map<String, Object> payload;
+    private Map<String, Object> variables;
+
+    private Trigger parent;
 
     public Trigger() {
     }
@@ -40,6 +44,14 @@ public class Trigger implements Serializable {
         this.id = id;
     }
 
+//    public String getChainDefinitionId() {
+//        return chainDefinitionId;
+//    }
+//
+//    public void setChainDefinitionId(String chainDefinitionId) {
+//        this.chainDefinitionId = chainDefinitionId;
+//    }
+
     public String getStateInstanceId() {
         return stateInstanceId;
     }
@@ -48,13 +60,13 @@ public class Trigger implements Serializable {
         this.stateInstanceId = stateInstanceId;
     }
 
-    public String getParentInstanceId() {
-        return parentInstanceId;
-    }
-
-    public void setParentInstanceId(String parentInstanceId) {
-        this.parentInstanceId = parentInstanceId;
-    }
+//    public String getParentInstanceId() {
+//        return parentInstanceId;
+//    }
+//
+//    public void setParentInstanceId(String parentInstanceId) {
+//        this.parentInstanceId = parentInstanceId;
+//    }
 
     public String getEdgeId() {
         return edgeId;
@@ -96,17 +108,34 @@ public class Trigger implements Serializable {
         this.payload = payload;
     }
 
+    public Map<String, Object> getVariables() {
+        return variables;
+    }
+
+    public void setVariables(Map<String, Object> variables) {
+        this.variables = variables;
+    }
+
+    public Trigger getParent() {
+        return parent;
+    }
+
+    public void setParent(Trigger parent) {
+        this.parent = parent;
+    }
+
     @Override
     public String toString() {
         return "Trigger{" +
                 "id='" + id + '\'' +
                 ", stateInstanceId='" + stateInstanceId + '\'' +
-                ", parentInstanceId='" + parentInstanceId + '\'' +
                 ", edgeId='" + edgeId + '\'' +
                 ", nodeId='" + nodeId + '\'' +
                 ", type=" + type +
                 ", triggerAt=" + triggerAt +
                 ", payload=" + payload +
+                ", variables=" + variables +
+                ", parent=" + parent +
                 '}';
     }
 }

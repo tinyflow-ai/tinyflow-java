@@ -273,8 +273,6 @@ public class HttpNode extends BaseNode {
                 ", id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
-                ", inwardEdges=" + inwardEdges +
-                ", outwardEdges=" + outwardEdges +
                 ", condition=" + condition +
                 ", validator=" + validator +
                 ", loopEnable=" + loopEnable +

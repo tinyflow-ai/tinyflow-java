@@ -58,25 +58,25 @@ public class ChainParser {
         JSONArray nodes = root.getJSONArray("nodes");
         JSONArray edges = root.getJSONArray("edges");
 
-        return parse(root, nodes, edges, null);
+        return parse(root, nodes, edges);
     }
 
 
-    public ChainDefinition parse(JSONObject chainJSONObject, JSONArray nodes, JSONArray edges, JSONObject parentNode) {
+    public ChainDefinition parse(JSONObject chainJSONObject, JSONArray nodes, JSONArray edges) {
         if (CollectionUtil.noItems(nodes) || CollectionUtil.noItems(edges)) {
             return null;
         }
 
-        ChainDefinition chain = new ChainDefinition();
+        ChainDefinition definition = new ChainDefinition();
         for (int i = 0; i < nodes.size(); i++) {
             JSONObject nodeObject = nodes.getJSONObject(i);
-            if ((parentNode == null && StringUtil.noText(nodeObject.getString("parentId")))
-                    || (parentNode != null && parentNode.getString("id").equals(nodeObject.getString("parentId")))) {
+//            if ((parentNode == null && StringUtil.noText(nodeObject.getString("parentId")))
+//                    || (parentNode != null && parentNode.getString("id").equals(nodeObject.getString("parentId")))) {
                 Node node = parseNode(chainJSONObject, nodeObject);
                 if (node != null) {
-                    chain.addNode(node);
+                    definition.addNode(node);
                 }
-            }
+//            }
         }
 
         for (int i = 0; i < edges.size(); i++) {
@@ -97,15 +97,15 @@ public class ChainParser {
             if (edge == null) {
                 continue;
             }
-            if (parentNode == null ||
-                    //不添加子流程里的第一条 edge（也就是父节点连接子节点的第一条线）
-                    (!parentNode.getString("id").equals(edgeObject.getString("source")))
-            ) {
-                chain.addEdge(edge);
-            }
+//            if (parentNode == null ||
+//                    //不添加子流程里的第一条 edge（也就是父节点连接子节点的第一条线）
+//                    (!parentNode.getString("id").equals(edgeObject.getString("source")))
+//            ) {
+                definition.addEdge(edge);
+//            }
         }
 
-        return chain;
+        return definition;
     }
 
     private Node parseNode(JSONObject chainJSONObject, JSONObject nodeObject) {

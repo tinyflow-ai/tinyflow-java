@@ -113,6 +113,7 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
         if (node != null) {
 
             node.setId(nodeJSONObject.getString("id"));
+            node.setParentId(nodeJSONObject.getString("parentId"));
             node.setName(nodeJSONObject.getString("label"));
             node.setDescription(nodeJSONObject.getString("description"));
 

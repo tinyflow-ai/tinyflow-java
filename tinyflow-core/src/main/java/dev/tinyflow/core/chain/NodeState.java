@@ -152,8 +152,9 @@ public class NodeState implements Serializable {
     }
 
     public boolean isUpstreamFullyExecuted() {
-        Node currentNode = Chain.currentChain().getDefinition().getNodeById(nodeId);
-        List<Edge> inwardEdges = currentNode.getInwardEdges();
+        ChainDefinition definition = Chain.currentChain().getDefinition();
+//        Node currentNode = definition.getNodeById(nodeId);
+        List<Edge> inwardEdges = definition.getInwardEdge(nodeId);
         if (inwardEdges == null || inwardEdges.isEmpty()) {
             return true;
         }

@@ -20,7 +20,6 @@ import dev.tinyflow.core.util.StringUtil;
 import org.slf4j.Logger;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,11 +28,12 @@ public abstract class Node implements Serializable {
     private static final Logger log = org.slf4j.LoggerFactory.getLogger(Node.class);
 
     protected String id;
+    protected String parentId;
     protected String name;
     protected String description;
 
-    protected List<Edge> inwardEdges;
-    protected List<Edge> outwardEdges;
+//    protected List<Edge> inwardEdges;
+//    protected List<Edge> outwardEdges;
 
     protected NodeCondition condition;
     protected NodeValidator validator;
@@ -60,6 +60,14 @@ public abstract class Node implements Serializable {
         this.id = id;
     }
 
+    public String getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
+    }
+
     public String getName() {
         return name;
     }
@@ -76,21 +84,21 @@ public abstract class Node implements Serializable {
         this.description = description;
     }
 
-    public List<Edge> getInwardEdges() {
-        return inwardEdges;
-    }
-
-    public void setInwardEdges(List<Edge> inwardEdges) {
-        this.inwardEdges = inwardEdges;
-    }
-
-    public List<Edge> getOutwardEdges() {
-        return outwardEdges;
-    }
-
-    public void setOutwardEdges(List<Edge> outwardEdges) {
-        this.outwardEdges = outwardEdges;
-    }
+//    public List<Edge> getInwardEdges() {
+//        return inwardEdges;
+//    }
+//
+//    public void setInwardEdges(List<Edge> inwardEdges) {
+//        this.inwardEdges = inwardEdges;
+//    }
+//
+//    public List<Edge> getOutwardEdges() {
+////        return outwardEdges;
+//    }
+//
+//    public void setOutwardEdges(List<Edge> outwardEdges) {
+//        this.outwardEdges = outwardEdges;
+//    }
 
     public NodeCondition getCondition() {
         return condition;
@@ -108,19 +116,19 @@ public abstract class Node implements Serializable {
         this.validator = validator;
     }
 
-    protected void addOutwardEdge(Edge edge) {
-        if (this.outwardEdges == null) {
-            this.outwardEdges = new ArrayList<>();
-        }
-        this.outwardEdges.add(edge);
-    }
-
-    protected void addInwardEdge(Edge edge) {
-        if (this.inwardEdges == null) {
-            this.inwardEdges = new ArrayList<>();
-        }
-        this.inwardEdges.add(edge);
-    }
+//    protected void addOutwardEdge(Edge edge) {
+//        if (this.outwardEdges == null) {
+//            this.outwardEdges = new ArrayList<>();
+//        }
+//        this.outwardEdges.add(edge);
+//    }
+//
+//    protected void addInwardEdge(Edge edge) {
+//        if (this.inwardEdges == null) {
+//            this.inwardEdges = new ArrayList<>();
+//        }
+//        this.inwardEdges.add(edge);
+//    }
 
     public boolean isLoopEnable() {
         return loopEnable;
