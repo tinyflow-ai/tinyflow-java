@@ -87,7 +87,7 @@ public class LlmNode extends BaseNode {
     }
 
     @Override
-    protected Map<String, Object> execute(Chain chain) {
+    public Map<String, Object> execute(Chain chain) {
         Map<String, Object> parameterValues = chain.getState().resolveParameters(this);
 
         if (StringUtil.noText(userPrompt)) {

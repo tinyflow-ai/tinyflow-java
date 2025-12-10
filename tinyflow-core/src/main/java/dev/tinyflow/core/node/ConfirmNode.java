@@ -53,7 +53,7 @@ public class ConfirmNode extends BaseNode {
 
 
     @Override
-    protected Map<String, Object> execute(Chain chain) {
+    public Map<String, Object> execute(Chain chain) {
 
         List<Parameter> confirmParameters = new ArrayList<>();
         addConfirmParameter(confirmParameters);

@@ -61,7 +61,7 @@ public class KnowledgeNode extends BaseNode {
     }
 
     @Override
-    protected Map<String, Object> execute(Chain chain) {
+    public Map<String, Object> execute(Chain chain) {
         Map<String, Object> argsMap = chain.getState().resolveParameters(this);
         String realKeyword = TextTemplate.of(keyword).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));
         String realLimitString = TextTemplate.of(limit).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));

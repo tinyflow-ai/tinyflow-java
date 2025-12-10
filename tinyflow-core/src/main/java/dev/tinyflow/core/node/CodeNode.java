@@ -47,7 +47,7 @@ public class CodeNode extends BaseNode {
     }
 
     @Override
-    protected Map<String, Object> execute(Chain chain) {
+    public Map<String, Object> execute(Chain chain) {
         if (StringUtil.noText(code)) {
             throw new IllegalArgumentException("code is empty");
         }

@@ -22,7 +22,7 @@ import java.util.Map;
 
 public class StartNode extends BaseNode {
     @Override
-    protected Map<String, Object> execute(Chain chain) {
+    public Map<String, Object> execute(Chain chain) {
         return chain.getState().resolveParameters(this);
     }
 

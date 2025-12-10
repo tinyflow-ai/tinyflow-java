@@ -47,7 +47,7 @@ public class TemplateNode extends BaseNode {
 
 
     @Override
-    protected Map<String, Object> execute(Chain chain) {
+    public Map<String, Object> execute(Chain chain) {
         Map<String, Object> parameters = chain.getState().resolveParameters(this);
 
         ByteArrayOutputStream result = new ByteArrayOutputStream();

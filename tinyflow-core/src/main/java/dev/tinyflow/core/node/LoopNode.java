@@ -43,7 +43,7 @@ public class LoopNode extends BaseNode {
     }
 
     @Override
-    protected Map<String, Object> execute(Chain chain) {
+    public Map<String, Object> execute(Chain chain) {
         Trigger prevTrigger = TriggerContext.getCurrentTrigger();
         LoopContext loopContext = getLoopContext(prevTrigger, chain);
         int triggerLoopIndex = getTriggerLoopIndex(prevTrigger);
