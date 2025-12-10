@@ -293,15 +293,15 @@ public class ChainState implements Serializable {
         List<Parameter> suspendParameters = null;
         for (Parameter parameter : parameters) {
             RefType refType = parameter.getRefType();
-            Object value;
+            Object value = null;
             if (refType == RefType.FIXED) {
                 value = TextTemplate.of(parameter.getValue())
                         .formatToString(Arrays.asList(formatArgs, getEnvMap()));
             } else if (refType == RefType.REF) {
                 value = this.resolveValue(parameter.getRef());
             }
-            // 默认为 INPUT
-            else {
+            // 单节点执行时，参数只会传入 name 内容。
+            if (value == null) {
                 value = this.resolveValue(parameter.getName());
             }
 
