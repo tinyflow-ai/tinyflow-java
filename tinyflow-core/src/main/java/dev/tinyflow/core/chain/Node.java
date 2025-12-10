@@ -214,7 +214,7 @@ public abstract class Node implements Serializable {
     }
 
 
-    protected abstract Map<String, Object> execute(Chain chain);
+    public abstract Map<String, Object> execute(Chain chain);
 
     public long calculateComputeCost(Chain chain, Map<String, Object> executeResult) {
 

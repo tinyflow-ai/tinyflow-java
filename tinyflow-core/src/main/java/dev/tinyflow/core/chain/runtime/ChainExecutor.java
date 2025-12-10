@@ -25,10 +25,7 @@ import dev.tinyflow.core.chain.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -79,10 +76,6 @@ public class ChainExecutor {
 
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables, long timeout, TimeUnit unit) {
         Chain chain = createChain(definitionId);
-        if (chain == null) {
-            throw new RuntimeException("Chain definition not found");
-        }
-
         String stateInstanceId = chain.getStateInstanceId();
         CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
@@ -125,11 +118,44 @@ public class ChainExecutor {
 
     public String executeAsync(String definitionId, Map<String, Object> variables) {
         Chain chain = createChain(definitionId);
-        if (chain == null) {
-            throw new RuntimeException("Chain definition not found");
-        }
         chain.start(variables);
         return chain.getStateInstanceId();
+    }
+
+
+    /**
+     * 执行指定节点的业务逻辑
+     *
+     * @param definitionId 流程定义ID，用于标识哪个流程定义
+     * @param nodeId       节点ID，用于标识要执行的具体节点
+     * @param variables    执行上下文变量集合，包含节点执行所需的参数和数据
+     * @return 执行结果映射表，包含节点执行后的输出数据
+     */
+    public Map<String, Object> executeNode(String definitionId, String nodeId, Map<String, Object> variables) {
+        ChainDefinition chainDefinitionById = definitionRepository.getChainDefinitionById(definitionId);
+        Node node = chainDefinitionById.getNodeById(nodeId);
+        Chain temp = createChain(definitionId);
+        if (variables != null && !variables.isEmpty()) {
+            temp.updateStateSafely(s -> {
+                s.getMemory().putAll(variables);
+                return EnumSet.of(ChainStateField.MEMORY);
+            });
+        }
+        return node.execute(temp);
+    }
+
+
+    /**
+     * 获取指定节点的参数列表
+     *
+     * @param definitionId 链定义ID，用于定位具体的链定义
+     * @param nodeId       节点ID，用于在链定义中定位具体节点
+     * @return 返回指定节点的参数列表
+     */
+    public List<Parameter> getNodeParameters(String definitionId, String nodeId) {
+        ChainDefinition chainDefinitionById = definitionRepository.getChainDefinitionById(definitionId);
+        Node node = chainDefinitionById.getNodeById(nodeId);
+        return node.getParameters();
     }
 
 
@@ -162,7 +188,7 @@ public class ChainExecutor {
     private Chain createChain(String definitionId) {
         ChainDefinition definition = definitionRepository.getChainDefinitionById(definitionId);
         if (definition == null) {
-            return null;
+            throw new RuntimeException("Chain definition not found");
         }
 
         String stateInstanceId = UUID.randomUUID().toString();
