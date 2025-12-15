@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 public class ChainState implements Serializable {
 
     private String instanceId;
+    private String parentInstanceId;
     private String chainDefinitionId;
     private ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<>();
     private Set<String> childStateIds;
@@ -66,6 +67,14 @@ public class ChainState implements Serializable {
 
     public void setInstanceId(String instanceId) {
         this.instanceId = instanceId;
+    }
+
+    public String getParentInstanceId() {
+        return parentInstanceId;
+    }
+
+    public void setParentInstanceId(String parentInstanceId) {
+        this.parentInstanceId = parentInstanceId;
     }
 
     public String getChainDefinitionId() {

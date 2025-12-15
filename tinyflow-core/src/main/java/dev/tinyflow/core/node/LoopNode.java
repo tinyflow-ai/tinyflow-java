@@ -72,9 +72,10 @@ public class LoopNode extends BaseNode {
             // 初始化子状态
             chain.updateStateSafely(loopContext.subStateId, state -> {
                 state.setChainDefinitionId(chain.getDefinition().getId());
+                state.setParentInstanceId(chain.getStateInstanceId());
                 state.setStatus(ChainStatus.RUNNING);
                 state.addChildStateId(loopContext.subStateId);
-                return EnumSet.of(ChainStateField.CHAIN_DEFINITION_ID, ChainStateField.STATUS, ChainStateField.CHILD_STATE_IDS);
+                return EnumSet.of(ChainStateField.CHAIN_DEFINITION_ID, ChainStateField.PARENT_INSTANCE_ID, ChainStateField.STATUS, ChainStateField.CHILD_STATE_IDS);
             });
         }
 
