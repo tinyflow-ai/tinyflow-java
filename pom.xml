@@ -56,8 +56,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <langchain4j.version>1.7.1</langchain4j.version>
-        <agentsflexbom.version>2.0.0-beta.4</agentsflexbom.version>
-        <agentsflexcore.version>2.0.0-beta.4</agentsflexcore.version>
+        <agentsflex.version>2.0.0-beta.5</agentsflex.version>
         <springai.version>1.0.0-M6</springai.version>
     </properties>
 
@@ -67,12 +66,12 @@
             <dependency>
                 <groupId>dev.tinyflow</groupId>
                 <artifactId>tinyflow-core</artifactId>
-                <version>${agentsflexcore.version}</version>
+                <version>${agentsflex.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.agentsflex</groupId>
                 <artifactId>agents-flex-bom</artifactId>
-                <version>${agentsflexbom.version}</version>
+                <version>${agentsflex.version}</version>
             </dependency>
             <dependency>
                 <!-- langchain4j 核心依赖-->
