@@ -95,6 +95,8 @@ public class LoopNode extends BaseNode {
             return loopContext.subResult;
         }
 
+
+        int loopIndex = loopContext.currentIndex;
         loopContext.currentIndex++;
 
         // 更新节点的执行状态
@@ -104,10 +106,10 @@ public class LoopNode extends BaseNode {
         });
 
         if (loopValue instanceof Iterable) {
-            Object loopItem = IterableUtil.get((Iterable<?>) loopValue, loopContext.currentIndex);
+            Object loopItem = IterableUtil.get((Iterable<?>) loopValue, loopIndex);
             executeLoopChain(chain, loopContext, loopItem, parentStateMemory);
         } else if (loopValue instanceof Number || (loopValue instanceof String && StringUtil.isNumeric(loopValue.toString()))) {
-            executeLoopChain(chain, loopContext, loopContext.currentIndex, parentStateMemory);
+            executeLoopChain(chain, loopContext, loopIndex, parentStateMemory);
         }
 
         // 禁用调度下个节点
