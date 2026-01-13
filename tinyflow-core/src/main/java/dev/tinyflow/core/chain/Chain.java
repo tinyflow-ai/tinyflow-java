@@ -227,46 +227,47 @@ public class Chain {
     }
 
     public void executeNode(Node node, String byEdgeId) {
-        ChainState chainState = getState();
-
-        // 当前处于挂起状态
-        if (chainState.getStatus() == ChainStatus.SUSPEND) {
-            updateStateSafely(state -> {
-                chainState.addSuspendNodeId(node.getId());
-                return EnumSet.of(ChainStateField.SUSPEND_NODE_IDS);
-            });
-            return;
-        }
-        // 处于非运行状态，比如错误状态
-        else if (chainState.getStatus() != ChainStatus.RUNNING) {
-            return;
-        }
-
-
-        NodeState nodeState = getNodeState(node.getId());
-        if (shouldSkipNode(node, nodeState, byEdgeId)) {
-            return;
-        }
-
-        Map<String, Object> nodeResult = null;
-        Throwable error = null;
         try {
-            updateNodeStateSafely(node.id, s -> {
-                s.setStatus(NodeStatus.RUNNING);
-                s.recordExecute(byEdgeId);
-                return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS, NodeStateField.STATUS);
-            });
             EXECUTION_THREAD_LOCAL.set(this);
-            notifyEvent(new NodeStartEvent(this, node));
-            nodeResult = node.execute(this);
-        } catch (Throwable throwable) {
-            log.error("Node execute error", throwable);
-            error = throwable;
+            ChainState chainState = getState();
+
+            // 当前处于挂起状态
+            if (chainState.getStatus() == ChainStatus.SUSPEND) {
+                updateStateSafely(state -> {
+                    chainState.addSuspendNodeId(node.getId());
+                    return EnumSet.of(ChainStateField.SUSPEND_NODE_IDS);
+                });
+                return;
+            }
+            // 处于非运行状态，比如错误状态
+            else if (chainState.getStatus() != ChainStatus.RUNNING) {
+                return;
+            }
+
+            NodeState nodeState = getNodeState(node.getId());
+            if (shouldSkipNode(node, nodeState, byEdgeId)) {
+                return;
+            }
+
+            Map<String, Object> nodeResult = null;
+            Throwable error = null;
+            try {
+                updateNodeStateSafely(node.id, s -> {
+                    s.setStatus(NodeStatus.RUNNING);
+                    s.recordExecute(byEdgeId);
+                    return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS, NodeStateField.STATUS);
+                });
+
+                notifyEvent(new NodeStartEvent(this, node));
+                nodeResult = node.execute(this);
+            } catch (Throwable throwable) {
+                log.error("Node execute error", throwable);
+                error = throwable;
+            }
+            handleNodeResult(node, nodeState, nodeResult, byEdgeId, error);
         } finally {
             EXECUTION_THREAD_LOCAL.remove();
         }
-
-        handleNodeResult(node, nodeState, nodeResult, byEdgeId, error);
     }
 
     public NodeState getNodeState(String nodeId) {
@@ -481,7 +482,7 @@ public class Chain {
         Map<String, Object> payload = prevTrigger == null ? null : prevTrigger.getPayload();
         Trigger parent = prevTrigger == null ? null : prevTrigger.getParent();
         String stateInstanceId = prevTrigger == null ? this.stateInstanceId : prevTrigger.getStateInstanceId();
-        scheduleNode(node,  stateInstanceId, edgeId, type, null, payload, parent, delayMs);
+        scheduleNode(node, stateInstanceId, edgeId, type, null, payload, parent, delayMs);
     }
 
     public void scheduleNode(Node node, String stateInstanceId, String edgeId,
