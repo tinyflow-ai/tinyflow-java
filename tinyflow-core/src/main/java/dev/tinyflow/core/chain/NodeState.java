@@ -159,6 +159,7 @@ public class NodeState implements Serializable {
         }
 
         List<String> shouldBeTriggerIds = inwardEdges.stream().map(Edge::getId).collect(Collectors.toList());
+        List<String> triggerEdgeIds = this.triggerEdgeIds;
         return triggerEdgeIds.size() >= shouldBeTriggerIds.size()
                 && shouldBeTriggerIds.parallelStream().allMatch(triggerEdgeIds::contains);
     }
@@ -168,7 +169,7 @@ public class NodeState implements Serializable {
         triggerEdgeIds.add(fromEdgeId);
     }
 
-    public synchronized void recordExecute(String fromEdgeId) {
+    public void recordExecute(String fromEdgeId) {
         executeCount.incrementAndGet();
         executeEdgeIds.add(fromEdgeId);
     }
