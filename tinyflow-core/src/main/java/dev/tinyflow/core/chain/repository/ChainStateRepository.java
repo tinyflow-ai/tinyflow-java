@@ -18,10 +18,24 @@ package dev.tinyflow.core.chain.repository;
 import dev.tinyflow.core.chain.ChainState;
 
 import java.util.EnumSet;
+import java.util.concurrent.TimeUnit;
 
 public interface ChainStateRepository {
 
     ChainState load(String instanceId);
 
     boolean tryUpdate(ChainState newState, EnumSet<ChainStateField> fields);
+
+    /**
+     * 获取指定 instanceId 的分布式锁
+     *
+     * @param instanceId 链实例 ID
+     * @param timeout    获取锁的超时时间
+     * @param unit       时间单位
+     * @return ChainLock 句柄，调用方必须负责 close()
+     * @throws IllegalArgumentException if instanceId is blank
+     */
+    default ChainLock getLock(String instanceId, long timeout, TimeUnit unit) {
+        return new LocalChainLock(instanceId, timeout, unit);
+    }
 }

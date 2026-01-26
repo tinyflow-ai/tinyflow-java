@@ -24,7 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 
 public class Chain {
@@ -244,8 +246,7 @@ public class Chain {
                 return;
             }
 
-            NodeState nodeState = getNodeState(node.getId());
-            if (shouldSkipNode(node, nodeState, byEdgeId)) {
+            if (shouldSkipNode(node, byEdgeId)) {
                 return;
             }
 
@@ -264,7 +265,7 @@ public class Chain {
                 log.error("Node execute error", throwable);
                 error = throwable;
             }
-            handleNodeResult(node, nodeState, nodeResult, byEdgeId, error);
+            handleNodeResult(node, nodeResult, byEdgeId, error);
         } finally {
             EXECUTION_THREAD_LOCAL.remove();
         }
@@ -278,19 +279,33 @@ public class Chain {
         return nodeStateRepository.load(stateInstanceId, nodeId);
     }
 
-
-    private boolean shouldSkipNode(Node node, NodeState nodeState, String edgeId) {
-        synchronized (this) {
-            nodeState.recordTrigger(edgeId);
-            NodeCondition condition = node.getCondition();
-            if (condition == null) return false;
-            Map<String, Object> prevResult = Collections.emptyMap();
-            return !condition.check(this, nodeState, prevResult);
+    public <T> T executeWithLock(String instanceId, long timeout, TimeUnit unit, Supplier<T> action) {
+        try (ChainLock lock = chainStateRepository.getLock(instanceId, timeout, unit)) {
+            if (!lock.isAcquired()) {
+                throw new ChainLockTimeoutException("Failed to acquire lock for instance: " + instanceId);
+            }
+            return action.get();
         }
     }
 
+    private boolean shouldSkipNode(Node node, String edgeId) {
+        return executeWithLock(stateInstanceId, 5, TimeUnit.SECONDS, () -> {
+            NodeState newState = updateNodeStateSafely(node.id, s -> {
+                s.recordTrigger(edgeId);
+                return EnumSet.of(NodeStateField.TRIGGER_COUNT, NodeStateField.TRIGGER_EDGE_IDS);
+            });
 
-    private void handleNodeResult(Node node, NodeState nodeState, Map<String, Object> result, String byEdgeId, Throwable error) {
+            NodeCondition condition = node.getCondition();
+            if (condition == null) {
+                return false;
+            }
+            Map<String, Object> prevResult = Collections.emptyMap();
+            return !condition.check(this, newState, prevResult);
+        });
+    }
+
+
+    private void handleNodeResult(Node node, Map<String, Object> result, String byEdgeId, Throwable error) {
         ChainStatus finalStatus = null;
         NodeStatus finalNodeStatus = null;
         try {
@@ -352,7 +367,7 @@ public class Chain {
                 }
                 // 失败
                 else {
-                    updateNodeStateSafely(node.getId(), s -> {
+                    NodeState newState = updateNodeStateSafely(node.getId(), s -> {
                         s.setStatus(NodeStatus.ERROR);
                         s.setError(new ExceptionSummary(error));
                         return EnumSet.of(NodeStateField.ERROR, NodeStateField.STATUS);
@@ -362,7 +377,7 @@ public class Chain {
 
                     if (node.isRetryEnable()
                             && node.getMaxRetryCount() > 0
-                            && nodeState.getRetryCount() < node.getMaxRetryCount()) {
+                            && newState.getRetryCount() < node.getMaxRetryCount()) {
 
                         updateNodeStateSafely(node.getId(), s -> {
                             s.setRetryCount(s.getRetryCount() + 1);

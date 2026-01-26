@@ -15,17 +15,19 @@
  */
 package dev.tinyflow.core.chain.repository;
 
-public enum NodeStateField {
-    INSTANCE_ID,
-    STATUS,
-    MESSAGE,
-    ERROR,
-    MEMORY,
-    PAYLOAD,
-    NODE_STATES,
-    COMPUTE_COST,
-    SUSPEND_NODE_IDS,
-    SUSPEND_FOR_PARAMETERS,
-    EXECUTE_RESULT,
-    RETRY_COUNT, EXECUTE_COUNT, EXECUTE_EDGE_IDS, LOOP_COUNT, TRIGGER_COUNT, TRIGGER_EDGE_IDS, ENVIRONMENT
+/**
+ * 分布式锁句柄，用于确保锁的正确释放。
+ * 使用 try-with-resources 模式保证释放。
+ */
+public interface ChainLock extends AutoCloseable {
+    /**
+     * 锁是否成功获取（用于判断是否超时）
+     */
+    boolean isAcquired();
+
+    /**
+     * 释放锁（幂等）
+     */
+    @Override
+    void close();
 }
