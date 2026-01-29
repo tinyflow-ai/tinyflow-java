@@ -70,7 +70,7 @@ public class ChainExecutor {
 
 
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables) {
-        return execute(definitionId, variables, 3, TimeUnit.MINUTES);
+        return execute(definitionId, variables, Long.MAX_VALUE, TimeUnit.SECONDS);
     }
 
 
