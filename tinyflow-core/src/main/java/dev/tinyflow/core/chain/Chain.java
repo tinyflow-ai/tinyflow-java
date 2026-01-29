@@ -199,32 +199,39 @@ public class Chain {
 
 
     public void start(Map<String, Object> variables) {
-        updateStateSafely(state -> {
-            EnumSet<ChainStateField> fields = EnumSet.of(ChainStateField.STATUS);
-            state.setStatus(ChainStatus.RUNNING);
+        Trigger prev = TriggerContext.getCurrentTrigger();
+        try {
+            // start 可能在 node 里执行一个新的 chain 的情况，
+            // 需要清空父级 chain 的 Trigger
+            TriggerContext.setCurrentTrigger(null);
+            updateStateSafely(state -> {
+                EnumSet<ChainStateField> fields = EnumSet.of(ChainStateField.STATUS);
+                state.setStatus(ChainStatus.RUNNING);
 
+                if (variables != null && !variables.isEmpty()) {
+                    state.getMemory().putAll(variables);
+                    fields.add(ChainStateField.MEMORY);
+                }
 
-            if (variables != null && !variables.isEmpty()) {
-                state.getMemory().putAll(variables);
-                fields.add(ChainStateField.MEMORY);
+                if (StringUtil.noText(state.getChainDefinitionId())) {
+                    state.setChainDefinitionId(definition.getId());
+                    fields.add(ChainStateField.CHAIN_DEFINITION_ID);
+                }
+
+                return fields;
+            });
+
+            notifyEvent(new ChainStartEvent(this, variables));
+            setStatusAndNotifyEvent(ChainStatus.RUNNING);
+
+            // 调度入口节点
+            List<Node> startNodes = definition.getStartNodes();
+            for (Node startNode : startNodes) {
+                scheduleNode(startNode, null, TriggerType.NEXT, 0);
             }
-
-            if (StringUtil.noText(state.getChainDefinitionId())) {
-                state.setChainDefinitionId(definition.getId());
-                fields.add(ChainStateField.CHAIN_DEFINITION_ID);
-            }
-
-            return fields;
-        });
-
-
-        notifyEvent(new ChainStartEvent(this, variables));
-        setStatusAndNotifyEvent(ChainStatus.RUNNING);
-
-        // 调度入口节点
-        List<Node> startNodes = definition.getStartNodes();
-        for (Node startNode : startNodes) {
-            scheduleNode(startNode, null, TriggerType.NEXT, 0);
+        } finally {
+            // 恢复父级 chain 的 Trigger
+            TriggerContext.setCurrentTrigger(prev);
         }
     }
 

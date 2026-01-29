@@ -35,11 +35,7 @@ public class ChainRuntime {
                     NODE_POOL_CORE, NODE_POOL_MAX,
                     60L, TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(10000),
-                    r -> {
-                        Thread t = new Thread(r, "tinyflow-node-exec");
-                        t.setDaemon(true);
-                        return t;
-                    });
+                    r -> new Thread(r, "tinyflow-node-exec"));
 
 
     private static final TriggerScheduler TRIGGER_SCHEDULER = new TriggerScheduler(

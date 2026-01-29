@@ -100,7 +100,9 @@ public class ChainExecutor {
             this.addEventListener(listener);
             this.addErrorListener(errorListener);
             chain.start(variables);
-            return future.get(timeout, unit);
+            Map<String, Object> result = future.get(timeout, unit);
+            clearDefaultStates(result);
+            return result;
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Execution timed out", e);
@@ -114,6 +116,20 @@ public class ChainExecutor {
             this.removeEventListener(listener);
             this.removeErrorListener(errorListener);
         }
+    }
+
+    /**
+     * 清理默认状态
+     * @param result 执行结果
+     */
+    public void clearDefaultStates(Map<String, Object> result) {
+        if (result == null || result.isEmpty()) {
+            return;
+        }
+        result.remove(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY);
+        result.remove(ChainConsts.NODE_STATE_STATUS_KEY);
+        result.remove(ChainConsts.CHAIN_STATE_STATUS_KEY);
+        result.remove(ChainConsts.CHAIN_STATE_MESSAGE_KEY);
     }
 
     public String executeAsync(String definitionId, Map<String, Object> variables) {
@@ -205,13 +221,13 @@ public class ChainExecutor {
     private void accept(Trigger trigger, ExecutorService worker) {
         ChainState state = chainStateRepository.load(trigger.getStateInstanceId());
         if (state == null) {
-            return;
+            throw new ChainException("Chain state not found");
         }
 
 
         ChainDefinition definition = definitionRepository.getChainDefinitionById(state.getChainDefinitionId());
         if (definition == null) {
-            return;
+            throw new ChainException("Chain definition not found");
         }
 
         Chain chain = new Chain(definition, trigger.getStateInstanceId());
@@ -230,10 +246,14 @@ public class ChainExecutor {
         }
 
         String nodeId = trigger.getNodeId();
-        if (nodeId == null) return;
+        if (nodeId == null) {
+            throw new ChainException("Node ID not found in trigger.");
+        }
 
         Node node = definition.getNodeById(nodeId);
-        if (node == null) return;
+        if (node == null) {
+            throw new ChainException("Node not found in definition(id: " + definition.getId() + ")");
+        }
 
         chain.executeNode(node, trigger.getEdgeId());
     }
