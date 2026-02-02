@@ -493,13 +493,23 @@ public class Chain {
             return;
         }
 
+        boolean scheduleNodeSuccess = false;
         for (Edge edge : edges) {
             EdgeCondition cond = edge.getCondition();
             if (cond == null || cond.check(this, edge, result)) {
                 Node next = definition.getNodeById(edge.getTarget());
                 if (next != null && isSameParent(node, next)) {
                     scheduleNode(next, edge.getId(), TriggerType.NEXT, 0L);
+                    scheduleNodeSuccess = true;
                 }
+            }
+        }
+
+        // 如果所有向外的边都不满足条件，则调度父节点（自动回归父节点） 用在 Loop 循环嵌套等场景（Loop 下的第一个节点是 Loop）
+        if (!scheduleNodeSuccess) {
+            if (StringUtil.hasText(node.getParentId())) {
+                Node parent = definition.getNodeById(node.getParentId());
+                scheduleNode(parent, null, TriggerType.NEXT, 0L);
             }
         }
     }
