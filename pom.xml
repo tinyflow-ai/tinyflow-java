@@ -7,7 +7,7 @@
     <groupId>dev.tinyflow</groupId>
     <name>tinyflow-java</name>
     <artifactId>tinyflow-java</artifactId>
-    <version>2.0.0-rc.2</version>
+    <version>2.0.0-rc.3</version>
     <packaging>pom</packaging>
 
     <url>https://tinyflow.dev</url>
@@ -66,7 +66,7 @@
             <dependency>
                 <groupId>dev.tinyflow</groupId>
                 <artifactId>tinyflow-core</artifactId>
-                <version>2.0.0-rc.2</version>
+                <version>2.0.0-rc.3</version>
             </dependency>
 
             <dependency>
