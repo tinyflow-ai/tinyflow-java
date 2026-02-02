@@ -67,6 +67,16 @@ public class Chain {
         notifyEvent(new ChainStatusChangeEvent(this, status, before.get()));
     }
 
+    public void setStatusAndNotifyEvent(String stateInstanceId, ChainStatus status) {
+        AtomicReference<ChainStatus> before = new AtomicReference<>();
+        updateStateSafely(stateInstanceId, state -> {
+            before.set(state.getStatus());
+            state.setStatus(status);
+            return EnumSet.of(ChainStateField.STATUS);
+        });
+        notifyEvent(new ChainStatusChangeEvent(this, status, before.get()));
+    }
+
     /**
      * Safely updates the chain state with optimistic locking and retry-on-conflict.
      *
@@ -398,8 +408,6 @@ public class Chain {
                 }
             }
         } finally {
-
-
             // 如果不是还在执行中的状态，则通知事件
             if (finalNodeStatus != NodeStatus.RUNNING) {
                 NodeStatus nodeStatus = finalNodeStatus == null ? NodeStatus.SUCCEEDED : finalNodeStatus;
@@ -416,6 +424,21 @@ public class Chain {
                 // chain 执行结束
                 if (finalStatus.isTerminal()) {
                     eventManager.notifyEvent(new ChainEndEvent(this), this);
+
+                    // 执行结束，但是未执行成功，失败和取消等
+                    // 更新父级链的状态
+                    if (!finalStatus.isSuccess()) {
+                        ChainState currentState = getState();
+                        ChainStatus currentStatus = finalStatus;
+                        while (currentState != null && StringUtil.hasText(currentState.getParentInstanceId())) {
+                            updateStateSafely(currentState.getParentInstanceId(), state -> {
+                                state.setStatus(currentStatus);
+                                return EnumSet.of(ChainStateField.STATUS);
+                            });
+                            setStatusAndNotifyEvent(currentState.getParentInstanceId(), currentStatus);
+                            currentState = getState(currentState.getParentInstanceId());
+                        }
+                    }
                 }
             }
         }
