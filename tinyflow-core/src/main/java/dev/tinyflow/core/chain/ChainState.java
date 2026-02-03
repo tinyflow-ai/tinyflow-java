@@ -46,6 +46,12 @@ public class ChainState implements Serializable {
     private Map<String, Object> executeResult;
     private Map<String, Object> environment;
 
+    private List<String> triggerEdgeIds;
+    private List<String> triggerNodeIds;
+
+    private List<String> uncheckedEdgeIds;
+    private List<String> uncheckedNodeIds;
+
     // 算力消耗定义，积分消耗
     private long computeCost;
     private Set<String> suspendNodeIds;
@@ -122,6 +128,81 @@ public class ChainState implements Serializable {
 
     public void setEnvironment(Map<String, Object> environment) {
         this.environment = environment;
+    }
+
+
+    public List<String> getTriggerEdgeIds() {
+        return triggerEdgeIds;
+    }
+
+    public void setTriggerEdgeIds(List<String> triggerEdgeIds) {
+        this.triggerEdgeIds = triggerEdgeIds;
+    }
+
+    public void addTriggerEdgeId(String edgeId) {
+        if (triggerEdgeIds == null) {
+            triggerEdgeIds = new ArrayList<>();
+        }
+        triggerEdgeIds.add(edgeId);
+    }
+
+    public List<String> getTriggerNodeIds() {
+        return triggerNodeIds;
+    }
+
+    public void setTriggerNodeIds(List<String> triggerNodeIds) {
+        this.triggerNodeIds = triggerNodeIds;
+    }
+
+    public void addTriggerNodeId(String nodeId) {
+        if (triggerNodeIds == null) {
+            triggerNodeIds = new ArrayList<>();
+        }
+        triggerNodeIds.add(nodeId);
+    }
+
+    public List<String> getUncheckedEdgeIds() {
+        return uncheckedEdgeIds;
+    }
+
+    public void setUncheckedEdgeIds(List<String> uncheckedEdgeIds) {
+        this.uncheckedEdgeIds = uncheckedEdgeIds;
+    }
+
+    public void addUncheckedEdgeId(String edgeId) {
+        if (uncheckedEdgeIds == null) {
+            uncheckedEdgeIds = new ArrayList<>();
+        }
+        uncheckedEdgeIds.add(edgeId);
+    }
+
+    public boolean removeUncheckedEdgeId(String edgeId) {
+        if (uncheckedEdgeIds == null) {
+            return false;
+        }
+        return uncheckedEdgeIds.remove(edgeId);
+    }
+
+    public List<String> getUncheckedNodeIds() {
+        return uncheckedNodeIds;
+    }
+
+    public void setUncheckedNodeIds(List<String> uncheckedNodeIds) {
+        this.uncheckedNodeIds = uncheckedNodeIds;
+    }
+
+    public void addUncheckedNodeId(String nodeId) {
+        if (uncheckedNodeIds == null) {
+            uncheckedNodeIds = new ArrayList<>();
+        }
+        uncheckedNodeIds.add(nodeId);
+    }
+
+    public boolean removeUncheckedNodeId(String nodeId) {
+        if (uncheckedNodeIds == null) {
+            return false;
+        }
+        return uncheckedNodeIds.remove(nodeId);
     }
 
     public Long getComputeCost() {

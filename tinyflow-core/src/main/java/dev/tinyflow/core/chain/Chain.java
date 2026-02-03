@@ -102,7 +102,7 @@ public class Chain {
             }
 
             EnumSet<ChainStateField> updatedFields = modifier.modify(current);
-            if (updatedFields.isEmpty()) {
+            if (updatedFields == null || updatedFields.isEmpty()) {
                 return current; // No actual changes, exit early
             }
 
@@ -155,7 +155,7 @@ public class Chain {
             // 3. 应用修改
             EnumSet<NodeStateField> updatedFields = modifier.modify(nodeState);
 
-            if (updatedFields.isEmpty()) {
+            if (updatedFields == null || updatedFields.isEmpty()) {
                 return nodeState;
             }
 
@@ -276,7 +276,13 @@ public class Chain {
                     return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS, NodeStateField.STATUS);
                 });
 
+                updateStateSafely(state -> {
+                    state.addTriggerNodeId(node.id);
+                    return EnumSet.of(ChainStateField.TRIGGER_NODE_IDS);
+                });
+
                 notifyEvent(new NodeStartEvent(this, node));
+
                 nodeResult = node.execute(this);
             } catch (Throwable throwable) {
                 log.error("Node execute error", throwable);
@@ -306,7 +312,7 @@ public class Chain {
     }
 
     private boolean shouldSkipNode(Node node, String edgeId) {
-        return executeWithLock(stateInstanceId, 5, TimeUnit.SECONDS, () -> {
+        return executeWithLock(stateInstanceId, 10, TimeUnit.SECONDS, () -> {
             NodeState newState = updateNodeStateSafely(node.id, s -> {
                 s.recordTrigger(edgeId);
                 return EnumSet.of(NodeStateField.TRIGGER_COUNT, NodeStateField.TRIGGER_EDGE_IDS);
@@ -317,7 +323,22 @@ public class Chain {
                 return false;
             }
             Map<String, Object> prevResult = Collections.emptyMap();
-            return !condition.check(this, newState, prevResult);
+            boolean shouldSkipNode = !condition.check(this, newState, prevResult);
+            if (shouldSkipNode) {
+                updateStateSafely(state -> {
+                    state.addUncheckedNodeId(node.id);
+                    return EnumSet.of(ChainStateField.UNCHECKED_NODE_IDS);
+                });
+            } else {
+                updateStateSafely(state -> {
+                    if (state.removeUncheckedNodeId(node.id)) {
+                        return EnumSet.of(ChainStateField.UNCHECKED_NODE_IDS);
+                    } else {
+                        return null;
+                    }
+                });
+            }
+            return shouldSkipNode;
         });
     }
 
@@ -494,20 +515,46 @@ public class Chain {
             return;
         }
 
-        boolean scheduleNodeSuccess = false;
+        // 检查所有向外的边是不是同一个父节点
+        boolean allNotSameParent = false;
         for (Edge edge : edges) {
-            EdgeCondition cond = edge.getCondition();
-            if (cond == null || cond.check(this, edge, result)) {
-                Node next = definition.getNodeById(edge.getTarget());
-                if (next != null && isSameParent(node, next)) {
-                    scheduleNode(next, edge.getId(), TriggerType.NEXT, 0L);
-                    scheduleNodeSuccess = true;
-                }
+            Node nextNode = definition.getNodeById(edge.getTarget());
+            if (nextNode == null) {
+                throw new ChainException("Invalid edge target: " + edge.getTarget());
+            }
+
+            // 如果存在不同父节点的边，则跳过, 比如 Loop 节点可能只有子节点，没有后续的节点
+            if (!isSameParent(node, nextNode)) {
+                allNotSameParent = true;
+                continue;
+            }
+
+            allNotSameParent = false;
+            EdgeCondition edgeCondition = edge.getCondition();
+            if (edgeCondition == null) {
+                scheduleNode(nextNode, edge.getId(), TriggerType.NEXT, 0L);
+                continue;
+            }
+
+            if (edgeCondition.check(this, edge, result)) {
+                updateStateSafely(state -> {
+                    if (state.removeUncheckedEdgeId(edge.getId())) {
+                        return EnumSet.of(ChainStateField.UNCHECKED_EDGE_IDS);
+                    } else {
+                        return null;
+                    }
+                });
+                scheduleNode(nextNode, edge.getId(), TriggerType.NEXT, 0L);
+            } else {
+                updateStateSafely(state -> {
+                    state.addUncheckedEdgeId(edge.getId());
+                    return EnumSet.of(ChainStateField.UNCHECKED_EDGE_IDS);
+                });
             }
         }
 
         // 如果所有向外的边都不满足条件，则调度父节点（自动回归父节点） 用在 Loop 循环嵌套等场景（Loop 下的第一个节点是 Loop）
-        if (!scheduleNodeSuccess) {
+        if (!allNotSameParent) {
             if (StringUtil.hasText(node.getParentId())) {
                 Node parent = definition.getNodeById(node.getParentId());
                 scheduleNode(parent, null, TriggerType.NEXT, 0L);
@@ -543,6 +590,13 @@ public class Chain {
 
     public void scheduleNode(Node node, String stateInstanceId, String edgeId,
                              TriggerType type, Map<String, Object> variables, Map<String, Object> payload, Trigger parent, long delayMs) {
+
+        if (edgeId != null) {
+            updateStateSafely(state -> {
+                state.addTriggerEdgeId(edgeId);
+                return EnumSet.of(ChainStateField.TRIGGER_EDGE_IDS);
+            });
+        }
 
         Trigger trigger = new Trigger();
         trigger.setStateInstanceId(stateInstanceId);
