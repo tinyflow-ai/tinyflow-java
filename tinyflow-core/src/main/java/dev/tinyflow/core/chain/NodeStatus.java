@@ -33,4 +33,13 @@ public enum NodeStatus {
         return value;
     }
 
+    public static NodeStatus fromValue(int value) {
+        for (NodeStatus status : NodeStatus.values()) {
+            if (status.value == value) {
+                return status;
+            }
+        }
+        return null;
+    }
+
 }

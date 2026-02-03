@@ -139,4 +139,13 @@ public enum ChainStatus {
     public int getValue() {
         return value;
     }
+
+    public static ChainStatus fromValue(int value) {
+        for (ChainStatus status : values()) {
+            if (status.value == value) {
+                return status;
+            }
+        }
+        return null;
+    }
 }
