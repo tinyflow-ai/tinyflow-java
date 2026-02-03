@@ -380,6 +380,7 @@ public class Chain {
                         return EnumSet.of(ChainStateField.SUSPEND_NODE_IDS, ChainStateField.SUSPEND_FOR_PARAMETERS);
                     });
 
+                    finalNodeStatus = NodeStatus.SUSPEND;
                     finalStatus = ChainStatus.SUSPEND;
                 }
                 // 失败
