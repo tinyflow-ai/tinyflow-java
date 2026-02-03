@@ -20,6 +20,7 @@ import dev.tinyflow.core.chain.Chain;
 import dev.tinyflow.core.chain.ChainSuspendException;
 import dev.tinyflow.core.chain.Parameter;
 import dev.tinyflow.core.chain.RefType;
+import dev.tinyflow.core.chain.repository.ChainStateField;
 
 import java.util.*;
 
@@ -71,7 +72,10 @@ public class ConfirmNode extends BaseNode {
         try {
             values = chain.getState().resolveParameters(this, confirmParameters);
         } catch (ChainSuspendException e) {
-            chain.getState().setMessage(message);
+            chain.updateStateSafely(state -> {
+                state.setMessage(message);
+                return EnumSet.of(ChainStateField.MESSAGE);
+            });
 
             if (confirms != null) {
                 List<Parameter> newParameters = new ArrayList<>();
