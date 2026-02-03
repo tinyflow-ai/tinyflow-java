@@ -18,7 +18,7 @@ package dev.tinyflow.core.chain;
 public enum NodeStatus {
     READY(0), // 未开始执行
     RUNNING(1), // 已开始执行，执行中...
-    SUSPEND(6),
+    SUSPEND(5),
     ERROR(10), //发生错误
     SUCCEEDED(20), //正常结束
     FAILED(21); //错误结束
