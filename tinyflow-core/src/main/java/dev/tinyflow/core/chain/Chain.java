@@ -550,6 +550,7 @@ public class Chain {
                     state.addUncheckedEdgeId(edge.getId());
                     return EnumSet.of(ChainStateField.UNCHECKED_EDGE_IDS);
                 });
+                eventManager.notifyEvent(new EdgeConditionCheckFailedEvent(this, edge, node, result), this);
             }
         }
 
@@ -591,13 +592,6 @@ public class Chain {
     public void scheduleNode(Node node, String stateInstanceId, String edgeId,
                              TriggerType type, Map<String, Object> variables, Map<String, Object> payload, Trigger parent, long delayMs) {
 
-        if (edgeId != null) {
-            updateStateSafely(state -> {
-                state.addTriggerEdgeId(edgeId);
-                return EnumSet.of(ChainStateField.TRIGGER_EDGE_IDS);
-            });
-        }
-
         Trigger trigger = new Trigger();
         trigger.setStateInstanceId(stateInstanceId);
         trigger.setEdgeId(edgeId);
@@ -607,6 +601,15 @@ public class Chain {
         trigger.setTriggerAt(System.currentTimeMillis() + delayMs);
         trigger.setPayload(payload);
         trigger.setParent(parent);
+
+        if (edgeId != null) {
+            updateStateSafely(state -> {
+                state.addTriggerEdgeId(edgeId);
+                return EnumSet.of(ChainStateField.TRIGGER_EDGE_IDS);
+            });
+
+            eventManager.notifyEvent(new EdgeTriggerEvent(this, trigger), this);
+        }
 
         getTriggerScheduler().schedule(trigger);
     }
