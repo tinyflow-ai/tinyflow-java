@@ -25,7 +25,6 @@ import dev.tinyflow.core.chain.runtime.TriggerType;
 import dev.tinyflow.core.util.IterableUtil;
 import dev.tinyflow.core.util.Maps;
 import dev.tinyflow.core.util.StringUtil;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.*;
@@ -146,7 +145,6 @@ public class LoopNode extends BaseNode {
     }
 
 
-    @NotNull
     private Map<String, Object> createSubPayload(LoopContext loopContext) {
         Map<String, Object> payload = new HashMap<>();
         payload.put(buildLoopKey(), loopContext.loopExecutionId);
@@ -230,7 +228,6 @@ public class LoopNode extends BaseNode {
         return (int) loopIndex;
     }
 
-    @NotNull
     private String buildLoopKey() {
         return "loop__" + this.getId();
     }
