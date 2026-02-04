@@ -343,7 +343,7 @@ public class Chain {
     }
 
 
-    private void handleNodeResult(Node node, Map<String, Object> result, String byEdgeId, Throwable error) {
+    private void handleNodeResult(Node node, Map<String, Object> prevNodeResult, String byEdgeId, Throwable error) {
         ChainStatus finalStatus = null;
         NodeStatus finalNodeStatus = null;
         try {
@@ -351,10 +351,10 @@ public class Chain {
                 // 更新 state 数据
                 updateStateSafely(state -> {
                     EnumSet<ChainStateField> fields = EnumSet.of(ChainStateField.EXECUTE_RESULT);
-                    state.setExecuteResult(result);
+                    state.setExecuteResult(prevNodeResult);
 
-                    if (result != null && !result.isEmpty()) {
-                        result.forEach((k, v) -> {
+                    if (prevNodeResult != null && !prevNodeResult.isEmpty()) {
+                        prevNodeResult.forEach((k, v) -> {
                             if (v != null) {
                                 state.getMemory().put(node.getId() + "." + k, v);
                             }
@@ -372,21 +372,21 @@ public class Chain {
                     });
                 }
 
-                finalNodeStatus = result == null ? null : (NodeStatus) result.get(ChainConsts.NODE_STATE_STATUS_KEY);
+                finalNodeStatus = prevNodeResult == null ? null : (NodeStatus) prevNodeResult.get(ChainConsts.NODE_STATE_STATUS_KEY);
 
                 // 不调度下一个节点，由 node 自行调度，比如 Loop 循环
-                Boolean scheduleNextNodeDisabled = result == null ? null : (Boolean) result.get(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY);
+                Boolean scheduleNextNodeDisabled = prevNodeResult == null ? null : (Boolean) prevNodeResult.get(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY);
                 if (scheduleNextNodeDisabled != null && scheduleNextNodeDisabled) {
                     return;
                 }
 
                 // 结束节点
-                finalStatus = result != null ? (ChainStatus) result.get(ChainConsts.CHAIN_STATE_STATUS_KEY) : null;
+                finalStatus = prevNodeResult != null ? (ChainStatus) prevNodeResult.get(ChainConsts.CHAIN_STATE_STATUS_KEY) : null;
                 if (finalStatus != null && finalStatus.isTerminal()) {
                     return;
                 }
 
-                scheduleNextForNode(node, result, byEdgeId);
+                scheduleNextForNode(node, prevNodeResult, byEdgeId);
             } else {
                 // 挂起
                 if (error instanceof ChainSuspendException) {
@@ -412,7 +412,7 @@ public class Chain {
                         return EnumSet.of(NodeStateField.ERROR, NodeStateField.STATUS);
                     });
 
-                    eventManager.notifyNodeError(error, node, result, this);
+                    eventManager.notifyNodeError(error, node, prevNodeResult, this);
 
                     if (node.isRetryEnable()
                             && node.getMaxRetryCount() > 0
@@ -437,7 +437,7 @@ public class Chain {
                     state.setStatus(nodeStatus);
                     return EnumSet.of(NodeStateField.STATUS);
                 });
-                notifyEvent(new NodeEndEvent(this, node, result, error));
+                notifyEvent(new NodeEndEvent(this, node, prevNodeResult, error));
             }
 
             if (finalStatus != null) {
