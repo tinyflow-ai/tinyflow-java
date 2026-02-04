@@ -106,12 +106,13 @@ public class ChainExecutor {
         } catch (TimeoutException e) {
             future.cancel(true);
             throw new RuntimeException("Execution timed out", e);
-        } catch (ExecutionException e) {
-            throw new RuntimeException("Execution failed", e.getCause());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             future.cancel(true);
             throw new RuntimeException("Execution interrupted", e);
+        } catch (Throwable e) {
+            future.cancel(true);
+            throw new RuntimeException("Execution failed", e.getCause());
         } finally {
             this.removeEventListener(listener);
             this.removeErrorListener(errorListener);
@@ -120,6 +121,7 @@ public class ChainExecutor {
 
     /**
      * 清理默认状态
+     *
      * @param result 执行结果
      */
     public void clearDefaultStates(Map<String, Object> result) {
