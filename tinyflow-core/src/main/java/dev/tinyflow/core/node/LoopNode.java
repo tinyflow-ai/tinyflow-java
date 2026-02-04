@@ -127,7 +127,7 @@ public class LoopNode extends BaseNode {
     private void executeLoopChain(Chain chain, LoopContext loopContext, Object loopItem, Map<String, Object> variables) {
 
         Map<String, Object> subVariables = new HashMap<>();
-        subVariables.put(this.id + ".index", loopContext.currentIndex);
+        subVariables.put(this.id + ".index", (loopContext.currentIndex - 1));
         subVariables.put(this.id + ".loopItem", loopItem);
         subVariables.putAll(variables);
 
