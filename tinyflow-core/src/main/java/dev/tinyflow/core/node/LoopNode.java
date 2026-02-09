@@ -119,7 +119,7 @@ public class LoopNode extends BaseNode {
 
         // 禁用调度下个节点
         return Maps.of(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY, true)
-                .set(ChainConsts.NODE_STATE_STATUS_KEY, NodeStatus.RUNNING);
+                .set(ChainConsts.NODE_STATE_STATUS_KEY, NodeStatus.SUCCEEDED);
     }
 
 

@@ -386,6 +386,7 @@ public class Chain {
                     return;
                 }
 
+                // 调度下一个节点
                 scheduleNextForNode(node, prevNodeResult, byEdgeId);
             } else {
                 // 挂起
