@@ -50,7 +50,7 @@ public class LoopNode extends BaseNode {
         if (loopContext.currentIndex != triggerLoopIndex) {
             // 不执行，子流程有分叉，已经被其他的分叉节点触发了
             return Maps.of(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY, true)
-                    .set(ChainConsts.NODE_STATE_STATUS_KEY, NodeStatus.RUNNING);
+                    .set(ChainConsts.NODE_STATE_STATUS_KEY, NodeStatus.SUCCEEDED);
         }
 
         ChainState parentState = chain.getState(loopContext.trigger.getStateInstanceId());

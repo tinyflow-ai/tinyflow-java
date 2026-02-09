@@ -16,6 +16,7 @@
 package dev.tinyflow.core.chain.runtime;
 
 public enum TriggerType {
+    START,
     NEXT,
     LOOP,
     RETRY,

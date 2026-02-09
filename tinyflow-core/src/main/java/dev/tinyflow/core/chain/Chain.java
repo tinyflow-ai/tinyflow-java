@@ -237,7 +237,7 @@ public class Chain {
             // 调度入口节点
             List<Node> startNodes = definition.getStartNodes();
             for (Node startNode : startNodes) {
-                scheduleNode(startNode, null, TriggerType.NEXT, 0);
+                scheduleNode(startNode, null, TriggerType.START, 0);
             }
         } finally {
             // 恢复父级 chain 的 Trigger
@@ -432,14 +432,14 @@ public class Chain {
             }
         } finally {
             // 如果不是还在执行中的状态，则通知事件
-            if (finalNodeStatus != NodeStatus.RUNNING) {
-                NodeStatus nodeStatus = finalNodeStatus == null ? NodeStatus.SUCCEEDED : finalNodeStatus;
-                updateNodeStateSafely(node.id, state -> {
-                    state.setStatus(nodeStatus);
-                    return EnumSet.of(NodeStateField.STATUS);
-                });
-                notifyEvent(new NodeEndEvent(this, node, prevNodeResult, error));
-            }
+//            if (finalNodeStatus != NodeStatus.RUNNING) {
+            NodeStatus nodeStatus = finalNodeStatus == null ? NodeStatus.SUCCEEDED : finalNodeStatus;
+            updateNodeStateSafely(node.id, state -> {
+                state.setStatus(nodeStatus);
+                return EnumSet.of(NodeStateField.STATUS);
+            });
+            notifyEvent(new NodeEndEvent(this, node, prevNodeResult, error));
+//            }
 
             if (finalStatus != null) {
                 setStatusAndNotifyEvent(finalStatus);
@@ -518,6 +518,7 @@ public class Chain {
 
         // 检查所有向外的边是不是同一个父节点
         boolean allNotSameParent = false;
+        boolean scheduleSuccess = false;
         for (Edge edge : edges) {
             Node nextNode = definition.getNodeById(edge.getTarget());
             if (nextNode == null) {
@@ -534,6 +535,7 @@ public class Chain {
             EdgeCondition edgeCondition = edge.getCondition();
             if (edgeCondition == null) {
                 scheduleNode(nextNode, edge.getId(), TriggerType.NEXT, 0L);
+                scheduleSuccess = true;
                 continue;
             }
 
@@ -546,6 +548,7 @@ public class Chain {
                     }
                 });
                 scheduleNode(nextNode, edge.getId(), TriggerType.NEXT, 0L);
+                scheduleSuccess = true;
             } else {
                 updateStateSafely(state -> {
                     state.addUncheckedEdgeId(edge.getId());
@@ -556,7 +559,7 @@ public class Chain {
         }
 
         // 如果所有向外的边都不满足条件，则调度父节点（自动回归父节点） 用在 Loop 循环嵌套等场景（Loop 下的第一个节点是 Loop）
-        if (!allNotSameParent) {
+        if (!allNotSameParent && !scheduleSuccess) {
             if (StringUtil.hasText(node.getParentId())) {
                 Node parent = definition.getNodeById(node.getParentId());
                 scheduleNode(parent, null, TriggerType.NEXT, 0L);
