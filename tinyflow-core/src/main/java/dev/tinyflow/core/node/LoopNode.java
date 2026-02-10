@@ -17,7 +17,6 @@ package dev.tinyflow.core.node;
 
 
 import dev.tinyflow.core.chain.*;
-import dev.tinyflow.core.chain.repository.ChainStateField;
 import dev.tinyflow.core.chain.repository.NodeStateField;
 import dev.tinyflow.core.chain.runtime.Trigger;
 import dev.tinyflow.core.chain.runtime.TriggerContext;
@@ -50,38 +49,19 @@ public class LoopNode extends BaseNode {
         if (loopContext.currentIndex != triggerLoopIndex) {
             // 不执行，子流程有分叉，已经被其他的分叉节点触发了
             return Maps.of(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY, true)
-                    .set(ChainConsts.NODE_STATE_STATUS_KEY, NodeStatus.SUCCEEDED);
+                    .set(ChainConsts.NODE_STATE_STATUS_KEY, NodeStatus.RUNNING);
         }
 
-        ChainState parentState = chain.getState(loopContext.trigger.getStateInstanceId());
-
-        Map<String, Object> parentStateMemory = parentState.getMemory();
-        Map<String, Object> loopVars = parentState.resolveParameters(this, Collections.singletonList(loopVar));
+        Map<String, Object> loopVars = chain.getState().resolveParameters(this, Collections.singletonList(loopVar));
         Object loopValue = loopVars.get(loopVar.getName());
 
-        int shouldLoopCount = 0;
+        int shouldLoopCount;
         if (loopValue instanceof Iterable) {
             shouldLoopCount = IterableUtil.size((Iterable<?>) loopValue);
         } else if (loopValue instanceof Number || (loopValue instanceof String && StringUtil.isNumeric(loopValue.toString()))) {
             shouldLoopCount = loopValue instanceof Number ? ((Number) loopValue).intValue() : Integer.parseInt(loopValue.toString().trim());
-        }
-
-        // 第一次进入，还没开始执行子循环
-        if (loopContext.currentIndex == 0) {
-
-            // 设置子状态 id
-            chain.updateStateSafely(state -> {
-                state.addChildStateId(loopContext.subStateId);
-                return EnumSet.of(ChainStateField.CHILD_STATE_IDS);
-            });
-
-            // 初始化子状态
-            chain.updateStateSafely(loopContext.subStateId, state -> {
-                state.setChainDefinitionId(chain.getDefinition().getId());
-                state.setParentInstanceId(chain.getStateInstanceId());
-                state.setStatus(ChainStatus.RUNNING);
-                return EnumSet.of(ChainStateField.CHAIN_DEFINITION_ID, ChainStateField.PARENT_INSTANCE_ID, ChainStateField.STATUS);
-            });
+        } else {
+            throw new IllegalArgumentException("loopValue must be Iterable or Number or String, but loopValue is \"" + loopValue + "\"");
         }
 
         //  不是第一次执行，合并结果到 subResult
@@ -96,7 +76,6 @@ public class LoopNode extends BaseNode {
             prevTrigger.setPayload(loopContext.trigger.getPayload());
             prevTrigger.setParent(loopContext.trigger.getParent());
             prevTrigger.setStateInstanceId(loopContext.trigger.getStateInstanceId());
-            chain.setStateInstanceId(prevTrigger.getStateInstanceId());
             return loopContext.subResult;
         }
 
@@ -112,32 +91,33 @@ public class LoopNode extends BaseNode {
 
         if (loopValue instanceof Iterable) {
             Object loopItem = IterableUtil.get((Iterable<?>) loopValue, loopIndex);
-            executeLoopChain(chain, loopContext, loopItem, parentStateMemory);
+            executeLoopChain(chain, loopContext, loopItem);
         } else if (loopValue instanceof Number || (loopValue instanceof String && StringUtil.isNumeric(loopValue.toString()))) {
-            executeLoopChain(chain, loopContext, loopIndex, parentStateMemory);
+            executeLoopChain(chain, loopContext, loopIndex);
+        } else {
+            throw new IllegalArgumentException("loopValue must be Iterable or Number or String, but loopValue is \"" + loopValue + "\"");
         }
 
         // 禁用调度下个节点
         return Maps.of(ChainConsts.SCHEDULE_NEXT_NODE_DISABLED_KEY, true)
-                .set(ChainConsts.NODE_STATE_STATUS_KEY, NodeStatus.SUCCEEDED);
+                .set(ChainConsts.NODE_STATE_STATUS_KEY, NodeStatus.RUNNING);
     }
 
 
-    private void executeLoopChain(Chain chain, LoopContext loopContext, Object loopItem, Map<String, Object> variables) {
+    private void executeLoopChain(Chain chain, LoopContext loopContext, Object loopItem) {
 
         Map<String, Object> subVariables = new HashMap<>();
         subVariables.put(this.id + ".index", (loopContext.currentIndex - 1));
         subVariables.put(this.id + ".loopItem", loopItem);
-        subVariables.putAll(variables);
 
         Map<String, Object> subPayload = createSubPayload(loopContext);
 
         ChainDefinition definition = chain.getDefinition();
         List<Edge> outwardEdges = definition.getOutwardEdge(this.id);
         for (Edge edge : outwardEdges) {
-            Node child = definition.getNodeById(edge.getTarget());
-            if (child.getParentId() != null && child.getParentId().equals(this.id)) {
-                chain.scheduleNode(child, loopContext.subStateId, edge.getId(), TriggerType.NEXT
+            Node childNode = definition.getNodeById(edge.getTarget());
+            if (childNode.getParentId() != null && childNode.getParentId().equals(this.id)) {
+                chain.scheduleNode(childNode, chain.getStateInstanceId(), edge.getId(), TriggerType.CHILD
                         , subVariables, subPayload
                         , loopContext.trigger, 0);
             }
@@ -147,8 +127,8 @@ public class LoopNode extends BaseNode {
 
     private Map<String, Object> createSubPayload(LoopContext loopContext) {
         Map<String, Object> payload = new HashMap<>();
-        payload.put(buildLoopKey(), loopContext.loopExecutionId);
-        payload.put(buildLoopIndexKey(), loopContext.currentIndex);
+        payload.put(buildLoopId(), loopContext.loopExecutionId);
+        payload.put(buildLoopIndex(), loopContext.currentIndex);
         return payload;
     }
 
@@ -190,7 +170,7 @@ public class LoopNode extends BaseNode {
 
         // 循环的执行 id（每一次执行，都是不同的执行 id， 1 次执行包含 N 次循环）
         // 每个执行 id，在当前的 memory 中，对应一个 LoopContext
-        String loopExecutionId = payload == null ? null : (String) payload.get(buildLoopKey());
+        String loopExecutionId = payload == null ? null : (String) payload.get(buildLoopId());
 
         // 是否是第一次执行
         boolean isFirstLoop = loopExecutionId == null;
@@ -199,11 +179,10 @@ public class LoopNode extends BaseNode {
         if (isFirstLoop) {
             loopContext = new LoopContext();
             loopContext.loopExecutionId = UUID.randomUUID().toString();
+
             loopContext.currentIndex = 0;
             loopContext.subResult = new HashMap<>();
-            loopContext.subStateId = UUID.randomUUID().toString();
             loopContext.trigger = prevTrigger;
-
         }
         // 不是第一次执行
         else {
@@ -221,19 +200,19 @@ public class LoopNode extends BaseNode {
         if (payload == null) {
             return 0;
         }
-        Object loopIndex = payload.get(buildLoopIndexKey());
+        Object loopIndex = payload.get(buildLoopIndex());
         if (loopIndex == null) {
             return 0;
         }
         return (int) loopIndex;
     }
 
-    private String buildLoopKey() {
-        return "loop__" + this.getId();
+    private String buildLoopId() {
+        return this.getId() + "__loop__id";
     }
 
-    private String buildLoopIndexKey() {
-        return "loop__index__" + this.getId();
+    private String buildLoopIndex() {
+        return this.getId() + "__loop__index";
     }
 
 
@@ -241,7 +220,6 @@ public class LoopNode extends BaseNode {
         String loopExecutionId;
         int currentIndex;
         Map<String, Object> subResult;
-        String subStateId;
         Trigger trigger;
     }
 }

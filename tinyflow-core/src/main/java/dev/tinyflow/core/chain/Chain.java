@@ -245,7 +245,7 @@ public class Chain {
         }
     }
 
-    public void executeNode(Node node, String byEdgeId) {
+    public void executeNode(Node node, Trigger trigger) {
         try {
             EXECUTION_THREAD_LOCAL.set(this);
             ChainState chainState = getState();
@@ -263,32 +263,46 @@ public class Chain {
                 return;
             }
 
-            if (shouldSkipNode(node, byEdgeId)) {
+            String triggerEdgeId = trigger.getEdgeId();
+            if (shouldSkipNode(node, triggerEdgeId)) {
                 return;
             }
 
             Map<String, Object> nodeResult = null;
             Throwable error = null;
             try {
-                updateNodeStateSafely(node.id, s -> {
-                    s.setStatus(NodeStatus.RUNNING);
-                    s.recordExecute(byEdgeId);
-                    return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS, NodeStateField.STATUS);
-                });
+                NodeState nodeState = getNodeState(node.id);
+
+                // 如果节点状态不是运行中，则更新为运行中
+                // 目前只有 Loop 节点会处于 Running 状态，因为它会多次触发
+                if (nodeState.getStatus() != NodeStatus.RUNNING) {
+                    updateNodeStateSafely(node.id, s -> {
+                        s.setStatus(NodeStatus.RUNNING);
+                        s.recordExecute(triggerEdgeId);
+                        return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS, NodeStateField.STATUS);
+                    });
+                    TriggerType type = trigger.getType();
+                    notifyEvent(new NodeStartEvent(this, node));
+                }
+                // 只需记录执行次数
+                else {
+                    updateNodeStateSafely(node.id, s -> {
+                        s.recordExecute(triggerEdgeId);
+                        return EnumSet.of(NodeStateField.EXECUTE_COUNT, NodeStateField.EXECUTE_EDGE_IDS);
+                    });
+                }
 
                 updateStateSafely(state -> {
                     state.addTriggerNodeId(node.id);
                     return EnumSet.of(ChainStateField.TRIGGER_NODE_IDS);
                 });
 
-                notifyEvent(new NodeStartEvent(this, node));
-
                 nodeResult = node.execute(this);
             } catch (Throwable throwable) {
                 log.error("Node execute error", throwable);
                 error = throwable;
             }
-            handleNodeResult(node, nodeResult, byEdgeId, error);
+            handleNodeResult(node, nodeResult, triggerEdgeId, error);
         } finally {
             EXECUTION_THREAD_LOCAL.remove();
         }
@@ -343,8 +357,8 @@ public class Chain {
     }
 
 
-    private void handleNodeResult(Node node, Map<String, Object> prevNodeResult, String byEdgeId, Throwable error) {
-        ChainStatus finalStatus = null;
+    private void handleNodeResult(Node node, Map<String, Object> prevNodeResult, String triggerEdgeId, Throwable error) {
+        ChainStatus finalChainStatus = null;
         NodeStatus finalNodeStatus = null;
         try {
             if (error == null) {
@@ -381,13 +395,13 @@ public class Chain {
                 }
 
                 // 结束节点
-                finalStatus = prevNodeResult != null ? (ChainStatus) prevNodeResult.get(ChainConsts.CHAIN_STATE_STATUS_KEY) : null;
-                if (finalStatus != null && finalStatus.isTerminal()) {
+                finalChainStatus = prevNodeResult != null ? (ChainStatus) prevNodeResult.get(ChainConsts.CHAIN_STATE_STATUS_KEY) : null;
+                if (finalChainStatus != null && finalChainStatus.isTerminal()) {
                     return;
                 }
 
                 // 调度下一个节点
-                scheduleNextForNode(node, prevNodeResult, byEdgeId);
+                scheduleNextForNode(node, prevNodeResult, triggerEdgeId);
             } else {
                 // 挂起
                 if (error instanceof ChainSuspendException) {
@@ -403,7 +417,7 @@ public class Chain {
                     });
 
                     finalNodeStatus = NodeStatus.SUSPEND;
-                    finalStatus = ChainStatus.SUSPEND;
+                    finalChainStatus = ChainStatus.SUSPEND;
                 }
                 // 失败
                 else {
@@ -424,35 +438,35 @@ public class Chain {
                             return EnumSet.of(NodeStateField.RETRY_COUNT);
                         });
 
-                        scheduleNode(node, byEdgeId, TriggerType.RETRY, node.getRetryIntervalMs());
+                        scheduleNode(node, triggerEdgeId, TriggerType.RETRY, node.getRetryIntervalMs());
                     } else {
-                        finalStatus = handleNodeError(node.id, error);
+                        finalChainStatus = handleNodeError(node.id, error);
                     }
                 }
             }
         } finally {
-            // 如果不是还在执行中的状态，则通知事件
-//            if (finalNodeStatus != NodeStatus.RUNNING) {
-            NodeStatus nodeStatus = finalNodeStatus == null ? NodeStatus.SUCCEEDED : finalNodeStatus;
-            updateNodeStateSafely(node.id, state -> {
-                state.setStatus(nodeStatus);
-                return EnumSet.of(NodeStateField.STATUS);
-            });
-            notifyEvent(new NodeEndEvent(this, node, prevNodeResult, error));
-//            }
+            // 如果当前的工作流正在执行中，则不发送 NodeEndEvent 事件
+            if (finalNodeStatus != NodeStatus.RUNNING) {
+                NodeStatus nodeStatus = finalNodeStatus == null ? NodeStatus.SUCCEEDED : finalNodeStatus;
+                updateNodeStateSafely(node.id, state -> {
+                    state.setStatus(nodeStatus);
+                    return EnumSet.of(NodeStateField.STATUS);
+                });
+                notifyEvent(new NodeEndEvent(this, node, prevNodeResult, error));
+            }
 
-            if (finalStatus != null) {
-                setStatusAndNotifyEvent(finalStatus);
+            if (finalChainStatus != null) {
+                setStatusAndNotifyEvent(finalChainStatus);
 
                 // chain 执行结束
-                if (finalStatus.isTerminal()) {
+                if (finalChainStatus.isTerminal()) {
                     eventManager.notifyEvent(new ChainEndEvent(this), this);
 
                     // 执行结束，但是未执行成功，失败和取消等
                     // 更新父级链的状态
-                    if (!finalStatus.isSuccess()) {
+                    if (!finalChainStatus.isSuccess()) {
                         ChainState currentState = getState();
-                        ChainStatus currentStatus = finalStatus;
+                        ChainStatus currentStatus = finalChainStatus;
                         while (currentState != null && StringUtil.hasText(currentState.getParentInstanceId())) {
                             updateStateSafely(currentState.getParentInstanceId(), state -> {
                                 state.setStatus(currentStatus);
@@ -511,7 +525,7 @@ public class Chain {
             // 当前节点没有向外的边，则调度父节点（自动回归父节点） 用在 Loop 循环等场景
             if (StringUtil.hasText(node.getParentId())) {
                 Node parent = definition.getNodeById(node.getParentId());
-                scheduleNode(parent, null, TriggerType.NEXT, 0L);
+                scheduleNode(parent, null, TriggerType.PARENT, 0L);
             }
             return;
         }
@@ -559,10 +573,10 @@ public class Chain {
         }
 
         // 如果所有向外的边都不满足条件，则调度父节点（自动回归父节点） 用在 Loop 循环嵌套等场景（Loop 下的第一个节点是 Loop）
-        if (!allNotSameParent && !scheduleSuccess) {
+        if (allNotSameParent && !scheduleSuccess) {
             if (StringUtil.hasText(node.getParentId())) {
                 Node parent = definition.getNodeById(node.getParentId());
-                scheduleNode(parent, null, TriggerType.NEXT, 0L);
+                scheduleNode(parent, null, TriggerType.PARENT, 0L);
             }
         }
     }
@@ -605,6 +619,7 @@ public class Chain {
         trigger.setTriggerAt(System.currentTimeMillis() + delayMs);
         trigger.setPayload(payload);
         trigger.setParent(parent);
+        trigger.setPrev(TriggerContext.getCurrentTrigger());
 
         if (edgeId != null) {
             updateStateSafely(state -> {

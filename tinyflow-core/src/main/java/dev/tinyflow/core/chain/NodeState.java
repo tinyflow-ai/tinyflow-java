@@ -166,11 +166,17 @@ public class NodeState implements Serializable {
 
     public void recordTrigger(String fromEdgeId) {
         triggerCount.incrementAndGet();
+        if (fromEdgeId == null) {
+            fromEdgeId = "none";
+        }
         triggerEdgeIds.add(fromEdgeId);
     }
 
     public void recordExecute(String fromEdgeId) {
         executeCount.incrementAndGet();
+        if (fromEdgeId == null) {
+            fromEdgeId = "none";
+        }
         executeEdgeIds.add(fromEdgeId);
     }
 

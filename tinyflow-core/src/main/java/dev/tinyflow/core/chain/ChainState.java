@@ -41,7 +41,6 @@ public class ChainState implements Serializable {
     private String parentInstanceId;
     private String chainDefinitionId;
     private ConcurrentHashMap<String, Object> memory = new ConcurrentHashMap<>();
-    private Set<String> childStateIds;
 
     private Map<String, Object> executeResult;
     private Map<String, Object> environment;
@@ -97,21 +96,6 @@ public class ChainState implements Serializable {
 
     public void setMemory(ConcurrentHashMap<String, Object> memory) {
         this.memory = memory;
-    }
-
-    public Set<String> getChildStateIds() {
-        return childStateIds;
-    }
-
-    public void setChildStateIds(Set<String> childStateIds) {
-        this.childStateIds = childStateIds;
-    }
-
-    public void addChildStateId(String childStateId) {
-        if (childStateIds == null) {
-            childStateIds = new HashSet<>();
-        }
-        childStateIds.add(childStateId);
     }
 
     public Map<String, Object> getExecuteResult() {
@@ -346,10 +330,22 @@ public class ChainState implements Serializable {
         return result;
     }
 
+//    public Map<String, Object> getTriggerVariables() {
+//        Trigger trigger = TriggerContext.getCurrentTrigger();
+//        if (trigger != null) {
+//            return trigger.getVariables();
+//        }
+//        return Collections.emptyMap();
+//    }
+
 
     public Object resolveValue(String path) {
         Object result = MapUtil.getByPath(getMemory(), path);
-        return result != null ? result : MapUtil.getByPath(getEnvironment(), path);
+        if (result == null) result = MapUtil.getByPath(getEnvironment(), path);
+//        if (result == null) result = MapUtil.getByPath(getTriggerVariables(), path);
+        return result;
+//        return result != null ? result : MapUtil.getByPath(getEnvironment(), path);
+//        return result != null ? result : MapUtil.getByPath(getExtraVariables(), path);
     }
 
     public Map<String, Object> resolveParameters(Node node) {
@@ -367,6 +363,7 @@ public class ChainState implements Serializable {
     private boolean isNullOrBlank(Object value) {
         return value == null || value instanceof String && StringUtil.noText((String) value);
     }
+
 
     public Map<String, Object> getEnvMap() {
         Map<String, Object> formatArgsMap = new HashMap<>();

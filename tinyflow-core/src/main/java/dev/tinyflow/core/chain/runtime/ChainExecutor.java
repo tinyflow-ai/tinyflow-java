@@ -257,7 +257,7 @@ public class ChainExecutor {
             throw new ChainException("Node not found in definition(id: " + definition.getId() + ")");
         }
 
-        chain.executeNode(node, trigger.getEdgeId());
+        chain.executeNode(node, trigger);
     }
 
 
