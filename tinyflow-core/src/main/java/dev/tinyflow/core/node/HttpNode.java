@@ -145,6 +145,72 @@ public class HttpNode extends BaseNode {
 
     @Override
     public Map<String, Object> execute(Chain chain) {
+        int maxRetry = 5;
+        long retryInterval = 2000L;
+
+        int attempt = 0;
+        Throwable lastError = null;
+
+        while (attempt < maxRetry) {
+            attempt++;
+
+            try {
+                return doExecute(chain);
+            } catch (Throwable ex) {
+
+                lastError = ex;
+
+                // 判断是否需要重试
+                if (!shouldRetry(ex)) {
+                    throw wrapAsRuntime(ex, attempt);
+                }
+
+                try {
+                    long waitMs = Math.min(
+                            retryInterval * (1L << (attempt - 1)),
+                            10_000L // 最大 10 秒
+                    );
+                    Thread.sleep(waitMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("HTTP retry interrupted", ie);
+                }
+            }
+        }
+
+        // 理论上不会走到这里
+        throw wrapAsRuntime(lastError, attempt);
+    }
+
+
+    protected boolean shouldRetry(Throwable ex) {
+        if (ex instanceof HttpServerErrorException) {
+            int code = ((HttpServerErrorException) ex).getStatusCode();
+            return code == 503 || code == 504; // 只对特定 5xx 重试
+        }
+
+        // 1. IO 异常（超时、连接失败、Socket 问题）
+        if (ex instanceof IOException) {
+            return true;
+        }
+
+        // 2. 包装过的异常
+        Throwable cause = ex.getCause();
+        return cause instanceof IOException;
+    }
+
+    private RuntimeException wrapAsRuntime(Throwable ex, int attempt) {
+        if (ex instanceof RuntimeException) {
+            return (RuntimeException) ex;
+        }
+        return new RuntimeException(
+                String.format("HttpNode[%s] failed after %d attempt(s)", getName(), attempt),
+                ex
+        );
+    }
+
+
+    public Map<String, Object> doExecute(Chain chain) throws IOException {
 
         Map<String, Object> argsMap = chain.getState().resolveParameters(this);
         String newUrl = TextTemplate.of(url).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));
@@ -160,9 +226,13 @@ public class HttpNode extends BaseNode {
             reqBuilder.method(method.toUpperCase(), getRequestBody(chain, argsMap));
         }
 
-
         OkHttpClient okHttpClient = OkHttpClientUtil.buildDefaultClient();
         try (Response response = okHttpClient.newCall(reqBuilder.build()).execute()) {
+
+            // 服务器异常
+            if (response.code() >= 500 && response.code() < 600) {
+                throw new HttpServerErrorException(response.code(), response.message());
+            }
 
             Map<String, Object> result = new HashMap<>();
             result.put("statusCode", response.code());
@@ -205,8 +275,6 @@ public class HttpNode extends BaseNode {
                 result.put("body", body.string());
             }
             return result;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -254,6 +322,19 @@ public class HttpNode extends BaseNode {
         }
         //none
         return RequestBody.create("", null);
+    }
+
+    public static class HttpServerErrorException extends IOException {
+        private final int statusCode;
+
+        public HttpServerErrorException(int statusCode, String message) {
+            super("HTTP " + statusCode + ": " + message);
+            this.statusCode = statusCode;
+        }
+
+        public int getStatusCode() {
+            return statusCode;
+        }
     }
 
 
