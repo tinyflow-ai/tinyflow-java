@@ -602,13 +602,13 @@ public class Chain {
     public void scheduleNode(Node node, String edgeId, TriggerType type, long delayMs) {
         Trigger prevTrigger = TriggerContext.getCurrentTrigger();
         Map<String, Object> payload = prevTrigger == null ? null : prevTrigger.getPayload();
-        Trigger parent = prevTrigger == null ? null : prevTrigger.getParent();
+//        Trigger parent = prevTrigger == null ? null : prevTrigger.getParent();
         String stateInstanceId = prevTrigger == null ? this.stateInstanceId : prevTrigger.getStateInstanceId();
-        scheduleNode(node, stateInstanceId, edgeId, type, null, payload, parent, delayMs);
+        scheduleNode(node, stateInstanceId, edgeId, type, null, payload, delayMs);
     }
 
     public void scheduleNode(Node node, String stateInstanceId, String edgeId,
-                             TriggerType type, Map<String, Object> variables, Map<String, Object> payload, Trigger parent, long delayMs) {
+                             TriggerType type, Map<String, Object> variables, Map<String, Object> payload, long delayMs) {
 
         Trigger trigger = new Trigger();
         trigger.setStateInstanceId(stateInstanceId);
@@ -618,8 +618,7 @@ public class Chain {
         trigger.setVariables(variables);
         trigger.setTriggerAt(System.currentTimeMillis() + delayMs);
         trigger.setPayload(payload);
-        trigger.setParent(parent);
-        trigger.setPrev(TriggerContext.getCurrentTrigger());
+//        trigger.setPrev(TriggerContext.getCurrentTrigger());
 
         if (edgeId != null) {
             updateStateSafely(state -> {

@@ -73,9 +73,9 @@ public class LoopNode extends BaseNode {
 
         // 执行的次数够了, 恢复父级触发
         if (loopContext.currentIndex >= shouldLoopCount) {
-            prevTrigger.setPayload(loopContext.trigger.getPayload());
-            prevTrigger.setParent(loopContext.trigger.getParent());
-            prevTrigger.setStateInstanceId(loopContext.trigger.getStateInstanceId());
+            prevTrigger.setPayload(loopContext.triggerPayload);
+//            prevTrigger.setPayload(loopContext.trigger.getPayload());
+//            prevTrigger.setParent(loopContext.trigger.getParent());
             return loopContext.subResult;
         }
 
@@ -84,7 +84,7 @@ public class LoopNode extends BaseNode {
         loopContext.currentIndex++;
 
         // 更新节点的执行状态
-        chain.updateNodeStateSafely(loopContext.trigger.getStateInstanceId(), this.id, state -> {
+        chain.updateNodeStateSafely(this.id, state -> {
             state.getMemory().put(loopContext.loopExecutionId, loopContext);
             return EnumSet.of(NodeStateField.MEMORY);
         });
@@ -105,12 +105,11 @@ public class LoopNode extends BaseNode {
 
 
     private void executeLoopChain(Chain chain, LoopContext loopContext, Object loopItem) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put(this.id + ".index", (loopContext.currentIndex - 1));
+        variables.put(this.id + ".loopItem", loopItem);
 
-        Map<String, Object> subVariables = new HashMap<>();
-        subVariables.put(this.id + ".index", (loopContext.currentIndex - 1));
-        subVariables.put(this.id + ".loopItem", loopItem);
-
-        Map<String, Object> subPayload = createSubPayload(loopContext);
+        Map<String, Object> payload = createSubPayload(loopContext);
 
         ChainDefinition definition = chain.getDefinition();
         List<Edge> outwardEdges = definition.getOutwardEdge(this.id);
@@ -118,8 +117,7 @@ public class LoopNode extends BaseNode {
             Node childNode = definition.getNodeById(edge.getTarget());
             if (childNode.getParentId() != null && childNode.getParentId().equals(this.id)) {
                 chain.scheduleNode(childNode, chain.getStateInstanceId(), edge.getId(), TriggerType.CHILD
-                        , subVariables, subPayload
-                        , loopContext.trigger, 0);
+                        , variables, payload, 0);
             }
         }
     }
@@ -182,12 +180,13 @@ public class LoopNode extends BaseNode {
 
             loopContext.currentIndex = 0;
             loopContext.subResult = new HashMap<>();
-            loopContext.trigger = prevTrigger;
+            loopContext.triggerPayload = payload;
+//            loopContext.trigger = prevTrigger;
         }
         // 不是第一次执行
         else {
-            String stateInstanceId = prevTrigger.getParent().getStateInstanceId();
-            NodeState nodeState = chain.getNodeState(stateInstanceId, this.id);
+//            String stateInstanceId = prevTrigger.getParent().getStateInstanceId();
+            NodeState nodeState = chain.getNodeState(this.id);
             loopContext = (LoopContext) nodeState.getMemory().get(loopExecutionId);
         }
 
@@ -220,6 +219,38 @@ public class LoopNode extends BaseNode {
         String loopExecutionId;
         int currentIndex;
         Map<String, Object> subResult;
-        Trigger trigger;
+        Map<String, Object> triggerPayload;
+
+        public String getLoopExecutionId() {
+            return loopExecutionId;
+        }
+
+        public void setLoopExecutionId(String loopExecutionId) {
+            this.loopExecutionId = loopExecutionId;
+        }
+
+        public int getCurrentIndex() {
+            return currentIndex;
+        }
+
+        public void setCurrentIndex(int currentIndex) {
+            this.currentIndex = currentIndex;
+        }
+
+        public Map<String, Object> getSubResult() {
+            return subResult;
+        }
+
+        public void setSubResult(Map<String, Object> subResult) {
+            this.subResult = subResult;
+        }
+
+        public Map<String, Object> getTriggerPayload() {
+            return triggerPayload;
+        }
+
+        public void setTriggerPayload(Map<String, Object> triggerPayload) {
+            this.triggerPayload = triggerPayload;
+        }
     }
 }

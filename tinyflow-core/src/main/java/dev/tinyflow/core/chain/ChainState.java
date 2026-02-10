@@ -344,8 +344,6 @@ public class ChainState implements Serializable {
         if (result == null) result = MapUtil.getByPath(getEnvironment(), path);
 //        if (result == null) result = MapUtil.getByPath(getTriggerVariables(), path);
         return result;
-//        return result != null ? result : MapUtil.getByPath(getEnvironment(), path);
-//        return result != null ? result : MapUtil.getByPath(getExtraVariables(), path);
     }
 
     public Map<String, Object> resolveParameters(Node node) {

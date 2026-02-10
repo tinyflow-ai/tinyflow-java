@@ -28,8 +28,8 @@ public class Trigger implements Serializable {
     private Map<String, Object> payload; // 自动传递上一个 trigger 的 payload
     private Map<String, Object> variables;
 
-    private Trigger prev;
-    private Trigger parent;
+//    private Trigger prev;
+//    private Trigger parent;
 
     public Trigger() {
     }
@@ -99,21 +99,22 @@ public class Trigger implements Serializable {
         this.variables = variables;
     }
 
-    public Trigger getPrev() {
-        return prev;
-    }
+//    public Trigger getPrev() {
+//        return prev;
+//    }
+//
+//    public void setPrev(Trigger prev) {
+//        this.prev = prev;
+//    }
 
-    public void setPrev(Trigger prev) {
-        this.prev = prev;
-    }
+//    public Trigger getParent() {
+//        return parent;
+//    }
+//
+//    public void setParent(Trigger parent) {
+//        this.parent = parent;
+//    }
 
-    public Trigger getParent() {
-        return parent;
-    }
-
-    public void setParent(Trigger parent) {
-        this.parent = parent;
-    }
 
     @Override
     public String toString() {
@@ -126,7 +127,6 @@ public class Trigger implements Serializable {
                 ", triggerAt=" + triggerAt +
                 ", payload=" + payload +
                 ", variables=" + variables +
-                ", parent=" + parent +
                 '}';
     }
 }
