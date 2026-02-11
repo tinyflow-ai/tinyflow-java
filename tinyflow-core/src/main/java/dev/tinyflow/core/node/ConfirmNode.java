@@ -71,6 +71,13 @@ public class ConfirmNode extends BaseNode {
         Map<String, Object> values;
         try {
             values = chain.getState().resolveParameters(this, confirmParameters);
+            // 移除 confirm 参数，方便在其他节点二次确认，或者在 for 循环中第二次获取
+            chain.updateStateSafely(state -> {
+                for (Parameter confirmParameter : confirmParameters) {
+                    state.getMemory().remove(confirmParameter.getName());
+                }
+                return EnumSet.of(ChainStateField.MEMORY);
+            });
         } catch (ChainSuspendException e) {
             chain.updateStateSafely(state -> {
                 state.setMessage(message);
