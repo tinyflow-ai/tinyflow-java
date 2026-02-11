@@ -600,25 +600,12 @@ public class Chain {
 
 
     public void scheduleNode(Node node, String edgeId, TriggerType type, long delayMs) {
-        Trigger prevTrigger = TriggerContext.getCurrentTrigger();
-        Map<String, Object> payload = prevTrigger == null ? null : prevTrigger.getPayload();
-//        Trigger parent = prevTrigger == null ? null : prevTrigger.getParent();
-        String stateInstanceId = prevTrigger == null ? this.stateInstanceId : prevTrigger.getStateInstanceId();
-        scheduleNode(node, stateInstanceId, edgeId, type, null, payload, delayMs);
-    }
-
-    public void scheduleNode(Node node, String stateInstanceId, String edgeId,
-                             TriggerType type, Map<String, Object> variables, Map<String, Object> payload, long delayMs) {
-
         Trigger trigger = new Trigger();
         trigger.setStateInstanceId(stateInstanceId);
         trigger.setEdgeId(edgeId);
         trigger.setNodeId(node.getId());
         trigger.setType(type);
-        trigger.setVariables(variables);
         trigger.setTriggerAt(System.currentTimeMillis() + delayMs);
-        trigger.setPayload(payload);
-//        trigger.setPrev(TriggerContext.getCurrentTrigger());
 
         if (edgeId != null) {
             updateStateSafely(state -> {
@@ -669,23 +656,28 @@ public class Chain {
                 state.getMemory().putAll(variables);
                 return EnumSet.of(ChainStateField.MEMORY);
             } else {
-                return EnumSet.noneOf(ChainStateField.class);
+                return null;
             }
         });
-
 
         notifyEvent(new ChainResumeEvent(this, variables));
         setStatusAndNotifyEvent(ChainStatus.RUNNING);
 
         Set<String> suspendNodeIds = newState.getSuspendNodeIds();
         if (suspendNodeIds != null && !suspendNodeIds.isEmpty()) {
+            // 移除 suspend 状态，方便二次 suspend 时，不带有旧数据
+             updateStateSafely(state -> {
+                state.setSuspendNodeIds(null);
+                state.setSuspendForParameters(null);
+                return EnumSet.of(ChainStateField.SUSPEND_NODE_IDS, ChainStateField.SUSPEND_FOR_PARAMETERS);
+            });
+
             for (String id : suspendNodeIds) {
                 Node node = definition.getNodeById(id);
-                if (node != null) {
-                    NodeState nodeState = getNodeState(node.getId());
-                    String edgeId = nodeState.getLastExecuteEdgeId();
-                    scheduleNode(node, edgeId, TriggerType.MANUAL, 0L);
+                if (node == null) {
+                    throw new ChainException("Node not found: " + id);
                 }
+                scheduleNode(node, null, TriggerType.RESUME, 0L);
             }
         }
     }
