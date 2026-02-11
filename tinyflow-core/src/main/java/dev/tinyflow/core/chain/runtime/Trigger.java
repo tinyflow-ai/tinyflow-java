@@ -16,7 +16,6 @@
 package dev.tinyflow.core.chain.runtime;
 
 import java.io.Serializable;
-import java.util.Map;
 
 public class Trigger implements Serializable {
     private String id;
@@ -25,11 +24,6 @@ public class Trigger implements Serializable {
     private String nodeId; // 可以为 null，代表触发整个 chain
     private TriggerType type;
     private long triggerAt; // epoch ms
-    private Map<String, Object> payload; // 自动传递上一个 trigger 的 payload
-    private Map<String, Object> variables;
-
-//    private Trigger prev;
-//    private Trigger parent;
 
     public Trigger() {
     }
@@ -83,39 +77,6 @@ public class Trigger implements Serializable {
         this.triggerAt = triggerAt;
     }
 
-    public Map<String, Object> getPayload() {
-        return payload;
-    }
-
-    public void setPayload(Map<String, Object> payload) {
-        this.payload = payload;
-    }
-
-    public Map<String, Object> getVariables() {
-        return variables;
-    }
-
-    public void setVariables(Map<String, Object> variables) {
-        this.variables = variables;
-    }
-
-//    public Trigger getPrev() {
-//        return prev;
-//    }
-//
-//    public void setPrev(Trigger prev) {
-//        this.prev = prev;
-//    }
-
-//    public Trigger getParent() {
-//        return parent;
-//    }
-//
-//    public void setParent(Trigger parent) {
-//        this.parent = parent;
-//    }
-
-
     @Override
     public String toString() {
         return "Trigger{" +
@@ -125,8 +86,6 @@ public class Trigger implements Serializable {
                 ", nodeId='" + nodeId + '\'' +
                 ", type=" + type +
                 ", triggerAt=" + triggerAt +
-                ", payload=" + payload +
-                ", variables=" + variables +
                 '}';
     }
 }
