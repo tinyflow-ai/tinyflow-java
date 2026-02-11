@@ -20,6 +20,7 @@ public enum TriggerType {
     NEXT,
     PARENT,
     CHILD,
+    SELF,
     LOOP,
     RETRY,
     TIMER,
