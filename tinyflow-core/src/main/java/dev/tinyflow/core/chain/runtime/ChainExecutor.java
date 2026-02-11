@@ -238,15 +238,6 @@ public class ChainExecutor {
         chain.setNodeStateRepository(nodeStateRepository);
         chain.setEventManager(eventManager);
 
-
-        Map<String, Object> variables = trigger.getVariables();
-        if (variables != null && !variables.isEmpty()) {
-            chain.updateStateSafely(s -> {
-                s.getMemory().putAll(variables);
-                return EnumSet.of(ChainStateField.MEMORY);
-            });
-        }
-
         String nodeId = trigger.getNodeId();
         if (nodeId == null) {
             throw new ChainException("Node ID not found in trigger.");
