@@ -56,11 +56,10 @@ public class LoopNode extends BaseNode {
         if (isFirstEntry) {
             // 首次触发：创建新的 LoopContext 并压入堆栈
             loopContext = new LoopContext();
-//            loopContext.loopExecutionId = UUID.randomUUID().toString();
             loopContext.currentIndex = 0;
             loopContext.subResult = new HashMap<>();
             // 保存原始触发上下文（用于循环结束后恢复）
-            loopStack.push(loopContext);
+            loopStack.offerLast(loopContext);
 
             chain.updateNodeStateSafely(this.id, state -> {
                 state.getMemory().put(buildLoopStackId(), loopStack);
@@ -78,7 +77,7 @@ public class LoopNode extends BaseNode {
             if (loopStack.isEmpty()) {
                 throw new IllegalStateException("Loop stack is empty when returning from child node.");
             }
-            loopContext = loopStack.peekLast();
+            loopContext = loopStack.peekFirst();
         }
 
 
@@ -112,12 +111,12 @@ public class LoopNode extends BaseNode {
 
         // 执行的次数够了, 恢复父级触发
         if (loopContext.currentIndex >= shouldLoopCount) {
-//            prevTrigger.setPayload(loopContext.triggerPayload);
-//            prevTrigger.setPayload(loopContext.trigger.getPayload());
-//            prevTrigger.setParent(loopContext.trigger.getParent());
-            loopStack.poll();
+            loopStack.pollFirst();    // 移除最顶部部的 LoopContext
             chain.updateNodeStateSafely(this.id, state -> {
-                state.getMemory().put(buildLoopStackId(), loopStack);
+                ConcurrentHashMap<String, Object> memory = state.getMemory();
+                memory.put(buildLoopStackId(), loopStack);
+                memory.remove(this.id + ".index");
+                memory.remove(this.id + ".loopItem");
                 return EnumSet.of(NodeStateField.MEMORY);
             });
             if (!loopStack.isEmpty()) {
@@ -134,11 +133,6 @@ public class LoopNode extends BaseNode {
             return EnumSet.of(NodeStateField.MEMORY);
         });
 
-        // 更新节点的执行状态
-//        chain.updateNodeStateSafely(this.id, state -> {
-//            state.getMemory().put(loopContext.loopExecutionId, loopContext);
-//            return EnumSet.of(NodeStateField.MEMORY);
-//        });
 
         if (loopValue instanceof Iterable) {
             Object loopItem = IterableUtil.get((Iterable<?>) loopValue, loopIndex);
@@ -178,9 +172,6 @@ public class LoopNode extends BaseNode {
 
 
     private void executeLoopChain(Chain chain, LoopContext loopContext, Object loopItem) {
-//        Map<String, Object> variables = new HashMap<>();
-//        variables.put(this.id + ".index", (loopContext.currentIndex - 1));
-//        variables.put(this.id + ".loopItem", loopItem);
 
         chain.updateStateSafely(state -> {
             ConcurrentHashMap<String, Object> memory = state.getMemory();
@@ -189,26 +180,16 @@ public class LoopNode extends BaseNode {
             return EnumSet.of(ChainStateField.MEMORY);
         });
 
-//        Map<String, Object> payload = createSubPayload(loopContext);
 
         ChainDefinition definition = chain.getDefinition();
         List<Edge> outwardEdges = definition.getOutwardEdge(this.id);
         for (Edge edge : outwardEdges) {
             Node childNode = definition.getNodeById(edge.getTarget());
             if (childNode.getParentId() != null && childNode.getParentId().equals(this.id)) {
-//                chain.scheduleNode(childNode, chain.getStateInstanceId(), edge.getId(), TriggerType.CHILD  , variables, null, 0);
                 chain.scheduleNode(childNode, edge.getId(), TriggerType.CHILD, 0);
             }
         }
     }
-
-
-//    private Map<String, Object> createSubPayload(LoopContext loopContext) {
-//        Map<String, Object> payload = new HashMap<>();
-//        payload.put(buildLoopId(), loopContext.loopExecutionId);
-//        payload.put(buildLoopIndex(), loopContext.currentIndex);
-//        return payload;
-//    }
 
 
     /**
@@ -243,69 +224,14 @@ public class LoopNode extends BaseNode {
     }
 
 
-//    private LoopContext getLoopContext(Trigger prevTrigger, Chain chain) {
-//        Map<String, Object> payload = prevTrigger.getPayload();
-//
-//        // 循环的执行 id（每一次执行，都是不同的执行 id， 1 次执行包含 N 次循环）
-//        // 每个执行 id，在当前的 memory 中，对应一个 LoopContext
-//        String loopExecutionId = payload == null ? null : (String) payload.get(buildLoopId());
-//
-//        // 是否是第一次执行
-//        boolean isFirstLoop = loopExecutionId == null;
-//
-//        LoopContext loopContext;
-//        if (isFirstLoop) {
-//            loopContext = new LoopContext();
-//            loopContext.loopExecutionId = UUID.randomUUID().toString();
-//
-//            loopContext.currentIndex = 0;
-//            loopContext.subResult = new HashMap<>();
-//            loopContext.triggerPayload = payload;
-////            loopContext.trigger = prevTrigger;
-//        }
-//        // 不是第一次执行
-//        else {
-
-    /// /            String stateInstanceId = prevTrigger.getParent().getStateInstanceId();
-//            NodeState nodeState = chain.getNodeState(this.id);
-//            loopContext = (LoopContext) nodeState.getMemory().get(loopExecutionId);
-//        }
-//        return loopContext;
-//    }
-    public int getTriggerLoopIndex(Trigger trigger) {
-        Map<String, Object> payload = trigger.getPayload();
-        if (payload == null) {
-            return 0;
-        }
-        Object loopIndex = payload.get(buildLoopIndex());
-        if (loopIndex == null) {
-            return 0;
-        }
-        return (int) loopIndex;
-    }
-
     private String buildLoopStackId() {
         return this.getId() + "__loop__context";
     }
 
-    private String buildLoopIndex() {
-        return this.getId() + "__loop__index";
-    }
-
 
     public static class LoopContext implements Serializable {
-        //        String loopExecutionId;
         int currentIndex;
         Map<String, Object> subResult;
-//        Map<String, Object> triggerPayload;
-
-//        public String getLoopExecutionId() {
-//            return loopExecutionId;
-//        }
-//
-//        public void setLoopExecutionId(String loopExecutionId) {
-//            this.loopExecutionId = loopExecutionId;
-//        }
 
         public int getCurrentIndex() {
             return currentIndex;
@@ -323,12 +249,5 @@ public class LoopNode extends BaseNode {
             this.subResult = subResult;
         }
 
-//        public Map<String, Object> getTriggerPayload() {
-//            return triggerPayload;
-//        }
-//
-//        public void setTriggerPayload(Map<String, Object> triggerPayload) {
-//            this.triggerPayload = triggerPayload;
-//        }
     }
 }
