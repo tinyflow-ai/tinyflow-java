@@ -27,5 +27,5 @@ public enum TriggerType {
     CRON,
     EVENT,
     DELAY,
-    MANUAL
+    RESUME
 }
