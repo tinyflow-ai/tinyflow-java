@@ -440,6 +440,8 @@ public class Chain {
 
                         scheduleNode(node, triggerEdgeId, TriggerType.RETRY, node.getRetryIntervalMs());
                     } else {
+                        // close https://gitee.com/tinyflow-ai/tinyflow-java/issues/IEZAK0
+                        finalNodeStatus = NodeStatus.FAILED;
                         finalChainStatus = handleNodeError(node.id, error);
                     }
                 }
