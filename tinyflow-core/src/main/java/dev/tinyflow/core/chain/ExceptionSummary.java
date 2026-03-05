@@ -40,19 +40,10 @@ public class ExceptionSummary implements Serializable {
         this.message = error.getMessage();
         this.stackTrace = getStackTraceAsString(error);
 
-        Throwable root = getRootCause(error);
-        this.rootCauseClass = root.getClass().getName();
-        this.rootCauseMessage = root.getMessage();
+        this.rootCauseClass = error.getClass().getName();
+        this.rootCauseMessage = error.getMessage();
 
         this.timestamp = System.currentTimeMillis();
-    }
-
-    private static Throwable getRootCause(Throwable t) {
-        Throwable result = t;
-        while (result.getCause() != null) {
-            result = result.getCause();
-        }
-        return result;
     }
 
     private static String getStackTraceAsString(Throwable t) {
