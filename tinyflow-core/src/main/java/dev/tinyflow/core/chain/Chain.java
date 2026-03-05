@@ -446,6 +446,10 @@ public class Chain {
                     }
                 }
             }
+        } catch (Exception e) {
+            // 在 scheduleNextForNode 执行时， js 判断等可能会出错。
+            finalNodeStatus = NodeStatus.FAILED;
+            finalChainStatus = handleNodeError(node.id, e);
         } finally {
             // 如果当前的工作流正在执行中，则不发送 NodeEndEvent 事件
             if (finalNodeStatus != NodeStatus.RUNNING) {
@@ -668,7 +672,7 @@ public class Chain {
         Set<String> suspendNodeIds = newState.getSuspendNodeIds();
         if (suspendNodeIds != null && !suspendNodeIds.isEmpty()) {
             // 移除 suspend 状态，方便二次 suspend 时，不带有旧数据
-             updateStateSafely(state -> {
+            updateStateSafely(state -> {
                 state.setSuspendNodeIds(null);
                 state.setSuspendForParameters(null);
                 return EnumSet.of(ChainStateField.SUSPEND_NODE_IDS, ChainStateField.SUSPEND_FOR_PARAMETERS);
