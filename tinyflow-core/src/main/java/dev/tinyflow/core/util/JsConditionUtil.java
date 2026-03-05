@@ -53,13 +53,18 @@ public class JsConditionUtil {
             });
 
             bindings.putMember("_result", _result);
-            code = "_result.value = " + code;
+            String resultCode = "_result.value = " + code;
 
-            context.eval("js", code);
+            context.eval("js", resultCode);
             Object value = _result.get("value");
             return toBoolean(value);
         } catch (Exception e) {
-            throw new RuntimeException("JavaScript 执行失败: " + e.getMessage(), e);
+            throw new JsCodeException("JavaScript exec failed: " + e.getMessage()
+                    + "\ncode："
+                    + "\n```\n"
+                    + "\n" + code
+                    + "\n```\n"
+                    , e);
         }
     }
 
@@ -76,13 +81,18 @@ public class JsConditionUtil {
             });
 
             bindings.putMember("_result", _result);
-            code = "_result.value = " + code;
+            String resultCode = "_result.value = " + code;
 
-            context.eval("js", code);
+            context.eval("js", resultCode);
             Object value = _result.get("value");
             return toLong(value);
         } catch (Exception e) {
-            throw new RuntimeException("JavaScript 执行失败: " + e.getMessage(), e);
+            throw new JsCodeException("JavaScript exec failed: " + e.getMessage()
+                    + "\ncode："
+                    + "\n```\n"
+                    + "\n" + code
+                    + "\n```\n"
+                    , e);
         }
     }
 

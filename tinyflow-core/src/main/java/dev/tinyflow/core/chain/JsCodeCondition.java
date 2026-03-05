@@ -15,6 +15,7 @@
  */
 package dev.tinyflow.core.chain;
 
+import dev.tinyflow.core.util.JsCodeException;
 import dev.tinyflow.core.util.JsConditionUtil;
 import dev.tinyflow.core.util.Maps;
 
@@ -40,19 +41,28 @@ public class JsCodeCondition implements NodeCondition, EdgeCondition {
 
     @Override
     public boolean check(Chain chain, Edge edge, Map<String, Object> executeResult) {
-        Maps map = Maps.of("_edge", edge).set("_chain", chain);
-        if (executeResult != null) {
-            map.putAll(executeResult);
+        try {
+            Maps map = Maps.of("_edge", edge).set("_chain", chain);
+            if (executeResult != null) {
+                map.putAll(executeResult);
+            }
+            return JsConditionUtil.eval(code, chain, map);
+        } catch (Exception e) {
+            throw new JsCodeException("edge check failed: " + e.getMessage(), e);
         }
-        return JsConditionUtil.eval(code, chain, map);
+
     }
 
     @Override
     public boolean check(Chain chain, NodeState state, Map<String, Object> executeResult) {
-        Maps map = Maps.of("_state", state).set("_chain", chain);
-        if (executeResult != null) {
-            map.putAll(executeResult);
+        try {
+            Maps map = Maps.of("_state", state).set("_chain", chain);
+            if (executeResult != null) {
+                map.putAll(executeResult);
+            }
+            return JsConditionUtil.eval(code, chain, map);
+        } catch (Exception e) {
+            throw new JsCodeException("node check failed: " + e.getMessage(), e);
         }
-        return JsConditionUtil.eval(code, chain, map);
     }
 }
