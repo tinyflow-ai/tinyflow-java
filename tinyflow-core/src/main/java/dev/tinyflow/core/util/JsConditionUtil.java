@@ -23,7 +23,6 @@ import org.graalvm.polyglot.Value;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class JsConditionUtil {
 
@@ -139,7 +138,7 @@ public class JsConditionUtil {
      * 收集上下文中的变量
      */
     private static Map<String, Object> collectContextVariables(Chain chain, Map<String, Object> initMap) {
-        Map<String, Object> variables = new ConcurrentHashMap<>();
+        Map<String, Object> variables = new HashMap<>();
 
         // 添加 Chain Memory 中的变量（去掉前缀）
         chain.getState().getMemory().forEach((key, value) -> {
