@@ -149,7 +149,8 @@ public class JsConditionUtil {
 
         // 添加 _chain 和 initMap 变量
         if (initMap != null) {
-            initMap.forEach((s, o) -> variables.put(s, o != null ? o : ""));
+            variables.putAll(initMap);
+//            initMap.forEach((s, o) -> variables.put(s, o != null ? o : ""));
         }
 
         return variables;
