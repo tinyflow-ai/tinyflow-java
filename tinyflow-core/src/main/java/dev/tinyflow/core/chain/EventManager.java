@@ -15,28 +15,37 @@
  */
 package dev.tinyflow.core.chain;
 
-import dev.tinyflow.core.chain.listener.*;
-
+import dev.tinyflow.core.chain.listener.ChainErrorListener;
+import dev.tinyflow.core.chain.listener.ChainEventListener;
+import dev.tinyflow.core.chain.listener.ChainOutputListener;
+import dev.tinyflow.core.chain.listener.NodeErrorListener;
+import dev.tinyflow.core.util.MapUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class EventManager {
 
     private static final Logger log = LoggerFactory.getLogger(EventManager.class);
 
     protected final Map<Class<?>, List<ChainEventListener>> eventListeners = new ConcurrentHashMap<>();
-    protected final List<ChainOutputListener> outputListeners = Collections.synchronizedList(new ArrayList<>());
-    protected final List<ChainErrorListener> chainErrorListeners = Collections.synchronizedList(new ArrayList<>());
-    protected final List<NodeErrorListener> nodeErrorListeners = Collections.synchronizedList(new ArrayList<>());
+    protected final List<ChainOutputListener> outputListeners = new CopyOnWriteArrayList<>();
+    protected final List<ChainErrorListener> chainErrorListeners = new CopyOnWriteArrayList<>();
+    protected final List<NodeErrorListener> nodeErrorListeners = new CopyOnWriteArrayList<>();
 
     /**
      * ---------- 通用事件监听器 ----------
      */
     public void addEventListener(Class<? extends Event> eventClass, ChainEventListener listener) {
-        eventListeners.computeIfAbsent(eventClass, k -> Collections.synchronizedList(new ArrayList<>())).add(listener);
+        MapUtil.computeIfAbsent(eventListeners, eventClass, k -> {
+            CopyOnWriteArrayList<ChainEventListener> objects = new CopyOnWriteArrayList<>();
+            objects.add(listener);
+            return objects;
+        });
     }
 
     public void addEventListener(ChainEventListener listener) {
@@ -61,7 +70,7 @@ public class EventManager {
                     try {
                         listener.onEvent(event, chain);
                     } catch (Exception e) {
-                        log.error("Error in event listener: {}", e.toString(), e);
+                        log.error("Error in event listener: {}", e, e);
                     }
                 }
             }
@@ -105,7 +114,7 @@ public class EventManager {
             try {
                 listener.onError(error, chain);
             } catch (Exception e) {
-                log.error("Error in chain error listener: {}", e.toString(), e);
+                log.error("Error in chain error listener: {}", e, e);
             }
         }
     }
@@ -130,6 +139,4 @@ public class EventManager {
             }
         }
     }
-
-
 }
