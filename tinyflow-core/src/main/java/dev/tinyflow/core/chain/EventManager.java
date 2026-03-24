@@ -36,6 +36,7 @@ public class EventManager {
     protected final List<ChainOutputListener> outputListeners = new CopyOnWriteArrayList<>();
     protected final List<ChainErrorListener> chainErrorListeners = new CopyOnWriteArrayList<>();
     protected final List<NodeErrorListener> nodeErrorListeners = new CopyOnWriteArrayList<>();
+    protected final Map<String, Object> otherListeners = new ConcurrentHashMap<>();
 
     /**
      * ---------- 通用事件监听器 ----------
@@ -138,5 +139,18 @@ public class EventManager {
                 log.error("Error in node error listener: {}", e.toString(), e);
             }
         }
+    }
+
+    public void addOtherListener(String key, Object listener) {
+        otherListeners.put(key, listener);
+    }
+
+    public void removeOtherListener(String key) {
+        otherListeners.remove(key);
+    }
+
+    public <T> T getOtherListener(String key) {
+        //noinspection unchecked
+        return (T) otherListeners.get(key);
     }
 }
