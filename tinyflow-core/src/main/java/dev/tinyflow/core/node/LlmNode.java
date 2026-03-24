@@ -30,8 +30,8 @@ public class LlmNode extends BaseNode {
     protected String llmId;
     protected Llm.ChatOptions chatOptions;
     protected String userPrompt;
-
     protected String systemPrompt;
+    protected String jsonSchema;
     protected String outType = "text"; //text markdown json
     protected List<Parameter> images;
 
@@ -60,6 +60,14 @@ public class LlmNode extends BaseNode {
 
     public void setSystemPrompt(String systemPrompt) {
         this.systemPrompt = systemPrompt;
+    }
+
+    public String getJsonSchema() {
+        return jsonSchema;
+    }
+
+    public void setJsonSchema(String jsonSchema) {
+        this.jsonSchema = jsonSchema;
     }
 
     public Llm.ChatOptions getChatOptions() {

@@ -17,8 +17,9 @@ public class LlmNodeParser extends BaseNodeParser<LlmNode> {
         llmNode.setUserPrompt(data.getString("userPrompt"));
         llmNode.setSystemPrompt(data.getString("systemPrompt"));
         llmNode.setOutType(data.getString("outType"));
+        llmNode.setJsonSchema(data.getString("jsonSchema"));
 
-
+        
         Llm.ChatOptions chatOptions = new Llm.ChatOptions();
         chatOptions.setTopK(data.containsKey("topK") ? data.getInteger("topK") : 10);
         chatOptions.setTopP(data.containsKey("topP") ? data.getFloat("topP") : 0.8F);
