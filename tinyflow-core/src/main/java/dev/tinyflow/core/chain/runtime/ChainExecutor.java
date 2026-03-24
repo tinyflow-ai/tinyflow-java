@@ -21,12 +21,16 @@ import dev.tinyflow.core.chain.listener.ChainErrorListener;
 import dev.tinyflow.core.chain.listener.ChainEventListener;
 import dev.tinyflow.core.chain.listener.ChainOutputListener;
 import dev.tinyflow.core.chain.listener.NodeErrorListener;
-import dev.tinyflow.core.chain.repository.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import dev.tinyflow.core.chain.repository.ChainDefinitionRepository;
+import dev.tinyflow.core.chain.repository.ChainStateField;
+import dev.tinyflow.core.chain.repository.ChainStateRepository;
+import dev.tinyflow.core.chain.repository.NodeStateRepository;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * TinyFlow 最新 ChainExecutor
@@ -38,7 +42,6 @@ import java.util.concurrent.*;
  */
 public class ChainExecutor {
 
-    private static final Logger log = LoggerFactory.getLogger(ChainExecutor.class);
     private final ChainDefinitionRepository definitionRepository;
     private final ChainStateRepository chainStateRepository;
     private final NodeStateRepository nodeStateRepository;

@@ -141,7 +141,9 @@ public class TriggerScheduler {
 
         // cancel any existing scheduled future for same id
         ScheduledFuture<?> prev = scheduledFutures.remove(trigger.getId());
-        if (prev != null) prev.cancel(false);
+        if (prev != null) {
+            prev.cancel(false);
+        }
 
         ScheduledFuture<?> future = scheduler.schedule(() -> {
             // double-check existence in store (可能已被 cancel)
