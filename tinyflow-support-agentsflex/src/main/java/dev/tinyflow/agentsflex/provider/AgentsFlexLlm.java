@@ -62,9 +62,9 @@ public class AgentsFlexLlm implements Llm {
         chatOptions.setMaxTokens(options.getMaxTokens());
         chatOptions.setStop(options.getStop());
 
-        chatOptions.addMetadata(METADATA_KEY_LLM_ID, llmNode.getLlmId());
-        chatOptions.addMetadata(METADATA_KEY_CHAIN_NODE_ID, llmNode.getId());
-        chatOptions.addMetadata(METADATA_KEY_CHAIN_STATE_ID, chain.getStateInstanceId());
+        chatOptions.putMetadata(METADATA_KEY_LLM_ID, llmNode.getLlmId());
+        chatOptions.putMetadata(METADATA_KEY_CHAIN_NODE_ID, llmNode.getId());
+        chatOptions.putMetadata(METADATA_KEY_CHAIN_STATE_ID, chain.getStateInstanceId());
 
         String jsonSchema = llmNode.getJsonSchema();
         if (StringUtil.hasText(jsonSchema)) {
