@@ -66,10 +66,16 @@ public class AgentsFlexLlm implements Llm {
         chatOptions.putMetadata(METADATA_KEY_CHAIN_NODE_ID, llmNode.getId());
         chatOptions.putMetadata(METADATA_KEY_CHAIN_STATE_ID, chain.getStateInstanceId());
 
-        String jsonSchema = llmNode.getJsonSchema();
-        if (StringUtil.hasText(jsonSchema)) {
-            chatOptions.setResponseFormat(Maps.of("type", "json_schema").set("json_schema", jsonSchema));
+        String outType = llmNode.getOutType();
+        if ("json".equalsIgnoreCase(outType)) {
+            String jsonSchema = llmNode.getJsonSchema();
+            if (StringUtil.hasText(jsonSchema)) {
+                chatOptions.setResponseFormat(Maps.of("type", "json_schema").set("json_schema", jsonSchema));
+            } else {
+                chatOptions.setResponseFormat(Maps.of("type", "json_object"));
+            }
         }
+
 
         StreamResponseListener listener = chain.getEventManager().getOtherListener(AGENTS_FLEX_STREAM_LISTENER_NAME);
         // 流式执行
