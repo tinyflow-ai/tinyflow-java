@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -212,18 +211,18 @@ public class HttpNode extends BaseNode {
 
     public Map<String, Object> doExecute(Chain chain) throws IOException {
 
-        Map<String, Object> argsMap = chain.getState().resolveParameters(this);
-        String newUrl = TextTemplate.of(url).formatToString(Arrays.asList(argsMap, chain.getState().getEnvMap()));
+        Map<String, Object> formatParameters = getFormatParameters(chain);
+        String newUrl = TextTemplate.of(url).formatToString(formatParameters);
 
         Request.Builder reqBuilder = new Request.Builder().url(newUrl);
 
-        Map<String, Object> headersMap = chain.getState().resolveParameters(this, headers, argsMap);
+        Map<String, Object> headersMap = chain.getState().resolveParameters(this, headers, formatParameters);
         headersMap.forEach((s, o) -> reqBuilder.addHeader(s, String.valueOf(o)));
 
         if (StringUtil.noText(method) || "GET".equalsIgnoreCase(method)) {
             reqBuilder.method("GET", null);
         } else {
-            reqBuilder.method(method.toUpperCase(), getRequestBody(chain, argsMap));
+            reqBuilder.method(method.toUpperCase(), getRequestBody(chain, formatParameters));
         }
 
         OkHttpClient okHttpClient = OkHttpClientUtil.buildDefaultClient();
@@ -317,7 +316,7 @@ public class HttpNode extends BaseNode {
         }
 
         if ("raw".equals(bodyType)) {
-            String rawBodyString = TextTemplate.of(rawBody).formatToString(Arrays.asList(formatArgs, chain.getState().getEnvMap()));
+            String rawBodyString = TextTemplate.of(rawBody).formatToString(formatArgs);
             return RequestBody.create(rawBodyString, null);
         }
         //none

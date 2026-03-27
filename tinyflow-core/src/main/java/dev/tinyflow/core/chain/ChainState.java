@@ -370,6 +370,20 @@ public class ChainState implements Serializable {
         return formatArgsMap;
     }
 
+    public Map<String, Object> getStartParameters() {
+        Map<String, Object> startParameters = new LinkedHashMap<>();
+        ConcurrentHashMap<String, Object> memory = getMemory();
+        if (memory != null) {
+            memory.forEach((s, o) -> {
+                if (!s.contains(".")) {
+                    startParameters.put(s, o);
+                }
+            });
+        }
+        return startParameters;
+    }
+
+
     public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters, Map<String, Object> formatArgs, boolean ignoreRequired) {
         if (parameters == null || parameters.isEmpty()) {
             return Collections.emptyMap();
@@ -381,7 +395,7 @@ public class ChainState implements Serializable {
             Object value = null;
             if (refType == RefType.FIXED) {
                 value = TextTemplate.of(parameter.getValue())
-                        .formatToString(Arrays.asList(formatArgs, getEnvMap()));
+                        .formatToString(Arrays.asList(formatArgs, getEnvMap(), getStartParameters()));
             } else if (refType == RefType.REF) {
                 value = this.resolveValue(parameter.getRef());
             }

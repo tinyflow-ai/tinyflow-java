@@ -96,13 +96,13 @@ public class LlmNode extends BaseNode {
 
     @Override
     public Map<String, Object> execute(Chain chain) {
-        Map<String, Object> parameterValues = chain.getState().resolveParameters(this);
+        Map<String, Object> formatParameters = getFormatParameters(chain);
 
         if (StringUtil.noText(userPrompt)) {
             throw new RuntimeException("Can not find user prompt");
         }
 
-        String userPromptString = TextTemplate.of(userPrompt).formatToString(Arrays.asList(parameterValues, chain.getState().getEnvMap()));
+        String userPromptString = TextTemplate.of(userPrompt).formatToString(formatParameters);
 
 
         Llm llm = LlmManager.getInstance().getChatModel(this.llmId);
@@ -110,7 +110,7 @@ public class LlmNode extends BaseNode {
             throw new RuntimeException("Can not find llm: " + this.llmId);
         }
 
-        String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(Arrays.asList(parameterValues, chain.getState().getEnvMap()));
+        String systemPromptString = TextTemplate.of(this.systemPrompt).formatToString(formatParameters);
 
         Llm.MessageInfo messageInfo = new Llm.MessageInfo();
         messageInfo.setMessage(userPromptString);

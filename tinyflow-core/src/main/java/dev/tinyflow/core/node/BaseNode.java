@@ -16,11 +16,15 @@
 package dev.tinyflow.core.node;
 
 
+import dev.tinyflow.core.chain.Chain;
+import dev.tinyflow.core.chain.ChainState;
 import dev.tinyflow.core.chain.Node;
 import dev.tinyflow.core.chain.Parameter;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class BaseNode extends Node {
 
@@ -63,5 +67,23 @@ public abstract class BaseNode extends Node {
             outputDefs = new java.util.ArrayList<>();
         }
         outputDefs.addAll(parameters);
+    }
+
+
+    public Map<String, Object> getFormatParameters(Chain chain) {
+        Map<String, Object> allParameters = new HashMap<>();
+        ChainState state = chain.getState();
+        Map<String, Object> parameterValues = state.resolveParameters(this);
+        if (parameterValues != null) {
+            allParameters.putAll(parameterValues);
+        }
+
+        Map<String, Object> envMap = state.getEnvMap();
+        if (envMap != null) {
+            allParameters.putAll(envMap);
+        }
+
+        allParameters.putAll(state.getStartParameters());
+        return allParameters;
     }
 }
