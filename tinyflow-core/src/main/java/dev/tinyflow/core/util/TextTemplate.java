@@ -213,8 +213,13 @@ public class TextTemplate {
 
         // 尝试从 JSONPath 取值
         Object value = getValueByJsonPath(root, pr.expression, escapeForJsonOutput);
-        if (value != null) {
+        if (value instanceof CharSequence ||
+                value instanceof Number ||
+                value instanceof Boolean ||
+                value instanceof Character) {
             return value.toString();
+        } else if (value != null) {
+            return com.alibaba.fastjson2.JSON.toJSONString(value);
         }
 
         // 若未取到，则尝试 fallback
