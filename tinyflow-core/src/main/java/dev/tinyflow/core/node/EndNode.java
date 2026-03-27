@@ -15,8 +15,10 @@
  */
 package dev.tinyflow.core.node;
 
+import com.alibaba.fastjson2.JSON;
 import dev.tinyflow.core.chain.*;
 import dev.tinyflow.core.util.StringUtil;
+import dev.tinyflow.core.util.TextTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,18 +61,33 @@ public class EndNode extends BaseNode {
             output.put(ChainConsts.CHAIN_STATE_MESSAGE_KEY, message);
         }
 
+        Map<String, Object> formatParameters = getFormatParameters(chain);
+
+
         if (this.outputDefs != null) {
             for (Parameter outputDef : this.outputDefs) {
+                Object refObject = chain.getState().resolveValue(outputDef.getRef());
+                if (refObject instanceof CharSequence ||
+                        refObject instanceof Number ||
+                        refObject instanceof Boolean ||
+                        refObject instanceof Character) {
+                    refObject = refObject.toString();
+                } else if (refObject != null) {
+                    refObject = JSON.toJSONString(refObject);
+                }
+
                 if (outputDef.getRefType() == RefType.REF) {
-                    output.put(outputDef.getName(), chain.getState().resolveValue(outputDef.getRef()));
+                    output.put(outputDef.getName(), refObject);
                 } else if (outputDef.getRefType() == RefType.INPUT) {
                     output.put(outputDef.getName(), outputDef.getRef());
                 } else if (outputDef.getRefType() == RefType.FIXED) {
-                    output.put(outputDef.getName(), StringUtil.getFirstWithText(outputDef.getValue(), outputDef.getDefaultValue()));
+                    String value = TextTemplate.of(outputDef.getValue())
+                            .formatToString(formatParameters);
+                    output.put(outputDef.getName(), StringUtil.getFirstWithText(value, outputDef.getDefaultValue()));
                 }
                 // default is ref type
                 else if (StringUtil.hasText(outputDef.getRef())) {
-                    output.put(outputDef.getName(), chain.getState().resolveValue(outputDef.getRef()));
+                    output.put(outputDef.getName(), refObject);
                 }
             }
         }
