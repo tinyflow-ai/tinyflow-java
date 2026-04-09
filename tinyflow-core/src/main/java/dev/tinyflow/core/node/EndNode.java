@@ -15,7 +15,6 @@
  */
 package dev.tinyflow.core.node;
 
-import com.alibaba.fastjson2.JSON;
 import dev.tinyflow.core.chain.*;
 import dev.tinyflow.core.util.StringUtil;
 import dev.tinyflow.core.util.TextTemplate;
@@ -67,22 +66,12 @@ public class EndNode extends BaseNode {
         if (this.outputDefs != null) {
             for (Parameter outputDef : this.outputDefs) {
                 Object refObject = chain.getState().resolveValue(outputDef.getRef());
-                if (refObject instanceof CharSequence ||
-                        refObject instanceof Number ||
-                        refObject instanceof Boolean ||
-                        refObject instanceof Character) {
-                    refObject = refObject.toString();
-                } else if (refObject != null) {
-                    refObject = JSON.toJSONString(refObject);
-                }
-
                 if (outputDef.getRefType() == RefType.REF) {
                     output.put(outputDef.getName(), refObject);
                 } else if (outputDef.getRefType() == RefType.INPUT) {
                     output.put(outputDef.getName(), outputDef.getRef());
                 } else if (outputDef.getRefType() == RefType.FIXED) {
-                    String value = TextTemplate.of(outputDef.getValue())
-                            .formatToString(formatParameters);
+                    String value = TextTemplate.of(outputDef.getValue()).formatToString(formatParameters);
                     output.put(outputDef.getName(), StringUtil.getFirstWithText(value, outputDef.getDefaultValue()));
                 }
                 // default is ref type
