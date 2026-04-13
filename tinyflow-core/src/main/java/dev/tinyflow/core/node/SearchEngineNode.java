@@ -1,0 +1,111 @@
+/**
+ * Copyright (c) 2025-2026, Michael Yang 杨福海 (fuhai999@gmail.com).
+ * <p>
+ * Licensed under the GNU Lesser General Public License (LGPL) ,Version 3.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.gnu.org/licenses/lgpl-3.0.txt
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package dev.tinyflow.core.node;
+
+import dev.tinyflow.core.chain.Chain;
+import dev.tinyflow.core.searchengine.SearchEngine;
+import dev.tinyflow.core.searchengine.SearchEngineManager;
+import dev.tinyflow.core.util.Maps;
+import dev.tinyflow.core.util.StringUtil;
+import dev.tinyflow.core.util.TextTemplate;
+import org.slf4j.Logger;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+public class SearchEngineNode extends BaseNode {
+
+    private static final Logger logger = org.slf4j.LoggerFactory.getLogger(SearchEngineNode.class);
+
+    private String engine;
+    private String limit;
+    private String keyword;
+
+    public String getEngine() {
+        return engine;
+    }
+
+    public void setEngine(String engine) {
+        this.engine = engine;
+    }
+
+    public String getLimit() {
+        return limit;
+    }
+
+    public void setLimit(String limit) {
+        this.limit = limit;
+    }
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
+    }
+
+    @Override
+    public Map<String, Object> execute(Chain chain) {
+        Map<String, Object> formatParameters = getFormatParameters(chain);
+        String realKeyword = TextTemplate.of(keyword).formatToString(formatParameters);
+        String realLimitString = TextTemplate.of(limit).formatToString(formatParameters);
+        int realLimit = 10;
+        if (StringUtil.hasText(realLimitString)) {
+            try {
+                realLimit = Integer.parseInt(realLimitString);
+            } catch (Exception e) {
+                logger.error(e.toString(), e);
+            }
+        }
+
+        SearchEngine searchEngine = SearchEngineManager.getInstance().geSearchEngine(engine);
+
+        if (searchEngine == null) {
+            return Collections.emptyMap();
+        }
+
+        List<Map<String, Object>> result = searchEngine.search(realKeyword, realLimit, this, chain);
+        return Maps.of("documents", result);
+    }
+
+
+    @Override
+    public String toString() {
+        return "SearchEngineNode{" +
+                "engine='" + engine + '\'' +
+                ", limit='" + limit + '\'' +
+                ", keyword='" + keyword + '\'' +
+                ", parameters=" + parameters +
+                ", outputDefs=" + outputDefs +
+                ", id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", condition=" + condition +
+                ", validator=" + validator +
+                ", loopEnable=" + loopEnable +
+                ", loopIntervalMs=" + loopIntervalMs +
+                ", loopBreakCondition=" + loopBreakCondition +
+                ", maxLoopCount=" + maxLoopCount +
+                ", retryEnable=" + retryEnable +
+                ", resetRetryCountAfterNormal=" + resetRetryCountAfterNormal +
+                ", maxRetryCount=" + maxRetryCount +
+                ", retryIntervalMs=" + retryIntervalMs +
+                ", computeCostExpr='" + computeCostExpr + '\'' +
+                '}';
+    }
+}

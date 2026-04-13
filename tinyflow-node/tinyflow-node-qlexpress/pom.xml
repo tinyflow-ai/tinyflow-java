@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>dev.tinyflow</groupId>
+        <artifactId>tinyflow-node</artifactId>
+        <version>2.0.2</version>
+    </parent>
+
+    <name>tinyflow-node-qlexpress</name>
+    <artifactId>tinyflow-node-qlexpress</artifactId>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>qlexpress4</artifactId>
+            <version>4.0.5</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.tinyflow</groupId>
+            <artifactId>tinyflow-core</artifactId>
+            <version>2.0.2</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+</project>

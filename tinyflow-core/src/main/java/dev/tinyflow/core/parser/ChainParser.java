@@ -1,0 +1,201 @@
+/**
+ * Copyright (c) 2025-2026, Michael Yang 杨福海 (fuhai999@gmail.com).
+ * <p>
+ * Licensed under the GNU Lesser General Public License (LGPL) ,Version 3.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.gnu.org/licenses/lgpl-3.0.txt
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package dev.tinyflow.core.parser;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import dev.tinyflow.core.chain.ChainDefinition;
+import dev.tinyflow.core.chain.Edge;
+import dev.tinyflow.core.chain.JsCodeCondition;
+import dev.tinyflow.core.chain.Node;
+import dev.tinyflow.core.util.CollectionUtil;
+import dev.tinyflow.core.util.StringUtil;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class ChainParser {
+
+    private final Map<String, NodeParser<?>> nodeParserMap;
+
+    public ChainParser(Map<String, NodeParser<?>> nodeParserMap) {
+        this.nodeParserMap = nodeParserMap;
+    }
+
+    public Map<String, NodeParser<?>> getNodeParserMap() {
+        return nodeParserMap;
+    }
+
+    public void addNodeParser(String type, NodeParser<?> nodeParser) {
+        this.nodeParserMap.put(type, nodeParser);
+    }
+
+    public void removeNodeParser(String type) {
+        this.nodeParserMap.remove(type);
+    }
+
+
+    public ChainDefinition parse(String jsonString) {
+        if (StringUtil.noText(jsonString)) {
+            throw new IllegalStateException("jsonString is empty");
+        }
+
+        JSONObject root = JSON.parseObject(jsonString);
+        JSONArray nodes = root.getJSONArray("nodes");
+        JSONArray edges = root.getJSONArray("edges");
+
+        return parse(root, nodes, edges);
+    }
+
+
+    public ChainDefinition parse(JSONObject chainJSONObject, JSONArray nodes, JSONArray edges) {
+        if (CollectionUtil.noItems(nodes) || CollectionUtil.noItems(edges)) {
+            return null;
+        }
+
+        ChainDefinition definition = new ChainDefinition();
+        for (int i = 0; i < nodes.size(); i++) {
+            JSONObject nodeObject = nodes.getJSONObject(i);
+//            if ((parentNode == null && StringUtil.noText(nodeObject.getString("parentId")))
+//                    || (parentNode != null && parentNode.getString("id").equals(nodeObject.getString("parentId")))) {
+                Node node = parseNode(chainJSONObject, nodeObject);
+                if (node != null) {
+                    definition.addNode(node);
+                }
+//            }
+        }
+
+        for (int i = 0; i < edges.size(); i++) {
+//            JSONObject edgeObject = edges.getJSONObject(i);
+//            JSONObject edgeData = edgeObject.getJSONObject("data");
+//            if ((parentNode == null && (edgeData == null || StringUtil.noText(edgeData.getString("parentNodeId"))))
+//                    || (parentNode != null && edgeData != null && edgeData.getString("parentNodeId").equals(parentNode.getString("id"))
+//                    //不添加子流程里的第一条 edge（也就是父节点连接子节点的第一条线）
+//                    && !parentNode.getString("id").equals(edgeObject.getString("source")))) {
+//                ChainEdge edge = parseEdge(edgeObject);
+//                if (edge != null) {
+//                    chain.addEdge(edge);
+//                }
+//            }
+
+            JSONObject edgeObject = edges.getJSONObject(i);
+            Edge edge = parseEdge(edgeObject);
+            if (edge == null) {
+                continue;
+            }
+//            if (parentNode == null ||
+//                    //不添加子流程里的第一条 edge（也就是父节点连接子节点的第一条线）
+//                    (!parentNode.getString("id").equals(edgeObject.getString("source")))
+//            ) {
+                definition.addEdge(edge);
+//            }
+        }
+
+        return definition;
+    }
+
+    private Node parseNode(JSONObject chainJSONObject, JSONObject nodeObject) {
+        String type = nodeObject.getString("type");
+        if (StringUtil.noText(type)) {
+            return null;
+        }
+
+        NodeParser<?> nodeParser = nodeParserMap.get(type);
+        return nodeParser == null ? null : nodeParser.parse(nodeObject, chainJSONObject, this);
+    }
+
+
+    private Edge parseEdge(JSONObject edgeObject) {
+        if (edgeObject == null) return null;
+        Edge edge = new Edge();
+        edge.setId(edgeObject.getString("id"));
+        edge.setSource(edgeObject.getString("source"));
+        edge.setTarget(edgeObject.getString("target"));
+
+        JSONObject data = edgeObject.getJSONObject("data");
+        if (data == null || data.isEmpty()) {
+            return edge;
+        }
+
+        String conditionString = data.getString("condition");
+        if (StringUtil.hasText(conditionString)) {
+            edge.setCondition(new JsCodeCondition(conditionString.trim()));
+        }
+        return edge;
+    }
+
+    public void addAllParsers(Map<String, NodeParser<?>> defaultNodeParsers) {
+        this.nodeParserMap.putAll(defaultNodeParsers);
+    }
+    
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+
+    public static final class Builder {
+
+        private final Map<String, NodeParser<?>> customParsers = new HashMap<>();
+        private boolean includeDefaults = true;
+
+        private Builder() {
+        }
+
+        /**
+         * 是否包含默认节点解析器（默认为 true）。
+         */
+        public Builder withDefaultParsers(boolean include) {
+            this.includeDefaults = include;
+            return this;
+        }
+
+        /**
+         * 添加自定义节点解析器（会覆盖同名的默认解析器）。
+         */
+        public Builder addParser(String type, NodeParser<?> parser) {
+            if (type == null || parser == null) {
+                throw new IllegalArgumentException("type and parser must not be null");
+            }
+            this.customParsers.put(type, parser);
+            return this;
+        }
+
+        /**
+         * 批量添加自定义解析器。
+         */
+        public Builder addParsers(Map<String, NodeParser<?>> parsers) {
+            if (parsers != null) {
+                this.customParsers.putAll(parsers);
+            }
+            return this;
+        }
+
+        public ChainParser build() {
+            Map<String, NodeParser<?>> finalMap = new HashMap<>();
+
+            if (includeDefaults) {
+                finalMap.putAll(DefaultNodeParsers.getDefaultNodeParsers());
+            }
+
+            // 自定义解析器覆盖默认
+            finalMap.putAll(customParsers);
+
+            return new ChainParser(finalMap);
+        }
+    }
+}

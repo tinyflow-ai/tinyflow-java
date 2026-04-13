@@ -7,11 +7,11 @@
     <groupId>dev.tinyflow</groupId>
     <name>tinyflow-java</name>
     <artifactId>tinyflow-java</artifactId>
-    <version>1.2.6</version>
+    <version>2.0.2</version>
     <packaging>pom</packaging>
 
     <url>https://tinyflow.dev</url>
-    <description>Tinyflow-java is an intelligent agent orchestration solution developed using Java. It is not a product,
+    <description>Tinyflow is an intelligent agent orchestration solution developed using Java. It is not a product,
         but a development component. By integrating Tinyflow-java, you can make any traditional Java Web application
         have the ability to orchestrate AI intelligent agents.
     </description>
@@ -43,21 +43,48 @@
     </scm>
 
     <modules>
-        <module>tinyflow-java-core</module>
+        <module>tinyflow-core</module>
+        <module>tinyflow-node</module>
+        <module>tinyflow-support-springai</module>
+        <module>tinyflow-support-langchain4j</module>
+        <module>tinyflow-support-agentsflex</module>
+        <module>tinyflow-support-solonai</module>
     </modules>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <langchain4j.version>1.7.1</langchain4j.version>
+        <agentsflex.version>2.0.8</agentsflex.version>
+        <springai.version>1.0.0-M6</springai.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- 基础核心包 -->
+            <dependency>
+                <groupId>dev.tinyflow</groupId>
+                <artifactId>tinyflow-core</artifactId>
+                <version>2.0.2</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.agentsflex</groupId>
                 <artifactId>agents-flex-bom</artifactId>
-                <version>1.4.0</version>
+                <version>${agentsflex.version}</version>
+            </dependency>
+            <dependency>
+                <!-- langchain4j 核心依赖-->
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j</artifactId>
+                <version>${langchain4j.version}</version>
+            </dependency>
+            <!--    spring-ai -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-core</artifactId>
+                <version>${springai.version}</version>
             </dependency>
 
             <!--使用 enjoy 模板引擎-->
