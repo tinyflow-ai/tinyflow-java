@@ -15,6 +15,8 @@
  */
 package dev.tinyflow.core.chain;
 
+import java.util.Map;
+
 /**
  * 链（Chain）执行生命周期状态枚举
  * <p>
@@ -35,7 +37,7 @@ public enum ChainStatus {
      * 初始状态：Chain 已创建，但尚未开始执行。
      * <p>
      * 此状态下，Chain 的内存为空，节点尚未触发。
-     * 调用 {@link Chain#execute} 或 {@link Chain#doExecute} 后进入 {@link #RUNNING}。
+     * 调用 {@link Chain#start(Map)} 后进入 {@link #RUNNING}。
      */
     READY(0),
 
@@ -55,7 +57,6 @@ public enum ChainStatus {
      * - 人工审批节点（等待管理员操作）
      * <p>
      * 恢复方式：调用 {@link Chain#resume(Map)} 注入所需变量。
-     * 监听器：通过 {@link dev.tinyflow.core.chain.listener.ChainSuspendListener} 感知。
      */
     SUSPEND(5),
 
