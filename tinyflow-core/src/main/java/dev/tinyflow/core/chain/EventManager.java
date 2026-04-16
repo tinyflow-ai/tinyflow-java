@@ -42,11 +42,9 @@ public class EventManager {
      * ---------- 通用事件监听器 ----------
      */
     public void addEventListener(Class<? extends Event> eventClass, ChainEventListener listener) {
-        MapUtil.computeIfAbsent(eventListeners, eventClass, k -> {
-            CopyOnWriteArrayList<ChainEventListener> objects = new CopyOnWriteArrayList<>();
-            objects.add(listener);
-            return objects;
-        });
+        List<ChainEventListener> chainEventListeners = eventListeners.computeIfAbsent(eventClass
+                , k -> new CopyOnWriteArrayList<>());
+        chainEventListeners.add(listener);
     }
 
     public void addEventListener(ChainEventListener listener) {
@@ -55,7 +53,12 @@ public class EventManager {
 
     public void removeEventListener(Class<? extends Event> eventClass, ChainEventListener listener) {
         List<ChainEventListener> list = eventListeners.get(eventClass);
-        if (list != null) list.remove(listener);
+        if (list != null) {
+            list.remove(listener);
+            if (list.isEmpty()) {
+                eventListeners.remove(eventClass, list);
+            }
+        }
     }
 
     public void removeEventListener(ChainEventListener listener) {
