@@ -90,6 +90,10 @@ public class ChainExecutor {
                     Map<String, Object> execResult = state.getExecuteResult();
                     future.complete(execResult != null ? execResult : Collections.emptyMap());
                 }
+                // 挂起状态
+                else if (((ChainStatusChangeEvent) event).getStatus() == ChainStatus.SUSPEND) {
+                    future.completeExceptionally(new ChainSuspendException("Chain is suspended", ((ChainStatusChangeEvent) event).getChain().getState().getSuspendForParameters()));
+                }
             }
         };
 
