@@ -119,7 +119,11 @@ public class ChainExecutor {
             throw new RuntimeException("Execution interrupted", e);
         } catch (Throwable e) {
             future.cancel(true);
-            throw new RuntimeException("Execution failed", e.getCause());
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeException("Execution failed", e.getCause());
+            }
         } finally {
             this.removeEventListener(listener);
             this.removeErrorListener(errorListener);
