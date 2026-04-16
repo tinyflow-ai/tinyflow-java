@@ -93,6 +93,7 @@ public class ChainExecutor {
                 else if (((ChainStatusChangeEvent) event).getStatus() == ChainStatus.SUSPEND) {
                     future.completeExceptionally(new ChainSuspendException(
                             "Chain is suspended"
+                            , c.getStateInstanceId()
                             , ((ChainStatusChangeEvent) event).getChain().getState().getSuspendForParameters())
                     );
                 }

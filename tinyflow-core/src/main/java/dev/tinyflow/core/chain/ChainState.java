@@ -451,7 +451,7 @@ public class ChainState implements Serializable {
                     missingParams
             );
 
-            throw new ChainSuspendException(errorMessage, suspendParameters);
+            throw new ChainSuspendException(errorMessage, this.instanceId, suspendParameters);
         }
 
         return variables;

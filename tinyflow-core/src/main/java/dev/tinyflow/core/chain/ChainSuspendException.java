@@ -19,11 +19,17 @@ import java.util.List;
 
 public class ChainSuspendException extends RuntimeException {
 
+    private final String chainStateId;
     private final List<Parameter> suspendParameters;
 
-    public ChainSuspendException(String message, List<Parameter> suspendParameters) {
+    public ChainSuspendException(String message, String chainStateId, List<Parameter> suspendParameters) {
         super(message);
+        this.chainStateId = chainStateId;
         this.suspendParameters = suspendParameters;
+    }
+
+    public String getChainStateId() {
+        return chainStateId;
     }
 
     public List<Parameter> getSuspendParameters() {
