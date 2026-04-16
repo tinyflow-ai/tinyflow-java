@@ -27,10 +27,7 @@ import dev.tinyflow.core.chain.repository.ChainStateRepository;
 import dev.tinyflow.core.chain.repository.NodeStateRepository;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 /**
  * TinyFlow 最新 ChainExecutor
@@ -122,10 +119,14 @@ public class ChainExecutor {
             throw new RuntimeException("Execution interrupted", e);
         } catch (Throwable e) {
             future.cancel(true);
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
+            Throwable err = e;
+            if (e instanceof ExecutionException) {
+                err = e.getCause();
+            }
+            if (err instanceof RuntimeException) {
+                throw (RuntimeException) err;
             } else {
-                throw new RuntimeException("Execution failed", e.getCause());
+                throw new RuntimeException("Execution failed", err.getCause());
             }
         } finally {
             this.removeEventListener(listener);
