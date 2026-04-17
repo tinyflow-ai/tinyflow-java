@@ -25,6 +25,7 @@ import dev.tinyflow.core.chain.repository.ChainDefinitionRepository;
 import dev.tinyflow.core.chain.repository.ChainStateField;
 import dev.tinyflow.core.chain.repository.ChainStateRepository;
 import dev.tinyflow.core.chain.repository.NodeStateRepository;
+import dev.tinyflow.core.util.StringUtil;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -75,7 +76,7 @@ public class ChainExecutor {
 
 
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables, long timeout, TimeUnit unit) {
-        Chain chain = createChain(definitionId);
+        Chain chain = createChain(definitionId, null);
         String stateInstanceId = chain.getStateInstanceId();
         CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
@@ -150,7 +151,7 @@ public class ChainExecutor {
     }
 
     public String executeAsync(String definitionId, Map<String, Object> variables) {
-        Chain chain = createChain(definitionId);
+        Chain chain = createChain(definitionId, null);
         chain.start(variables);
         return chain.getStateInstanceId();
     }
@@ -167,7 +168,7 @@ public class ChainExecutor {
     public Map<String, Object> executeNode(String definitionId, String nodeId, Map<String, Object> variables) {
         ChainDefinition chainDefinitionById = definitionRepository.getChainDefinitionById(definitionId);
         Node node = chainDefinitionById.getNodeById(nodeId);
-        Chain temp = createChain(definitionId);
+        Chain temp = createChain(definitionId, null);
         if (variables != null && !variables.isEmpty()) {
             temp.updateStateSafely(s -> {
                 s.getMemory().putAll(variables);
@@ -192,6 +193,74 @@ public class ChainExecutor {
     }
 
 
+    public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables) {
+        return resume(stateInstanceId, variables, Long.MAX_VALUE, TimeUnit.SECONDS);
+    }
+
+
+    public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables, long timeout, TimeUnit unit) {
+        ChainState state = chainStateRepository.load(stateInstanceId);
+        if (state == null) {
+            throw new ChainStateNotFoundException(stateInstanceId);
+        }
+
+        CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
+        ChainEventListener listener = (event, c) -> {
+            if (event instanceof ChainStatusChangeEvent && c.getStateInstanceId().equals(stateInstanceId)) {
+                if (((ChainStatusChangeEvent) event).getStatus().isTerminal()) {
+                    ChainState stateResult = chainStateRepository.load(stateInstanceId);
+                    Map<String, Object> execResult = stateResult.getExecuteResult();
+                    future.complete(execResult != null ? execResult : Collections.emptyMap());
+                }
+                // 挂起状态
+                else if (((ChainStatusChangeEvent) event).getStatus() == ChainStatus.SUSPEND) {
+                    future.completeExceptionally(new ChainSuspendException(
+                            "Chain is suspended"
+                            , c.getStateInstanceId()
+                            , ((ChainStatusChangeEvent) event).getChain().getState().getSuspendForParameters())
+                    );
+                }
+            }
+        };
+
+        ChainErrorListener errorListener = (error, c) -> {
+            if (c.getStateInstanceId().equals(stateInstanceId)) {
+                future.completeExceptionally(error);
+            }
+        };
+
+        try {
+            this.addEventListener(listener);
+            this.addErrorListener(errorListener);
+            createChain(state.getChainDefinitionId(), stateInstanceId).resume(variables);
+            Map<String, Object> result = future.get(timeout, unit);
+            clearDefaultStates(result);
+            return result;
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            throw new RuntimeException("Execution timed out", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            future.cancel(true);
+            throw new RuntimeException("Execution interrupted", e);
+        } catch (Throwable e) {
+            future.cancel(true);
+            Throwable err = e;
+            if (e instanceof ExecutionException) {
+                err = e.getCause();
+            }
+            if (err instanceof RuntimeException) {
+                throw (RuntimeException) err;
+            } else {
+                throw new RuntimeException("Execution failed", err.getCause());
+            }
+        } finally {
+            this.removeEventListener(listener);
+            this.removeErrorListener(errorListener);
+        }
+    }
+
+
     public void resumeAsync(String stateInstanceId) {
         this.resumeAsync(stateInstanceId, Collections.emptyMap());
     }
@@ -208,23 +277,18 @@ public class ChainExecutor {
             return;
         }
 
-        Chain chain = new Chain(definition, state.getInstanceId());
-        chain.setTriggerScheduler(triggerScheduler);
-        chain.setChainStateRepository(chainStateRepository);
-        chain.setNodeStateRepository(nodeStateRepository);
-        chain.setEventManager(eventManager);
-
+        Chain chain = createChain(state.getChainDefinitionId(), state.getInstanceId());
         chain.resume(variables);
     }
 
 
-    private Chain createChain(String definitionId) {
+    private Chain createChain(String definitionId, String stateInstanceId) {
         ChainDefinition definition = definitionRepository.getChainDefinitionById(definitionId);
         if (definition == null) {
-            throw new RuntimeException("Chain definition not found");
+            throw new ChainDefinitionNotFoundException(definitionId);
         }
 
-        String stateInstanceId = UUID.randomUUID().toString();
+        stateInstanceId = StringUtil.hasText(stateInstanceId) ? stateInstanceId : UUID.randomUUID().toString();
         Chain chain = new Chain(definition, stateInstanceId);
         chain.setTriggerScheduler(triggerScheduler);
         chain.setChainStateRepository(chainStateRepository);
