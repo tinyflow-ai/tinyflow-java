@@ -77,62 +77,7 @@ public class ChainExecutor {
 
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables, long timeout, TimeUnit unit) {
         Chain chain = createChain(definitionId, null);
-        String stateInstanceId = chain.getStateInstanceId();
-        CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
-
-        ChainEventListener listener = (event, c) -> {
-            if (event instanceof ChainStatusChangeEvent && c.getStateInstanceId().equals(stateInstanceId)) {
-                if (((ChainStatusChangeEvent) event).getStatus().isTerminal()) {
-                    ChainState state = chainStateRepository.load(stateInstanceId);
-                    Map<String, Object> execResult = state.getExecuteResult();
-                    future.complete(execResult != null ? execResult : Collections.emptyMap());
-                }
-                // 挂起状态
-                else if (((ChainStatusChangeEvent) event).getStatus() == ChainStatus.SUSPEND) {
-                    future.completeExceptionally(new ChainSuspendException(
-                            "Chain is suspended"
-                            , c.getStateInstanceId()
-                            , ((ChainStatusChangeEvent) event).getChain().getState().getSuspendForParameters())
-                    );
-                }
-            }
-        };
-
-        ChainErrorListener errorListener = (error, c) -> {
-            if (c.getStateInstanceId().equals(stateInstanceId)) {
-                future.completeExceptionally(error);
-            }
-        };
-
-        try {
-            this.addEventListener(listener);
-            this.addErrorListener(errorListener);
-            chain.start(variables);
-            Map<String, Object> result = future.get(timeout, unit);
-            clearDefaultStates(result);
-            return result;
-        } catch (TimeoutException e) {
-            future.cancel(true);
-            throw new RuntimeException("Execution timed out", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            future.cancel(true);
-            throw new RuntimeException("Execution interrupted", e);
-        } catch (Throwable e) {
-            future.cancel(true);
-            Throwable err = e;
-            if (e instanceof ExecutionException) {
-                err = e.getCause();
-            }
-            if (err instanceof RuntimeException) {
-                throw (RuntimeException) err;
-            } else {
-                throw new RuntimeException("Execution failed", err.getCause());
-            }
-        } finally {
-            this.removeEventListener(listener);
-            this.removeErrorListener(errorListener);
-        }
+        return this.startOrResume(chain, variables, false, timeout, unit);
     }
 
     /**
@@ -203,7 +148,12 @@ public class ChainExecutor {
         if (state == null) {
             throw new ChainStateNotFoundException(stateInstanceId);
         }
+        Chain chain = createChain(state.getChainDefinitionId(), stateInstanceId);
+        return this.startOrResume(chain, variables, true, timeout, unit);
+    }
 
+    private Map<String, Object> startOrResume(Chain chain, Map<String, Object> variables, boolean isResume, long timeout, TimeUnit unit) {
+        String stateInstanceId = chain.getStateInstanceId();
         CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
         ChainEventListener listener = (event, c) -> {
             if (event instanceof ChainStatusChangeEvent && c.getStateInstanceId().equals(stateInstanceId)) {
@@ -232,7 +182,11 @@ public class ChainExecutor {
         try {
             this.addEventListener(listener);
             this.addErrorListener(errorListener);
-            createChain(state.getChainDefinitionId(), stateInstanceId).resume(variables);
+            if (isResume) {
+                chain.resume(variables);
+            } else {
+                chain.start(variables);
+            }
             Map<String, Object> result = future.get(timeout, unit);
             clearDefaultStates(result);
             return result;
