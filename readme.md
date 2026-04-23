@@ -21,7 +21,7 @@ Tinyflow-java 是一个使用 Java 开发的智能体编排解决方案，她不
 ```xml
 <dependency>
     <groupId>dev.tinyflow</groupId>
-    <artifactId>tinyflow-java-core</artifactId>
+    <artifactId>tinyflow-core</artifactId>
     <version>2.0.3</version>
 </dependency>
 ```
@@ -29,15 +29,27 @@ Tinyflow-java 是一个使用 Java 开发的智能体编排解决方案，她不
 初始化 Tinyflow
 
 ```java
-String flowDataJson = "从前端传递的流程数据";
-Tinyflow tinyflow = new Tinyflow(flowDataJson);
+ChainExecutor executor = new ChainExecutor(
+        new ChainDefinitionRepository() 
+        , new InMemoryChainStateRepository()
+        , new InMemoryNodeStateRepository()
+);
+
+executor.addEventListener(new ChainEventListener() {
+    @Override
+    public void onEvent(Event event, Chain chain) {
+        System.out.println(event.toString());
+    }
+});
 
 Map<String, Object> variables = new HashMap<>();
 variables.put("name", "张三");
 variables.put("age", 18);
 
-tinyflow.execute(variables);
+Map<String, Object> result = executor.execute("1", variables);
 ```
+
+请移步了解请查看文档： https://www.tinyflow.cn/zh/chain/chain-executor.html
 
 
 ## Star 用户专属交流群
