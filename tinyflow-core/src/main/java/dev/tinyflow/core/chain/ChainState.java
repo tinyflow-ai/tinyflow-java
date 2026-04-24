@@ -409,7 +409,8 @@ public class ChainState implements Serializable {
             }
 
             if (refType == RefType.INPUT && isNullOrBlank(value)) {
-                if (!ignoreRequired && parameter.isRequired()) {
+//                if (!ignoreRequired && parameter.isRequired()) {
+                if (!ignoreRequired) {
                     if (suspendParameters == null) {
                         suspendParameters = new ArrayList<>();
                     }
