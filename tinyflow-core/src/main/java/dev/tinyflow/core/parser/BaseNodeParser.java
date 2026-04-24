@@ -84,6 +84,19 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
             parameter.setFormAttrs(parameterJsonObject.getString("formAttrs"));
             parameter.setFormDescription(parameterJsonObject.getString("formDescription"));
 
+            if ("input".equalsIgnoreCase(parameter.getRefType().getValue())) {
+                if (StringUtil.noText(parameter.getContentType())) {
+                    parameter.setContentType("text");
+                }
+                if (StringUtil.noText(parameter.getFormType())) {
+                    parameter.setFormType("input");
+                }
+                if (StringUtil.noText(parameter.getFormLabel())) {
+                    parameter.setFormLabel(parameter.getName());
+                }
+            }
+
+
             JSONArray children = parameterJsonObject.getJSONArray("children");
             if (children != null && !children.isEmpty()) {
                 parameter.addChildren(getParameters(children));
