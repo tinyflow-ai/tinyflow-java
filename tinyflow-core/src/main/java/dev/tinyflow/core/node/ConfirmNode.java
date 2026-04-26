@@ -44,7 +44,7 @@ public class ConfirmNode extends BaseNode {
     public void setConfirms(List<Parameter> confirms) {
         if (confirms != null) {
             for (Parameter confirm : confirms) {
-                confirm.setRefType(RefType.INPUT);
+                confirm.setRefType(RefType.FORM);
                 confirm.setRequired(true); // 必填，才能正确通过 getParameterValuesOnly 获取参数值
                 confirm.setName(confirm.getName());
             }
@@ -63,7 +63,7 @@ public class ConfirmNode extends BaseNode {
             for (Parameter confirm : confirms) {
                 Parameter clone = confirm.clone();
                 clone.setName(confirm.getName() + "__" + getId());
-                clone.setRefType(RefType.INPUT);
+                clone.setRefType(RefType.FORM);
                 confirmParameters.add(clone);
             }
         }
@@ -126,7 +126,7 @@ public class ConfirmNode extends BaseNode {
     private void addConfirmParameter(List<Parameter> parameters) {
         // “确认 和 取消” 的参数
         Parameter parameter = new Parameter();
-        parameter.setRefType(RefType.INPUT);
+        parameter.setRefType(RefType.FORM);
         parameter.setId("confirm");
         parameter.setName("confirm__" + getId());
         parameter.setRequired(true);
