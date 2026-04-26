@@ -84,7 +84,9 @@ public abstract class BaseNodeParser<T extends BaseNode> implements NodeParser<T
             parameter.setFormAttrs(parameterJsonObject.getString("formAttrs"));
             parameter.setFormDescription(parameterJsonObject.getString("formDescription"));
 
-            if ("input".equalsIgnoreCase(parameter.getRefType().getValue())) {
+            //form 的一些默认值
+            RefType refType = parameter.getRefType();
+            if (refType != null && "form".equalsIgnoreCase(refType.getValue())) {
                 if (StringUtil.noText(parameter.getContentType())) {
                     parameter.setContentType("text");
                 }
