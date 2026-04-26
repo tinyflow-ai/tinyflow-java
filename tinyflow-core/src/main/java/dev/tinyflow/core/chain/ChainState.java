@@ -399,7 +399,21 @@ public class ChainState implements Serializable {
             } else if (refType == RefType.REF) {
                 value = this.resolveValue(parameter.getRef());
             }
-            // 单节点执行时，参数只会传入 name 内容。
+            // 开始节点
+            else if (refType == RefType.INPUT) {
+                value = this.resolveValue(parameter.getName());
+                if (value == null && parameter.getDefaultValue() != null) {
+                    value = parameter.getDefaultValue();
+                }
+                if (isNullOrBlank(value) && parameter.isRequired() && !ignoreRequired) {
+                    if (suspendParameters == null) {
+                        suspendParameters = new ArrayList<>();
+                    }
+                    suspendParameters.add(parameter);
+                    continue;
+                }
+            }
+            // 单节点（只有 1 个节点，或者直接点击节点执行）执行时，参数只会传入 name 内容。
             if (value == null) {
                 value = this.resolveValue(parameter.getName());
             }
@@ -408,16 +422,45 @@ public class ChainState implements Serializable {
                 value = parameter.getDefaultValue();
             }
 
-            if (refType == RefType.INPUT && isNullOrBlank(value)) {
+//            if (refType == RefType.INPUT && isNullOrBlank(value)) {
 //                if (!ignoreRequired && parameter.isRequired()) {
-                if (!ignoreRequired) {
+//                    if (suspendParameters == null) {
+//                        suspendParameters = new ArrayList<>();
+//                    }
+//                    suspendParameters.add(parameter);
+//                    continue;
+//                }
+//            }
+
+            // 用户表单输入
+            if (refType == RefType.FORM) {
+                // 前端未传入任何值，包括空字符串
+                if (value == null && !ignoreRequired) {
                     if (suspendParameters == null) {
                         suspendParameters = new ArrayList<>();
                     }
                     suspendParameters.add(parameter);
                     continue;
                 }
+
+                // 如果前端传入了空值
+                if (value instanceof String && StringUtil.noText((String) value) && parameter.isRequired() && !ignoreRequired) {
+                    if (suspendParameters == null) {
+                        suspendParameters = new ArrayList<>();
+                    }
+                    suspendParameters.add(parameter);
+                    continue;
+                }
+
+//                if (!ignoreRequired && parameter.isRequired()) {
+//                    if (suspendParameters == null) {
+//                        suspendParameters = new ArrayList<>();
+//                    }
+//                    suspendParameters.add(parameter);
+//                    continue;
+//                }
             }
+
 
             if (parameter.isRequired() && isNullOrBlank(value)) {
                 if (!ignoreRequired) {

@@ -21,7 +21,8 @@ import com.alibaba.fastjson.annotation.JSONType;
 public enum RefType {
     REF("ref"),
     FIXED("fixed"),
-    INPUT("input"),
+    INPUT("input"), // 开始节点
+    FORM("form"), // 表单节点 和 确认节点等
     ;
 
     private final String value;

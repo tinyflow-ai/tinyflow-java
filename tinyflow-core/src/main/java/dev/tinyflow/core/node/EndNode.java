@@ -66,11 +66,13 @@ public class EndNode extends BaseNode {
         if (this.outputDefs != null) {
             for (Parameter outputDef : this.outputDefs) {
                 Object refObject = chain.getState().resolveValue(outputDef.getRef());
-                if (outputDef.getRefType() == RefType.REF) {
+                RefType refType = outputDef.getRefType();
+                if (refType == RefType.REF) {
                     output.put(outputDef.getName(), refObject);
-                } else if (outputDef.getRefType() == RefType.INPUT) {
-                    output.put(outputDef.getName(), outputDef.getRef());
-                } else if (outputDef.getRefType() == RefType.FIXED) {
+                } else if (refType == RefType.INPUT || refType == RefType.FORM) {
+                    Object resolveValue = chain.getState().resolveValue(outputDef.getName());
+                    output.put(outputDef.getName(), resolveValue);
+                } else if (refType == RefType.FIXED) {
                     String value = TextTemplate.of(outputDef.getValue()).formatToString(formatParameters);
                     output.put(outputDef.getName(), StringUtil.getFirstWithText(value, outputDef.getDefaultValue()));
                 }
