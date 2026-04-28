@@ -42,7 +42,7 @@ public class EventManager {
      * ---------- 通用事件监听器 ----------
      */
     public void addEventListener(Class<? extends Event> eventClass, ChainEventListener listener) {
-        List<ChainEventListener> chainEventListeners = eventListeners.computeIfAbsent(eventClass
+        List<ChainEventListener> chainEventListeners = MapUtil.computeIfAbsent(eventListeners, eventClass
                 , k -> new CopyOnWriteArrayList<>());
         chainEventListeners.add(listener);
     }
