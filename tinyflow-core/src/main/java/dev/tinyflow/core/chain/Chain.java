@@ -91,39 +91,40 @@ public class Chain {
     public ChainState updateStateSafely(String stateInstanceId, ChainStateModifier modifier) {
         final long timeoutMs = 30_000; // 30 seconds total timeout
         final long maxRetryDelayMs = 100; // Maximum delay between retries
+        return executeWithLock(stateInstanceId, timeoutMs, TimeUnit.MILLISECONDS, () -> {
+            long startTime = System.currentTimeMillis();
+            int attempt = 0;
+            ChainState current = null;
+            while (System.currentTimeMillis() - startTime < timeoutMs) {
+                current = chainStateRepository.load(stateInstanceId);
+                if (current == null) {
+                    throw new IllegalStateException("Chain state not found: " + stateInstanceId);
+                }
 
-        long startTime = System.currentTimeMillis();
-        int attempt = 0;
-        ChainState current = null;
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            current = chainStateRepository.load(stateInstanceId);
-            if (current == null) {
-                throw new IllegalStateException("Chain state not found: " + stateInstanceId);
+                EnumSet<ChainStateField> updatedFields = modifier.modify(current);
+                if (updatedFields == null || updatedFields.isEmpty()) {
+                    return current; // No actual changes, exit early
+                }
+
+                if (chainStateRepository.tryUpdate(current, updatedFields)) {
+                    return current;
+                }
+
+                // Prepare next retry
+                attempt++;
+                long nextDelay = calculateNextRetryDelay(attempt, maxRetryDelayMs);
+                sleepUninterruptibly(nextDelay);
             }
 
-            EnumSet<ChainStateField> updatedFields = modifier.modify(current);
-            if (updatedFields == null || updatedFields.isEmpty()) {
-                return current; // No actual changes, exit early
-            }
-
-            if (chainStateRepository.tryUpdate(current, updatedFields)) {
-                return current;
-            }
-
-            // Prepare next retry
-            attempt++;
-            long nextDelay = calculateNextRetryDelay(attempt, maxRetryDelayMs);
-            sleepUninterruptibly(nextDelay);
-        }
-
-        // Timeout reached
-        assert current != null;
-        String msg = String.format(
-                "Chain state update timeout after %d ms (instanceId: %s)",
-                timeoutMs, current.getInstanceId()
-        );
-        log.warn(msg);
-        throw new ChainUpdateTimeoutException(msg);
+            // Timeout reached
+            assert current != null;
+            String msg = String.format(
+                    "Chain state update timeout after %d ms (instanceId: %s)",
+                    timeoutMs, current.getInstanceId()
+            );
+            log.warn(msg);
+            throw new ChainUpdateTimeoutException(msg);
+        });
     }
 
 
@@ -134,42 +135,45 @@ public class Chain {
     public NodeState updateNodeStateSafely(String stateInstanceId, String nodeId, NodeStateModifier modifier) {
         final long timeoutMs = 30_000;
         final long maxRetryDelayMs = 100;
-        long startTime = System.currentTimeMillis();
-        int attempt = 0;
 
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            // 1. 加载最新 ChainState（获取 chainVersion）
-            ChainState chainState = chainStateRepository.load(stateInstanceId);
-            if (chainState == null) {
-                throw new IllegalStateException("Chain state not found");
+        return executeWithLock(stateInstanceId, timeoutMs, TimeUnit.MILLISECONDS, () -> {
+            long startTime = System.currentTimeMillis();
+            int attempt = 0;
+
+            while (System.currentTimeMillis() - startTime < timeoutMs) {
+                // 1. 加载最新 ChainState（获取 chainVersion）
+                ChainState chainState = chainStateRepository.load(stateInstanceId);
+                if (chainState == null) {
+                    throw new IllegalStateException("Chain state not found");
+                }
+
+                // 2. 加载 NodeState
+                NodeState nodeState = nodeStateRepository.load(stateInstanceId, nodeId);
+                if (nodeState == null) {
+                    nodeState = new NodeState();
+                    nodeState.setChainInstanceId(chainState.getInstanceId());
+                    nodeState.setNodeId(nodeId);
+                }
+
+                // 3. 应用修改
+                EnumSet<NodeStateField> updatedFields = modifier.modify(nodeState);
+
+                if (updatedFields == null || updatedFields.isEmpty()) {
+                    return nodeState;
+                }
+
+                // 4. 尝试更新（传入 chainVersion 保证一致性）
+                if (nodeStateRepository.tryUpdate(nodeState, updatedFields, chainState.getVersion())) {
+                    return nodeState;
+                }
+
+                // 5. 退避重试
+                attempt++;
+                sleepUninterruptibly(calculateNextRetryDelay(attempt, maxRetryDelayMs));
             }
 
-            // 2. 加载 NodeState
-            NodeState nodeState = nodeStateRepository.load(stateInstanceId, nodeId);
-            if (nodeState == null) {
-                nodeState = new NodeState();
-                nodeState.setChainInstanceId(chainState.getInstanceId());
-                nodeState.setNodeId(nodeId);
-            }
-
-            // 3. 应用修改
-            EnumSet<NodeStateField> updatedFields = modifier.modify(nodeState);
-
-            if (updatedFields == null || updatedFields.isEmpty()) {
-                return nodeState;
-            }
-
-            // 4. 尝试更新（传入 chainVersion 保证一致性）
-            if (nodeStateRepository.tryUpdate(nodeState, updatedFields, chainState.getVersion())) {
-                return nodeState;
-            }
-
-            // 5. 退避重试
-            attempt++;
-            sleepUninterruptibly(calculateNextRetryDelay(attempt, maxRetryDelayMs));
-        }
-
-        throw new ChainUpdateTimeoutException("Node state update timeout");
+            throw new ChainUpdateTimeoutException("Node state update timeout");
+        });
     }
 
 
