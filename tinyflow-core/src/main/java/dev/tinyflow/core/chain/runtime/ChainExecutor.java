@@ -70,16 +70,41 @@ public class ChainExecutor {
     }
 
 
+    /**
+     * 执行指定的流程定义
+     *
+     * @param definitionId 流程定义ID，用于标识哪个流程定义
+     * @param variables    执行上下文变量集合，包含节点执行所需的参数和数据
+     * @return 执行结果映射表，包含节点执行后的输出数据
+     */
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables) {
         return execute(definitionId, variables, Collections.emptyMap(), Long.MAX_VALUE, TimeUnit.SECONDS);
     }
 
 
+    /**
+     * 执行指定的流程定义
+     *
+     * @param definitionId 流程定义ID，用于标识哪个流程定义
+     * @param variables    执行上下文变量集合，包含节点执行所需的参数和数据
+     * @param environment  执行环境变量集合，包含节点执行所需的参数和数据
+     * @return 执行结果映射表，包含节点执行后的输出数据
+     */
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables, Map<String, Object> environment) {
         return execute(definitionId, variables, environment, Long.MAX_VALUE, TimeUnit.SECONDS);
     }
 
 
+    /**
+     * 执行指定的流程定义
+     *
+     * @param definitionId 流程定义ID，用于标识哪个流程定义
+     * @param variables    执行上下文变量集合，包含节点执行所需的参数和数据
+     * @param environment  执行环境变量集合，包含节点执行所需的参数和数据
+     * @param timeout      执行超时时间
+     * @param unit         执行超时时间单位
+     * @return 执行结果映射表，包含节点执行后的输出数据
+     */
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables, Map<String, Object> environment, long timeout, TimeUnit unit) {
         Chain chain = createChain(definitionId, null);
         return this.startOrResume(chain, variables, environment, false, timeout, unit);
@@ -147,15 +172,41 @@ public class ChainExecutor {
     }
 
 
+    /**
+     * 恢复执行指定状态实例的流程
+     *
+     * @param stateInstanceId 状态实例ID，用于标识要恢复的流程状态
+     * @param variables       执行上下文变量集合，包含节点执行所需的参数和数据
+     * @return 执行结果映射表，包含节点执行后的输出数据
+     */
     public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables) {
         return resume(stateInstanceId, variables, Collections.emptyMap(), Long.MAX_VALUE, TimeUnit.SECONDS);
     }
 
+
+    /**
+     * 恢复执行指定状态实例的流程
+     *
+     * @param stateInstanceId 状态实例ID，用于标识要恢复的流程状态
+     * @param variables       执行上下文变量集合，包含节点执行所需的参数和数据
+     * @param environment     环境变量集合，包含节点执行所需的环境参数和数据
+     * @return 执行结果映射表，包含节点执行后的输出数据
+     */
     public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables, Map<String, Object> environment) {
         return resume(stateInstanceId, variables, environment, Long.MAX_VALUE, TimeUnit.SECONDS);
     }
 
 
+    /**
+     * 恢复执行指定状态实例的流程
+     *
+     * @param stateInstanceId 状态实例ID，用于标识要恢复的流程状态
+     * @param variables       执行上下文变量集合，包含节点执行所需的参数和数据
+     * @param environment     环境变量集合，包含节点执行所需 环境参数和数据
+     * @param timeout         超时时间
+     * @param unit            超时时间单位
+     * @return 执行结果映射表，包含节点执行后的输出数据
+     */
     public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables, Map<String, Object> environment, long timeout, TimeUnit unit) {
         ChainState state = chainStateRepository.load(stateInstanceId);
         if (state == null) {
@@ -165,6 +216,17 @@ public class ChainExecutor {
         return this.startOrResume(chain, variables, environment, true, timeout, unit);
     }
 
+    /**
+     * 启动或恢复执行流程
+     *
+     * @param chain       链实例
+     * @param variables   执行上下文变量集合
+     * @param environment 环境变量集合
+     * @param isResume    是否为恢复执行
+     * @param timeout     超时时间
+     * @param unit        超时时间单位
+     * @return 执行结果映射表
+     */
     private Map<String, Object> startOrResume(Chain chain, Map<String, Object> variables, Map<String, Object> environment, boolean isResume, long timeout, TimeUnit unit) {
         String stateInstanceId = chain.getStateInstanceId();
         CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
