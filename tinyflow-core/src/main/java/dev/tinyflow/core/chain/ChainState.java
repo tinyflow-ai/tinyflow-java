@@ -114,6 +114,22 @@ public class ChainState implements Serializable {
         this.environment = environment;
     }
 
+    public void addEnvironment(String key, Object value) {
+        if (this.environment == null) {
+            this.environment = new ConcurrentHashMap<>();
+        }
+        this.environment.put(key, value);
+    }
+
+    public void addEnvironment(Map<String, Object> environment) {
+        if (this.environment == null) {
+            this.environment = new ConcurrentHashMap<>();
+        }
+        if (environment != null) {
+            this.environment.putAll(environment);
+        }
+    }
+
 
     public List<String> getTriggerEdgeIds() {
         return triggerEdgeIds;
@@ -342,6 +358,7 @@ public class ChainState implements Serializable {
     public Object resolveValue(String path) {
         Object result = MapUtil.getByPath(getMemory(), path);
         if (result == null) result = MapUtil.getByPath(getEnvironment(), path);
+//        if (result == null) result = MapUtil.getByPath(getEnvMap(), path);
 //        if (result == null) result = MapUtil.getByPath(getTriggerVariables(), path);
         return result;
     }
@@ -365,8 +382,8 @@ public class ChainState implements Serializable {
 
     public Map<String, Object> getEnvMap() {
         Map<String, Object> formatArgsMap = new HashMap<>();
-        formatArgsMap.put("env", getEnvironment());
-        formatArgsMap.put("env.sys", System.getenv());
+        formatArgsMap.put("_env", getEnvironment());
+        formatArgsMap.put("_env.sys", System.getenv());
         return formatArgsMap;
     }
 

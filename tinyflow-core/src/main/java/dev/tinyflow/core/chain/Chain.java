@@ -212,7 +212,7 @@ public class Chain {
     }
 
 
-    public void start(Map<String, Object> variables) {
+    public void start(Map<String, Object> variables, Map<String, Object> environment) {
         Trigger prev = TriggerContext.getCurrentTrigger();
         try {
             // start 可能在 node 里执行一个新的 chain 的情况，
@@ -225,6 +225,11 @@ public class Chain {
                 if (variables != null && !variables.isEmpty()) {
                     state.getMemory().putAll(variables);
                     fields.add(ChainStateField.MEMORY);
+                }
+
+                if (environment != null && !environment.isEmpty()) {
+                    state.addEnvironment(environment);
+                    fields.add(ChainStateField.ENVIRONMENT);
                 }
 
                 if (StringUtil.noText(state.getChainDefinitionId())) {
@@ -660,14 +665,19 @@ public class Chain {
     }
 
 
-    public void resume(Map<String, Object> variables) {
+    public void resume(Map<String, Object> variables, Map<String, Object> environment) {
         ChainState newState = updateStateSafely(state -> {
+            Set<ChainStateField> updateFields = new HashSet<>();
             if (variables != null) {
                 state.getMemory().putAll(variables);
-                return EnumSet.of(ChainStateField.MEMORY);
-            } else {
-                return null;
+                updateFields.add(ChainStateField.MEMORY);
             }
+
+            if (environment != null) {
+                state.addEnvironment(environment);
+                updateFields.add(ChainStateField.ENVIRONMENT);
+            }
+            return updateFields.isEmpty() ? null : EnumSet.copyOf(updateFields);
         });
 
         notifyEvent(new ChainResumeEvent(this, variables));
@@ -693,7 +703,7 @@ public class Chain {
     }
 
     public void resume() {
-        resume(Collections.emptyMap());
+        resume(Collections.emptyMap(), Collections.emptyMap());
     }
 
     public void output(Node node, Object response) {

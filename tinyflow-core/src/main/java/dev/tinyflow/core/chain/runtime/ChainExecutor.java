@@ -71,13 +71,18 @@ public class ChainExecutor {
 
 
     public Map<String, Object> execute(String definitionId, Map<String, Object> variables) {
-        return execute(definitionId, variables, Long.MAX_VALUE, TimeUnit.SECONDS);
+        return execute(definitionId, variables, Collections.emptyMap(), Long.MAX_VALUE, TimeUnit.SECONDS);
     }
 
 
-    public Map<String, Object> execute(String definitionId, Map<String, Object> variables, long timeout, TimeUnit unit) {
+    public Map<String, Object> execute(String definitionId, Map<String, Object> variables, Map<String, Object> environment) {
+        return execute(definitionId, variables, environment, Long.MAX_VALUE, TimeUnit.SECONDS);
+    }
+
+
+    public Map<String, Object> execute(String definitionId, Map<String, Object> variables, Map<String, Object> environment, long timeout, TimeUnit unit) {
         Chain chain = createChain(definitionId, null);
-        return this.startOrResume(chain, variables, false, timeout, unit);
+        return this.startOrResume(chain, variables, environment, false, timeout, unit);
     }
 
     /**
@@ -96,8 +101,12 @@ public class ChainExecutor {
     }
 
     public String executeAsync(String definitionId, Map<String, Object> variables) {
+        return executeAsync(definitionId, variables, Collections.emptyMap());
+    }
+
+    public String executeAsync(String definitionId, Map<String, Object> variables, Map<String, Object> environment) {
         Chain chain = createChain(definitionId, null);
-        chain.start(variables);
+        chain.start(variables, environment);
         return chain.getStateInstanceId();
     }
 
@@ -139,20 +148,24 @@ public class ChainExecutor {
 
 
     public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables) {
-        return resume(stateInstanceId, variables, Long.MAX_VALUE, TimeUnit.SECONDS);
+        return resume(stateInstanceId, variables, Collections.emptyMap(), Long.MAX_VALUE, TimeUnit.SECONDS);
+    }
+
+    public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables, Map<String, Object> environment) {
+        return resume(stateInstanceId, variables, environment, Long.MAX_VALUE, TimeUnit.SECONDS);
     }
 
 
-    public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables, long timeout, TimeUnit unit) {
+    public Map<String, Object> resume(String stateInstanceId, Map<String, Object> variables, Map<String, Object> environment, long timeout, TimeUnit unit) {
         ChainState state = chainStateRepository.load(stateInstanceId);
         if (state == null) {
             throw new ChainStateNotFoundException(stateInstanceId);
         }
         Chain chain = createChain(state.getChainDefinitionId(), stateInstanceId);
-        return this.startOrResume(chain, variables, true, timeout, unit);
+        return this.startOrResume(chain, variables, environment, true, timeout, unit);
     }
 
-    private Map<String, Object> startOrResume(Chain chain, Map<String, Object> variables, boolean isResume, long timeout, TimeUnit unit) {
+    private Map<String, Object> startOrResume(Chain chain, Map<String, Object> variables, Map<String, Object> environment, boolean isResume, long timeout, TimeUnit unit) {
         String stateInstanceId = chain.getStateInstanceId();
         CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
         ChainEventListener listener = (event, c) -> {
@@ -185,9 +198,9 @@ public class ChainExecutor {
             this.addEventListener(listener);
             this.addErrorListener(errorListener);
             if (isResume) {
-                chain.resume(variables);
+                chain.resume(variables, environment);
             } else {
-                chain.start(variables);
+                chain.start(variables, environment);
             }
             Map<String, Object> result = future.get(timeout, unit);
             clearDefaultStates(result);
@@ -223,6 +236,10 @@ public class ChainExecutor {
 
 
     public void resumeAsync(String stateInstanceId, Map<String, Object> variables) {
+        this.resumeAsync(stateInstanceId, variables, Collections.emptyMap());
+    }
+
+    public void resumeAsync(String stateInstanceId, Map<String, Object> variables, Map<String, Object> environment) {
         ChainState state = chainStateRepository.load(stateInstanceId);
         if (state == null) {
             return;
@@ -234,7 +251,7 @@ public class ChainExecutor {
         }
 
         Chain chain = createChain(state.getChainDefinitionId(), state.getInstanceId());
-        chain.resume(variables);
+        chain.resume(variables, environment);
     }
 
 
