@@ -35,6 +35,13 @@ public class Chain {
     private static final ThreadLocal<Chain> EXECUTION_THREAD_LOCAL = new ThreadLocal<>();
 
 
+    // 30 seconds total timeout
+    public static final long DEFAULT_STATE_UPDATE_TIMEOUT_MS = 30_000;
+
+    // Maximum delay between retries
+    public static final long DEFAULT_STATE_UPDATE_MAX_RETRY_DELAY_MS = 100;
+
+
     protected final ChainDefinition definition;
     protected String stateInstanceId;
 
@@ -43,6 +50,9 @@ public class Chain {
     protected NodeStateRepository nodeStateRepository;
     protected EventManager eventManager;
     protected TriggerScheduler triggerScheduler;
+
+    protected long stateUpdateTimeoutMs = DEFAULT_STATE_UPDATE_TIMEOUT_MS;
+    protected long stateUpdateMaxRetryDelayMs = DEFAULT_STATE_UPDATE_MAX_RETRY_DELAY_MS;
 
     public static Chain currentChain() {
         return EXECUTION_THREAD_LOCAL.get();
@@ -89,13 +99,11 @@ public class Chain {
 
 
     public ChainState updateStateSafely(String stateInstanceId, ChainStateModifier modifier) {
-        final long timeoutMs = 30_000; // 30 seconds total timeout
-        final long maxRetryDelayMs = 100; // Maximum delay between retries
-        return executeWithLock(stateInstanceId, timeoutMs, TimeUnit.MILLISECONDS, () -> {
+        return executeWithLock(stateInstanceId, stateUpdateTimeoutMs, TimeUnit.MILLISECONDS, () -> {
             long startTime = System.currentTimeMillis();
             int attempt = 0;
             ChainState current = null;
-            while (System.currentTimeMillis() - startTime < timeoutMs) {
+            while (System.currentTimeMillis() - startTime < stateUpdateTimeoutMs) {
                 current = chainStateRepository.load(stateInstanceId);
                 if (current == null) {
                     throw new IllegalStateException("Chain state not found: " + stateInstanceId);
@@ -112,7 +120,7 @@ public class Chain {
 
                 // Prepare next retry
                 attempt++;
-                long nextDelay = calculateNextRetryDelay(attempt, maxRetryDelayMs);
+                long nextDelay = calculateNextRetryDelay(attempt, stateUpdateMaxRetryDelayMs);
                 sleepUninterruptibly(nextDelay);
             }
 
@@ -120,7 +128,7 @@ public class Chain {
             assert current != null;
             String msg = String.format(
                     "Chain state update timeout after %d ms (instanceId: %s)",
-                    timeoutMs, current.getInstanceId()
+                    stateUpdateTimeoutMs, current.getInstanceId()
             );
             log.warn(msg);
             throw new ChainUpdateTimeoutException(msg);
@@ -133,14 +141,11 @@ public class Chain {
     }
 
     public NodeState updateNodeStateSafely(String stateInstanceId, String nodeId, NodeStateModifier modifier) {
-        final long timeoutMs = 30_000;
-        final long maxRetryDelayMs = 100;
-
-        return executeWithLock(stateInstanceId, timeoutMs, TimeUnit.MILLISECONDS, () -> {
+        return executeWithLock(stateInstanceId, stateUpdateTimeoutMs, TimeUnit.MILLISECONDS, () -> {
             long startTime = System.currentTimeMillis();
             int attempt = 0;
 
-            while (System.currentTimeMillis() - startTime < timeoutMs) {
+            while (System.currentTimeMillis() - startTime < stateUpdateTimeoutMs) {
                 // 1. 加载最新 ChainState（获取 chainVersion）
                 ChainState chainState = chainStateRepository.load(stateInstanceId);
                 if (chainState == null) {
@@ -169,7 +174,7 @@ public class Chain {
 
                 // 5. 退避重试
                 attempt++;
-                sleepUninterruptibly(calculateNextRetryDelay(attempt, maxRetryDelayMs));
+                sleepUninterruptibly(calculateNextRetryDelay(attempt, stateUpdateMaxRetryDelayMs));
             }
 
             throw new ChainUpdateTimeoutException("Node state update timeout");
@@ -725,6 +730,22 @@ public class Chain {
 
     public void setChainStateRepository(ChainStateRepository chainStateRepository) {
         this.chainStateRepository = chainStateRepository;
+    }
+
+    public long getStateUpdateTimeoutMs() {
+        return stateUpdateTimeoutMs;
+    }
+
+    public void setStateUpdateTimeoutMs(long stateUpdateTimeoutMs) {
+        this.stateUpdateTimeoutMs = stateUpdateTimeoutMs;
+    }
+
+    public long getStateUpdateMaxRetryDelayMs() {
+        return stateUpdateMaxRetryDelayMs;
+    }
+
+    public void setStateUpdateMaxRetryDelayMs(long stateUpdateMaxRetryDelayMs) {
+        this.stateUpdateMaxRetryDelayMs = stateUpdateMaxRetryDelayMs;
     }
 
     public ChainDefinition getDefinition() {

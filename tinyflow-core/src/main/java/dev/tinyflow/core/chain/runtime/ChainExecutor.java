@@ -40,11 +40,15 @@ import java.util.concurrent.*;
  */
 public class ChainExecutor {
 
+
     private final ChainDefinitionRepository definitionRepository;
     private final ChainStateRepository chainStateRepository;
     private final NodeStateRepository nodeStateRepository;
     private final TriggerScheduler triggerScheduler;
     private final EventManager eventManager = new EventManager();
+
+    private long stateUpdateTimeoutMs = Chain.DEFAULT_STATE_UPDATE_TIMEOUT_MS;
+    private long stateUpdateMaxRetryDelayMs = Chain.DEFAULT_STATE_UPDATE_MAX_RETRY_DELAY_MS;
 
     public ChainExecutor(ChainDefinitionRepository definitionRepository
             , ChainStateRepository chainStateRepository
@@ -329,6 +333,8 @@ public class ChainExecutor {
         chain.setChainStateRepository(chainStateRepository);
         chain.setNodeStateRepository(nodeStateRepository);
         chain.setEventManager(eventManager);
+        chain.setStateUpdateTimeoutMs(stateUpdateTimeoutMs);
+        chain.setStateUpdateMaxRetryDelayMs(stateUpdateMaxRetryDelayMs);
 
         return chain;
     }
@@ -351,6 +357,8 @@ public class ChainExecutor {
         chain.setChainStateRepository(chainStateRepository);
         chain.setNodeStateRepository(nodeStateRepository);
         chain.setEventManager(eventManager);
+        chain.setStateUpdateTimeoutMs(stateUpdateTimeoutMs);
+        chain.setStateUpdateMaxRetryDelayMs(stateUpdateMaxRetryDelayMs);
 
         String nodeId = trigger.getNodeId();
         if (nodeId == null) {
@@ -420,5 +428,21 @@ public class ChainExecutor {
 
     public EventManager getEventManager() {
         return eventManager;
+    }
+
+    public long getStateUpdateTimeoutMs() {
+        return stateUpdateTimeoutMs;
+    }
+
+    public void setStateUpdateTimeoutMs(long stateUpdateTimeoutMs) {
+        this.stateUpdateTimeoutMs = stateUpdateTimeoutMs;
+    }
+
+    public long getStateUpdateMaxRetryDelayMs() {
+        return stateUpdateMaxRetryDelayMs;
+    }
+
+    public void setStateUpdateMaxRetryDelayMs(long stateUpdateMaxRetryDelayMs) {
+        this.stateUpdateMaxRetryDelayMs = stateUpdateMaxRetryDelayMs;
     }
 }
