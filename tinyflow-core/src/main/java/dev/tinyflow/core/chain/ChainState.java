@@ -363,48 +363,59 @@ public class ChainState implements Serializable {
         return result;
     }
 
+    /**
+     * 解析参数
+     *
+     * @param node 节点
+     * @return 参数
+     */
     public Map<String, Object> resolveParameters(Node node) {
         return resolveParameters(node, node.getParameters());
     }
 
+    /**
+     * 解析参数
+     *
+     * @param node           节点
+     * @param ignoreRequired 忽略必填参数
+     * @return 参数
+     */
     public Map<String, Object> resolveParameters(Node node, boolean ignoreRequired) {
         return resolveParameters(node, node.getParameters(), null, ignoreRequired);
     }
 
+    /**
+     * 解析参数
+     *
+     * @param node       节点
+     * @param parameters 参数
+     * @return 参数
+     */
     public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters) {
         return resolveParameters(node, parameters, null);
     }
 
+    /**
+     * 解析参数
+     *
+     * @param node       节点
+     * @param parameters 节点参数
+     * @param formatArgs 格式化参数
+     * @return 节点参数
+     */
     public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters, Map<String, Object> formatArgs) {
         return resolveParameters(node, parameters, formatArgs, false);
     }
 
-    private boolean isNullOrBlank(Object value) {
-        return value == null || value instanceof String && StringUtil.noText((String) value);
-    }
-
-
-    public Map<String, Object> getEnvMap() {
-        Map<String, Object> formatArgsMap = new HashMap<>();
-        formatArgsMap.put("_env", getEnvironment());
-        formatArgsMap.put("_env.sys", System.getenv());
-        return formatArgsMap;
-    }
-
-    public Map<String, Object> getStartParameters() {
-        Map<String, Object> startParameters = new LinkedHashMap<>();
-        ConcurrentHashMap<String, Object> memory = getMemory();
-        if (memory != null) {
-            memory.forEach((s, o) -> {
-                if (!s.contains(".")) {
-                    startParameters.put(s, o);
-                }
-            });
-        }
-        return startParameters;
-    }
-
-
+    /**
+     * 解析参数
+     *
+     * @param node           节点
+     * @param parameters     节点参数
+     * @param formatArgs     节点参数
+     * @param ignoreRequired 忽略必填参数
+     * @return 节点参数
+     */
     public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters, Map<String, Object> formatArgs, boolean ignoreRequired) {
         if (parameters == null || parameters.isEmpty()) {
             return Collections.emptyMap();
@@ -528,6 +539,32 @@ public class ChainState implements Serializable {
         }
 
         return variables;
+    }
+
+
+    private boolean isNullOrBlank(Object value) {
+        return value == null || value instanceof String && StringUtil.noText((String) value);
+    }
+
+
+    public Map<String, Object> getEnvMap() {
+        Map<String, Object> formatArgsMap = new HashMap<>();
+        formatArgsMap.put("_env", getEnvironment());
+        formatArgsMap.put("_env.sys", System.getenv());
+        return formatArgsMap;
+    }
+
+    public Map<String, Object> getStartParameters() {
+        Map<String, Object> startParameters = new LinkedHashMap<>();
+        ConcurrentHashMap<String, Object> memory = getMemory();
+        if (memory != null) {
+            memory.forEach((s, o) -> {
+                if (!s.contains(".")) {
+                    startParameters.put(s, o);
+                }
+            });
+        }
+        return startParameters;
     }
 
 
