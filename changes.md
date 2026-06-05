@@ -1,5 +1,11 @@
 # Tinyflow-java ChangeLog
 
+## v2.0.6 20260605
+- refactor(chain): move helper methods and add parameter resolution documentation
+- feat(chain): add parameter resolution method with ignoreRequired option
+- feat(chain): enhance parameter resolution with fallback mechanism
+
+
 ## v2.0.5 20260522
 - feat(core): add configurable state update timeout and retry delay settings
 - docs(ChainExecutor): add comprehensive JavaDoc comments for execution methods
