@@ -413,21 +413,34 @@ public class ChainState implements Serializable {
             if (refType == RefType.FIXED) {
                 value = TextTemplate.of(parameter.getValue())
                         .formatToString(Arrays.asList(formatArgs, getEnvMap(), getStartParameters()));
+
+                if (value == null) {
+                    value = this.resolveValue(parameter.getName());
+                }
+
+                if (value == null && parameter.getDefaultValue() != null) {
+                    value = parameter.getDefaultValue();
+                }
             } else if (refType == RefType.REF) {
                 value = this.resolveValue(parameter.getRef());
-            }
 
-            // 单节点（只有 1 个节点，或者直接点击节点执行）执行时，参数只会传入 name 内容。
-            if (value == null) {
-                value = this.resolveValue(parameter.getName());
-            }
+                // 单节点（只有 1 个节点，或者直接点击节点执行）执行时，参数只会传入 name 内容。
+                if (value == null) {
+                    value = this.resolveValue(parameter.getName());
+                }
 
-            if (value == null && parameter.getDefaultValue() != null) {
-                value = parameter.getDefaultValue();
+                if (value == null && parameter.getDefaultValue() != null) {
+                    value = parameter.getDefaultValue();
+                }
             }
 
             // 开始节点
             if (refType == RefType.INPUT) {
+                value = this.resolveValue(parameter.getName());
+
+                if (value == null && parameter.getDefaultValue() != null) {
+                    value = parameter.getDefaultValue();
+                }
                 if (isNullOrBlank(value) && parameter.isRequired() && !ignoreRequired) {
                     if (suspendParameters == null) {
                         suspendParameters = new ArrayList<>();
@@ -439,7 +452,10 @@ public class ChainState implements Serializable {
 
             // 用户表单输入
             else if (refType == RefType.FORM) {
-                // 前端未传入任何值，包括空字符串
+
+                value = this.resolveValue(parameter.getName());
+
+                // 第一次去获取表单内容，触发表单填写
                 if (value == null && !ignoreRequired) {
                     if (suspendParameters == null) {
                         suspendParameters = new ArrayList<>();
@@ -448,14 +464,26 @@ public class ChainState implements Serializable {
                     continue;
                 }
 
-                // 如果前端传入了空值
-                if (value instanceof String && StringUtil.noText((String) value) && parameter.isRequired() && !ignoreRequired) {
+                // 用户填写内容了，但内容是空的, 则使用默认值
+                if (StringUtil.noText((String) value)) {
+                    value = parameter.getDefaultValue();
+                }
+
+                if (StringUtil.noText((String) value) && parameter.isRequired() && !ignoreRequired) {
                     if (suspendParameters == null) {
                         suspendParameters = new ArrayList<>();
                     }
                     suspendParameters.add(parameter);
                     continue;
                 }
+
+//                if (value instanceof String && StringUtil.noText((String) value) && parameter.isRequired() && !ignoreRequired) {
+//                    if (suspendParameters == null) {
+//                        suspendParameters = new ArrayList<>();
+//                    }
+//                    suspendParameters.add(parameter);
+//                    continue;
+//                }
             }
 
 
