@@ -367,6 +367,10 @@ public class ChainState implements Serializable {
         return resolveParameters(node, node.getParameters());
     }
 
+    public Map<String, Object> resolveParameters(Node node, boolean ignoreRequired) {
+        return resolveParameters(node, node.getParameters(), null, ignoreRequired);
+    }
+
     public Map<String, Object> resolveParameters(Node node, List<? extends Parameter> parameters) {
         return resolveParameters(node, parameters, null);
     }
