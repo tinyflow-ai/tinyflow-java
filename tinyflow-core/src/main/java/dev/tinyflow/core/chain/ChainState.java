@@ -480,11 +480,11 @@ public class ChainState implements Serializable {
                 }
 
                 // 用户填写内容了，但内容是空的, 则使用默认值
-                if (StringUtil.noText((String) value)) {
+                if (isNullOrBlank(value)) {
                     value = parameter.getDefaultValue();
                 }
 
-                if (StringUtil.noText((String) value) && parameter.isRequired() && !ignoreRequired) {
+                if (isNullOrBlank(value) && parameter.isRequired() && !ignoreRequired) {
                     if (suspendParameters == null) {
                         suspendParameters = new ArrayList<>();
                     }
@@ -543,7 +543,8 @@ public class ChainState implements Serializable {
 
 
     private boolean isNullOrBlank(Object value) {
-        return value == null || value instanceof String && StringUtil.noText((String) value);
+        return value == null ||
+                (value instanceof String && StringUtil.noText((String) value));
     }
 
 
